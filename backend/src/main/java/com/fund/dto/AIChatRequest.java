@@ -13,6 +13,9 @@ public class AIChatRequest {
      */
     private String sessionId;
 
+
+    
+
     /**
      * 用户消息
      */
