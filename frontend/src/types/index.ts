@@ -1,0 +1,198 @@
+export interface User {
+  id: number
+  username: string
+  email?: string
+  phone?: string
+  nickname?: string
+  avatar?: string
+  status: number
+}
+
+export interface LoginDTO {
+  username: string
+  password: string
+}
+
+export interface RegisterDTO {
+  username: string
+  password: string
+  email?: string
+  phone?: string
+  nickname?: string
+}
+
+export interface UserVO {
+  id: number
+  username: string
+  email?: string
+  phone?: string
+  nickname?: string
+  avatar?: string
+  status: number
+  createTime?: string
+}
+
+export interface Fund {
+  id: number
+  fundCode: string
+  fundName: string
+  fundType?: string
+  sector?: string
+  fundCompany?: string
+  fundScale?: number
+  nav?: number
+  accNav?: number
+  navDate?: string
+  dayGrowth?: number
+  weekGrowth?: number
+  monthGrowth?: number
+  threeMonthGrowth?: number
+  sixMonthGrowth?: number
+  yearGrowth?: number
+  totalGrowth?: number
+  riskLevel?: number
+}
+
+export interface FundNavHistoryVO {
+  fundCode: string
+  navDate: string
+  nav: number
+  accNav?: number
+  dayGrowth?: number
+}
+
+export interface FundSearchDTO {
+  keyword?: string
+  fundType?: string
+  riskLevel?: number
+  minScale?: number
+  maxScale?: number
+  sortBy?: string
+  sortOrder?: string
+  pageNum?: number
+  pageSize?: number
+}
+
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+export interface FundDetailVO extends Fund {
+  establishDate?: string
+  minPurchase?: number
+  purchaseRate?: number
+  redemptionRate?: number
+  managementRate?: number
+  custodyRate?: number
+  status?: number
+  riskLevelName?: string
+}
+
+export interface UserFavorite {
+  id: number
+  userId: number
+  fundCode: string
+  groupName?: string
+  createTime: string
+  fundName?: string
+  nav?: number
+  navDate?: string
+  dayGrowth?: number
+  weekGrowth?: number
+  monthGrowth?: number
+  threeMonthGrowth?: number
+  yearGrowth?: number
+}
+
+export interface FundNews {
+  id: number
+  title: string
+  summary?: string
+  content?: string
+  coverImage?: string
+  originalUrl?: string
+  source?: string
+  author?: string
+  newsType?: string
+  fundCode?: string
+  sentiment?: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  sentimentScore?: number
+  sentimentConfidence?: number
+  impactLevel?: number
+  publishTime?: string
+  viewCount?: number
+  status?: number
+}
+
+export interface NewsSearchDTO {
+  keyword?: string
+  type?: string
+  sentiment?: string
+  pageNum: number
+  pageSize: number
+}
+
+export interface NewsSentimentOverview {
+  bullishCount: number
+  bearishCount: number
+  neutralCount: number
+  bullishPercent: number
+  bearishPercent: number
+  neutralPercent: number
+}
+
+export interface MarketDataVO {
+  marketType: string
+  marketCode: string
+  currentPoint?: number
+  changePoint?: number
+  changeRatio?: number
+  volume?: number
+  amount?: number
+  highPoint?: number
+  lowPoint?: number
+  openPoint?: number
+  prevClose?: number
+}
+
+export interface FundManagerVO {
+  managerId: string
+  managerName: string
+  company?: string
+  workYears?: number
+  startDate?: string
+  totalAsset?: number
+  bestReturn?: number
+  education?: string
+  resume?: string
+  photo?: string
+}
+
+export interface FundCompareVO {
+  fundCode: string
+  fundName: string
+  fundType?: string
+  fundCompany?: string
+  fundScale?: number
+  nav?: number
+  dayGrowth?: number
+  weekGrowth?: number
+  monthGrowth?: number
+  threeMonthGrowth?: number
+  sixMonthGrowth?: number
+  yearGrowth?: number
+  totalGrowth?: number
+  maxDrawdown?: number
+  sharpeRatio?: number
+  navHistory?: FundNavHistoryVO[]
+}
+
+export interface Result<T> {
+  code: number
+  message: string
+  data: T
+}
