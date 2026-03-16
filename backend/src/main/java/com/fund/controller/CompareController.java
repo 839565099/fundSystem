@@ -2,14 +2,12 @@ package com.fund.controller;
 
 import com.fund.common.Result;
 import com.fund.entity.Fund;
-import com.fund.entity.FundNavHistory;
-import com.fund.external.FundDataApiService;
 import com.fund.service.FundService;
+import com.fund.service.FundNavHistoryService;
 import com.fund.vo.FundCompareVO;
 import com.fund.vo.FundNavHistoryVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,13 +17,13 @@ import java.util.List;
 public class CompareController {
 
     private final FundService fundService;
-    private final FundDataApiService fundDataApiService;
+    private final FundNavHistoryService navHistoryService;
+
+    private final com.fund.external.FundDataApiService fundDataApiService;
 
     @PostMapping("/funds")
     public Result<List<FundCompareVO>> compareFunds(@RequestBody List<String> fundCodes) {
         List<FundCompareVO> compareList = new ArrayList<>();
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusMonths(6); // 获取近6个月净值历史用于对比
 
         for (String fundCode : fundCodes) {
             Fund fund = fundService.getByFundCode(fundCode);
@@ -49,21 +47,11 @@ public class CompareController {
                 vo.setYearGrowth(fund.getYearGrowth());
                 vo.setTotalGrowth(fund.getTotalGrowth());
 
-                // 获取净值历史数据用于图表展示
+                // 获取净值历史数据 - 使用带缓存的服务
                 try {
-                    List<FundNavHistory> historyList = fundDataApiService.fetchNavHistory(fundCode, startDate, endDate);
+                    List<FundNavHistoryVO> historyList = navHistoryService.getNavHistory(fundCode, "sixMonth");
                     if (historyList != null && !historyList.isEmpty()) {
-                        List<FundNavHistoryVO> navHistoryVOList = new ArrayList<>();
-                        for (FundNavHistory history : historyList) {
-                            FundNavHistoryVO historyVO = new FundNavHistoryVO();
-                            historyVO.setFundCode(history.getFundCode());
-                            historyVO.setNavDate(history.getNavDate());
-                            historyVO.setNav(history.getNav());
-                            historyVO.setAccNav(history.getAccNav());
-                            historyVO.setDayGrowth(history.getDayGrowth());
-                            navHistoryVOList.add(historyVO);
-                        }
-                        vo.setNavHistory(navHistoryVOList);
+                        vo.setNavHistory(historyList);
                     }
                 } catch (Exception e) {
                     // 忽略获取历史数据失败的情况

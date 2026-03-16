@@ -24,7 +24,33 @@ public enum ErrorCode {
     FAVORITE_LIMIT(3002, "收藏数量已达上限"),
     
     TOKEN_EXPIRED(4001, "Token已过期"),
-    TOKEN_INVALID(4002, "Token无效");
+    TOKEN_INVALID(4002, "Token无效"),
+
+    // 投资组合相关错误码 5xxx
+    PORTFOLIO_NOT_FOUND(5001, "投资组合不存在"),
+    PORTFOLIO_NAME_EXISTS(5002, "组合名称已存在"),
+    PORTFOLIO_ITEM_LIMIT(5003, "组合持仓数量已达上限"),
+    PORTFOLIO_ITEM_NOT_FOUND(5004, "组合持仓项不存在"),
+    PORTFOLIO_ACCESS_DENIED(5005, "无权访问该组合"),
+
+    // 预警相关错误码 6xxx
+    ALERT_RULE_NOT_FOUND(6001, "预警规则不存在"),
+    ALERT_RULE_LIMIT(6002, "预警规则数量已达上限"),
+    ALERT_RULE_INVALID(6003, "预警规则参数无效"),
+
+    // AI助手相关错误码 7xxx
+    AI_SERVICE_UNAVAILABLE(7001, "AI服务暂不可用"),
+    AI_SESSION_NOT_FOUND(7002, "AI会话不存在"),
+    AI_API_KEY_NOT_CONFIGURED(7003, "AI服务未配置"),
+    AI_REQUEST_FAILED(7004, "AI请求失败"),
+
+    // 通用错误码 8xxx
+    RESOURCE_NOT_FOUND(8001, "请求的资源不存在"),
+    RATE_LIMIT_EXCEEDED(8002, "请求过于频繁，请稍后重试"),
+    REQUEST_TIMEOUT(8003, "请求超时"),
+    SERVICE_UNAVAILABLE(8004, "服务暂不可用"),
+    MEDIA_TYPE_NOT_SUPPORTED(8005, "不支持的媒体类型"),
+    MESSAGE_NOT_READABLE(8006, "请求数据格式错误");
 
     private final Integer code;
     private final String message;

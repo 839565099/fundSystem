@@ -40,16 +40,42 @@
               <n-icon size="20"><TrendingUpOutline /></n-icon>
               收藏组合趋势
             </h3>
-            <n-button-group size="small">
-              <n-button 
-                v-for="p in trendPeriods" 
-                :key="p.value"
-                :type="trendPeriod === p.value ? 'primary' : 'default'"
-                @click="changeTrendPeriod(p.value)"
-              >
-                {{ p.label }}
-              </n-button>
-            </n-button-group>
+            <div class="trend-controls">
+              <n-popover trigger="click" placement="bottom">
+                <template #trigger>
+                  <n-button size="small">
+                    选择基金 ({{ selectedTrendFunds.length }}/{{ favorites.length }})
+                  </n-button>
+                </template>
+                <div class="fund-selector">
+                  <n-checkbox-group v-model:value="selectedTrendFunds" @update:value="loadTrendChart">
+                    <n-space vertical>
+                      <n-checkbox
+                        v-for="fav in favorites"
+                        :key="fav.fundCode"
+                        :value="fav.fundCode"
+                        :label="`${fav.fundName} (${fav.fundCode})`"
+                      />
+                    </n-space>
+                  </n-checkbox-group>
+                  <div class="selector-actions">
+                    <n-button text size="small" @click="selectAllFunds">全选</n-button>
+                    <n-button text size="small" @click="selectTopFunds">前5只</n-button>
+                    <n-button text size="small" @click="clearSelection">清空</n-button>
+                  </div>
+                </div>
+              </n-popover>
+              <n-button-group size="small">
+                <n-button
+                  v-for="p in trendPeriods"
+                  :key="p.value"
+                  :type="trendPeriod === p.value ? 'primary' : 'default'"
+                  @click="changeTrendPeriod(p.value)"
+                >
+                  {{ p.label }}
+                </n-button>
+              </n-button-group>
+            </div>
           </div>
           <div ref="trendChartRef" class="trend-chart"></div>
         </div>
@@ -112,7 +138,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { NIcon, NButton, NSpin, NEmpty, NButtonGroup, createDiscreteApi } from 'naive-ui'
+import { NIcon, NButton, NSpin, NEmpty, NButtonGroup, NPopover, NCheckboxGroup, NCheckbox, NSpace, createDiscreteApi } from 'naive-ui'
 import { StarOutline, DownloadOutline, TrendingUpOutline } from '@vicons/ionicons5'
 import { favoriteApi, exportApi, fundApi } from '../api/fund'
 import { useAuthStore } from '../stores/auth'
@@ -140,6 +166,39 @@ const trendPeriods = [
   { label: '六月', value: 'sixMonth' },
 ]
 
+// 选中的基金代码列表（用于趋势图显示）
+const selectedTrendFunds = ref<string[]>([])
+
+// 基于索引生成区分度高的颜色（HSL色彩空间）
+const generateColors = (count: number): string[] => {
+  return Array.from({ length: count }, (_, i) => {
+    const hue = (i * 360 / count) % 360
+    return `hsl(${hue}, 70%, 50%)`
+  })
+}
+
+// 初始化选中基金（默认前5只或全部）
+const initSelectedFunds = () => {
+  selectedTrendFunds.value = favorites.value.slice(0, 5).map(f => f.fundCode)
+}
+
+// 全选
+const selectAllFunds = () => {
+  selectedTrendFunds.value = favorites.value.map(f => f.fundCode)
+  loadTrendChart()
+}
+
+// 选择前5只
+const selectTopFunds = () => {
+  initSelectedFunds()
+  loadTrendChart()
+}
+
+// 清空选择
+const clearSelection = () => {
+  selectedTrendFunds.value = []
+}
+
 const avgGrowth = computed(() => {
   if (favorites.value.length === 0) return 0
   const total = favorites.value.reduce((sum, f) => sum + (f.dayGrowth || 0), 0)
@@ -153,6 +212,7 @@ const loadFavorites = async () => {
   loading.value = true
   try {
     favorites.value = await favoriteApi.getList() || []
+    initSelectedFunds()
   } catch {
     message.error('加载收藏失败')
   } finally {
@@ -166,14 +226,16 @@ const changeTrendPeriod = (period: string) => {
 }
 
 const loadTrendChart = async () => {
-  if (!trendChartRef.value || favorites.value.length === 0) return
-  
+  if (!trendChartRef.value || selectedTrendFunds.value.length === 0) return
+
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value)
   }
-  
+
   const navHistories: Map<string, FundNavHistoryVO[]> = new Map()
-  const loadPromises = favorites.value.slice(0, 5).map(async (fav) => {
+  const selectedFunds = favorites.value.filter(f => selectedTrendFunds.value.includes(f.fundCode))
+
+  const loadPromises = selectedFunds.map(async (fav) => {
     try {
       const data = await fundApi.getNavHistory(fav.fundCode, trendPeriod.value)
       navHistories.set(fav.fundCode, data || [])
@@ -181,39 +243,39 @@ const loadTrendChart = async () => {
       navHistories.set(fav.fundCode, [])
     }
   })
-  
+
   await Promise.all(loadPromises)
-  
+
   const allDates = new Set<string>()
   navHistories.forEach(history => {
     history.forEach(h => allDates.add(h.navDate))
   })
   const sortedDates = Array.from(allDates).sort()
-  
+
   const series: any[] = []
-  const colors = ['#3b82f6', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6']
-  
-  favorites.value.slice(0, 5).forEach((fav, index) => {
+  const colors = generateColors(selectedFunds.length)
+
+  selectedFunds.forEach((fav, index) => {
     const history = navHistories.get(fav.fundCode) || []
     if (history.length === 0) return
-    
+
     const firstNav = history[0]?.nav || 1
     const growthData = sortedDates.map(date => {
       const item = history.find(h => h.navDate === date)
       if (!item) return null
       return firstNav > 0 ? ((item.nav - firstNav) / firstNav) * 100 : 0
     })
-    
+
     series.push({
       name: fav.fundName?.substring(0, 6),
       type: 'line',
       data: growthData,
       smooth: true,
       symbol: 'none',
-      lineStyle: { width: 2, color: colors[index % colors.length] },
+      lineStyle: { width: 2, color: colors[index] },
     })
   })
-  
+
   if (series.length === 0) {
     trendChart.clear()
     return
@@ -247,6 +309,7 @@ const loadTrendChart = async () => {
     legend: {
       data: series.map(s => s.name),
       bottom: 0,
+      type: 'scroll',
       textStyle: { fontSize: 11 },
     },
     grid: {
@@ -383,6 +446,26 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.trend-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fund-selector {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.selector-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
 }
 
 .trend-section .section-title {

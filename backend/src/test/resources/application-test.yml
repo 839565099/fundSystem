@@ -1,0 +1,59 @@
+# 测试环境配置
+spring:
+  application:
+    name: fund-system-test
+
+  # 使用 H2 内存数据库
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  # 排除不需要的自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+# 日志配置
+logging:
+  level:
+    root: warn
+    com.fund: info
+
+# JWT 配置
+jwt:
+  secret: testSecretKeyForJwtTokenGeneration2024TestSecretKeyForJwtToken
+  expiration: 3600000
+  header: Authorization
+  prefix: Bearer
+
+# AI 配置（测试环境禁用）
+ai:
+  qwen:
+    api-key: test-api-key
+    endpoint: https://test.endpoint
+    default-model: test-model
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.fund.entity
+  global-config:
+    db-config:
+      id-type: auto
+    banner: false
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false

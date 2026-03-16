@@ -133,6 +133,13 @@ public class AIChatServiceImpl implements AIChatService {
 
     private String callQwenAPI(List<Map<String, String>> messages, String model) {
         try {
+            // 检查 API Key 是否配置
+            if (aiConfig.getApiKey() == null || aiConfig.getApiKey().isEmpty() ||
+                "your-qwen-api-key-here".equals(aiConfig.getApiKey())) {
+                log.error("Qwen API Key not configured");
+                return "AI 助手未配置，请联系管理员配置通义千问 API Key。";
+            }
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + aiConfig.getApiKey());
@@ -140,6 +147,7 @@ public class AIChatServiceImpl implements AIChatService {
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", model != null ? model : aiConfig.getDefaultModel());
 
+            // 使用 OpenAI 兼容格式的 messages 数组
             JSONArray messagesArray = new JSONArray();
             for (Map<String, String> msg : messages) {
                 JSONObject msgObj = new JSONObject();
@@ -147,14 +155,11 @@ public class AIChatServiceImpl implements AIChatService {
                 msgObj.put("content", msg.get("content"));
                 messagesArray.add(msgObj);
             }
-            JSONObject input = new JSONObject();
-            input.put("messages", messagesArray);
-            requestBody.put("input", input);
+            requestBody.put("messages", messagesArray);
 
-            JSONObject parameters = new JSONObject();
-            parameters.put("max_tokens", aiConfig.getMaxTokens());
-            parameters.put("temperature", aiConfig.getTemperature());
-            requestBody.put("parameters", parameters);
+            // 添加其他参数
+            requestBody.put("max_tokens", aiConfig.getMaxTokens());
+            requestBody.put("temperature", aiConfig.getTemperature());
 
             HttpEntity<String> entity = new HttpEntity<>(requestBody.toJSONString(), headers);
 
@@ -169,21 +174,27 @@ public class AIChatServiceImpl implements AIChatService {
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 JSONObject responseJson = JSON.parseObject(response.getBody());
+                // OpenAI 兼容格式：choices 在根级别
+                JSONArray choices = responseJson.getJSONArray("choices");
+                if (choices != null && !choices.isEmpty()) {
+                    return choices.getJSONObject(0).getJSONObject("message").getString("content");
+                }
+                // 也支持旧版格式
                 JSONObject output = responseJson.getJSONObject("output");
                 if (output != null) {
-                    JSONArray choices = output.getJSONArray("choices");
-                    if (choices != null && !choices.isEmpty()) {
-                        return choices.getJSONObject(0).getJSONObject("message").getString("content");
+                    JSONArray outputChoices = output.getJSONArray("choices");
+                    if (outputChoices != null && !outputChoices.isEmpty()) {
+                        return outputChoices.getJSONObject(0).getJSONObject("message").getString("content");
                     }
                 }
             }
 
-            log.error("API call failed: {}", response.getStatusCode());
-            return "Sorry, AI service is temporarily unavailable. Please try again later.";
+            log.error("API call failed: {}, body: {}", response.getStatusCode(), response.getBody());
+            return "抱歉，AI 服务暂时不可用，请稍后再试。";
 
         } catch (Exception e) {
             log.error("Failed to call Qwen API", e);
-            return "Sorry, an error occurred while processing your request. Please try again later.";
+            return "抱歉，处理请求时发生错误，请稍后再试。";
         }
     }
 

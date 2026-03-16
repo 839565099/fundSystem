@@ -247,6 +247,30 @@ public class FundServiceImpl implements FundService {
             log.error("更新基金数据失败: {}", fundCode, e);
         }
     }
+
+    @Override
+    @CacheEvict(value = {"fundDetail", "hotFunds", "topGrowthFunds"}, allEntries = true)
+    public Fund fetchAndSaveFund(String fundCode) {
+        try {
+            // 先检查本地是否已存在
+            Fund existingFund = getByFundCode(fundCode);
+            if (existingFund != null) {
+                return existingFund;
+            }
+
+            // 从东方财富 API 获取基金信息
+            Fund fund = fundDataApiService.fetchFundInfo(fundCode);
+            if (fund != null) {
+                fund.setStatus(1);
+                fundMapper.insert(fund);
+                log.info("从外部 API 获取基金信息成功: {}", fundCode);
+                return fund;
+            }
+        } catch (Exception e) {
+            log.error("获取基金信息失败: {}", fundCode, e);
+        }
+        return null;
+    }
     
     @Override
     @Scheduled(fixedRate = 30000)

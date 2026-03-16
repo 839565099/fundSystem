@@ -6,6 +6,7 @@ import com.fund.dto.PortfolioItemDTO;
 import com.fund.entity.Fund;
 import com.fund.entity.Portfolio;
 import com.fund.entity.PortfolioItem;
+import com.fund.exception.BusinessException;
 import com.fund.mapper.PortfolioItemMapper;
 import com.fund.mapper.PortfolioMapper;
 import com.fund.service.FundService;
@@ -126,10 +127,19 @@ public class PortfolioServiceImpl implements PortfolioService {
     public PortfolioItemVO addItem(Long userId, Long portfolioId, PortfolioItemDTO dto) {
         Portfolio portfolio = getAndCheckOwner(userId, portfolioId);
 
-        // 检查基金是否存在
+        // 检查基金是否存在，如果不存在则自动获取
         Fund fund = fundService.getByFundCode(dto.getFundCode());
         if (fund == null) {
-            throw new RuntimeException("基金不存在");
+            // 尝试从外部 API 获取基金信息
+            fund = fundService.fetchAndSaveFund(dto.getFundCode());
+            if (fund == null) {
+                throw new BusinessException("基金代码不存在，请检查后重试");
+            }
+        }
+
+        // 检查基金净值是否存在
+        if (fund.getNav() == null) {
+            throw new BusinessException("基金净值数据不完整，请稍后重试或选择其他基金");
         }
 
         // 检查是否已存在
@@ -137,7 +147,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         existWrapper.eq(PortfolioItem::getPortfolioId, portfolioId)
                 .eq(PortfolioItem::getFundCode, dto.getFundCode());
         if (portfolioItemMapper.selectCount(existWrapper) > 0) {
-            throw new RuntimeException("该基金已在组合中");
+            throw new BusinessException("该基金已在组合中");
         }
 
         PortfolioItem item = new PortfolioItem();
@@ -151,6 +161,13 @@ public class PortfolioServiceImpl implements PortfolioService {
         item.setBuyDate(dto.getBuyDate());
         item.setCurrentNav(fund.getNav());
         item.setStatus(1);
+
+        // 如果没有输入份额，根据金额和买入净值计算份额
+        if ((item.getShares() == null || item.getShares().compareTo(BigDecimal.ZERO) == 0)
+                && item.getAmount() != null && item.getBuyNav() != null
+                && item.getBuyNav().compareTo(BigDecimal.ZERO) > 0) {
+            item.setShares(item.getAmount().divide(item.getBuyNav(), 2, RoundingMode.HALF_UP));
+        }
 
         // 计算当前市值和盈亏
         calculateItemValue(item, fund);
@@ -170,7 +187,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         PortfolioItem item = portfolioItemMapper.selectById(itemId);
         if (item == null || !item.getPortfolioId().equals(portfolioId)) {
-            throw new RuntimeException("持仓不存在");
+            throw new BusinessException("持仓不存在");
         }
 
         if (dto.getAmount() != null) {
@@ -187,6 +204,13 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
         if (dto.getBuyDate() != null) {
             item.setBuyDate(dto.getBuyDate());
+        }
+
+        // 如果没有份额，根据金额和买入净值计算份额
+        if ((item.getShares() == null || item.getShares().compareTo(BigDecimal.ZERO) == 0)
+                && item.getAmount() != null && item.getBuyNav() != null
+                && item.getBuyNav().compareTo(BigDecimal.ZERO) > 0) {
+            item.setShares(item.getAmount().divide(item.getBuyNav(), 2, RoundingMode.HALF_UP));
         }
 
         // 重新计算
@@ -208,7 +232,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         PortfolioItem item = portfolioItemMapper.selectById(itemId);
         if (item == null || !item.getPortfolioId().equals(portfolioId)) {
-            throw new RuntimeException("持仓不存在");
+            throw new BusinessException("持仓不存在");
         }
 
         item.setStatus(0);
@@ -239,8 +263,34 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         for (PortfolioItem item : items) {
             Fund fund = fundService.getByFundCode(item.getFundCode());
+            if (fund == null) {
+                log.warn("基金数据不存在: {}, 尝试获取", item.getFundCode());
+                fund = fundService.fetchAndSaveFund(item.getFundCode());
+            }
+            
             if (fund != null) {
-                item.setCurrentNav(fund.getNav());
+                // 只有当基金净值存在时才更新
+                if (fund.getNav() != null) {
+                    item.setCurrentNav(fund.getNav());
+                }
+                
+                // 如果买入净值为空，使用当前净值（收益会从今天开始计算）
+                if (item.getBuyNav() == null || item.getBuyNav().compareTo(BigDecimal.ZERO) == 0) {
+                    if (fund.getNav() != null) {
+                        item.setBuyNav(fund.getNav());
+                        log.info("设置买入净值: fundCode={}, buyNav={}", item.getFundCode(), item.getBuyNav());
+                    }
+                }
+                
+                // 如果没有份额，根据金额和买入净值计算份额
+                if ((item.getShares() == null || item.getShares().compareTo(BigDecimal.ZERO) == 0)
+                        && item.getAmount() != null && item.getBuyNav() != null
+                        && item.getBuyNav().compareTo(BigDecimal.ZERO) > 0) {
+                    item.setShares(item.getAmount().divide(item.getBuyNav(), 2, RoundingMode.HALF_UP));
+                    log.info("计算份额: fundCode={}, amount={}, buyNav={}, shares={}", 
+                            item.getFundCode(), item.getAmount(), item.getBuyNav(), item.getShares());
+                }
+                
                 calculateItemValue(item, fund);
                 portfolioItemMapper.updateById(item);
 
@@ -248,6 +298,8 @@ public class PortfolioServiceImpl implements PortfolioService {
                 currentValue = currentValue.add(item.getCurrentValue());
                 totalProfit = totalProfit.add(item.getProfit());
                 dayProfit = dayProfit.add(item.getDayProfit() != null ? item.getDayProfit() : BigDecimal.ZERO);
+            } else {
+                log.error("无法获取基金数据: {}", item.getFundCode());
             }
         }
 
@@ -294,9 +346,15 @@ public class PortfolioServiceImpl implements PortfolioService {
      * 计算持仓市值和盈亏
      */
     private void calculateItemValue(PortfolioItem item, Fund fund) {
+        // 获取基金净值，如果为空则使用买入净值或默认值
+        BigDecimal currentNav = fund.getNav();
+        if (currentNav == null) {
+            currentNav = item.getBuyNav() != null ? item.getBuyNav() : BigDecimal.ZERO;
+        }
+
         // 计算当前市值
         if (item.getShares() != null && item.getShares().compareTo(BigDecimal.ZERO) > 0) {
-            item.setCurrentValue(item.getShares().multiply(fund.getNav()));
+            item.setCurrentValue(item.getShares().multiply(currentNav));
         } else {
             item.setCurrentValue(item.getAmount());
         }
@@ -312,9 +370,16 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         // 计算今日盈亏（基于日涨跌幅）
         if (fund.getDayGrowth() != null && item.getCurrentValue() != null) {
-            BigDecimal prevValue = item.getCurrentValue()
-                    .divide(BigDecimal.ONE.add(fund.getDayGrowth().divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP)), 2, RoundingMode.HALF_UP);
-            item.setDayProfit(item.getCurrentValue().subtract(prevValue));
+            BigDecimal dayGrowth = fund.getDayGrowth().divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+            // 避免除以零的情况（日涨跌幅为 -100%）
+            BigDecimal divisor = BigDecimal.ONE.add(dayGrowth);
+            if (divisor.compareTo(BigDecimal.ZERO) != 0) {
+                BigDecimal prevValue = item.getCurrentValue()
+                        .divide(divisor, 2, RoundingMode.HALF_UP);
+                item.setDayProfit(item.getCurrentValue().subtract(prevValue));
+            } else {
+                item.setDayProfit(BigDecimal.ZERO);
+            }
         }
     }
 
@@ -340,10 +405,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     private Portfolio getAndCheckOwner(Long userId, Long portfolioId) {
         Portfolio portfolio = portfolioMapper.selectById(portfolioId);
         if (portfolio == null) {
-            throw new RuntimeException("投资组合不存在");
+            throw new BusinessException("投资组合不存在");
         }
         if (!portfolio.getUserId().equals(userId)) {
-            throw new RuntimeException("无权操作此投资组合");
+            throw new BusinessException("无权操作此投资组合");
         }
         return portfolio;
     }
@@ -410,10 +475,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         PortfolioItemVO vo = new PortfolioItemVO();
         BeanUtils.copyProperties(item, vo);
 
-        // 获取基金类型
+        // 获取基金类型和日涨跌幅
         Fund fund = fundService.getByFundCode(item.getFundCode());
         if (fund != null) {
             vo.setFundType(fund.getFundType());
+            vo.setDayGrowth(fund.getDayGrowth());
         }
 
         return vo;

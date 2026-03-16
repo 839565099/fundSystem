@@ -343,6 +343,10 @@ export const fundApi = {
   deletePortfolio: portfolioApi.delete,
   setDefaultPortfolio: portfolioApi.setDefault,
   getDefaultPortfolio: portfolioApi.getDefault,
+  addPortfolioItem: portfolioApi.addItem,
+  updatePortfolioItem: portfolioApi.updateItem,
+  deletePortfolioItem: portfolioApi.deleteItem,
+  refreshPortfolio: portfolioApi.refresh,
 
   // AI
   getAISessions: aiApi.getSessions,

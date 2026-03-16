@@ -8,14 +8,17 @@
       </h2>
       <div class="fund-selectors">
         <div v-for="(code, index) in selectedCodes" :key="index" class="selector-item">
-          <n-auto-complete
+          <n-select
             :value="code"
-            :options="getSearchOptions(index)"
-            :loading="searchLoading"
-            placeholder="输入基金代码或名称搜索"
-            @update:value="(val: string) => handleInput(val, index)"
+            :options="getOptions(index)"
+            :loading="getLoading(index)"
+            placeholder="选择或搜索基金"
+            filterable
+            remote
             clearable
             style="width: 280px"
+            @search="(query: string) => handleSearch(query, index)"
+            @update:value="(val: string) => handleSelect(val, index)"
           />
           <n-button
             v-if="selectedCodes.length > 2"
@@ -193,9 +196,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, h } from 'vue'
-import { NIcon, NButton, NAutoComplete, NSpin, NEmpty, NDataTable, NTag, NRadioButton, NRadioGroup, createDiscreteApi } from 'naive-ui'
+import { NIcon, NButton, NSelect, NSpin, NEmpty, NDataTable, NTag, NRadioButton, NRadioGroup, createDiscreteApi } from 'naive-ui'
 import { GitCompareOutline, CloseOutline, AddOutline, TrendingUpOutline, GridOutline } from '@vicons/ionicons5'
-import { fundApi, compareApi } from '../api/fund'
+import { fundApi, compareApi, favoriteApi } from '../api/fund'
 import type { Fund, FundCompareVO } from '../types'
 import * as echarts from 'echarts'
 import { useThemeStore } from '../stores/theme'
@@ -210,27 +213,36 @@ const getChartColors = () => ({
 })
 
 const selectedCodes = ref(['', ''])
-const searchOptions = ref<Map<number, { label: string; value: string }[]>>(new Map())
-const searchLoading = ref(false)
+const selectOptions = ref(new Map<number, { label: string; value: string }[]>())
+const searchLoading = ref(new Map<number, boolean>())
 const loading = ref(false)
 const compareData = ref<FundCompareVO[]>([])
 const chartRef = ref<HTMLElement>()
 const chartPeriod = ref('sixMonth')
 let chart: echarts.ECharts | null = null
 
-// 从选中值中提取基金代码
-const extractFundCode = (value: string): string => {
-  if (!value) return ''
-  if (value.includes(' - ')) {
-    return value.split(' - ')[0].trim()
+// 收藏的基金
+const favoriteOptions = ref<{ label: string; value: string }[]>([])
+
+// 加载收藏的基金
+const loadFavorites = async () => {
+  try {
+    const list = await favoriteApi.getList()
+    favoriteOptions.value = (list || []).map((f: any) => ({
+      label: `⭐ ${f.fundCode} - ${f.fundName}`,
+      value: f.fundCode
+    }))
+    // 初始化所有选择器的选项
+    selectedCodes.value.forEach((_, index) => {
+      selectOptions.value.set(index, [...favoriteOptions.value])
+    })
+  } catch {
+    // 忽略错误
   }
-  return value.trim()
 }
 
 const validCodes = computed(() => {
-  return selectedCodes.value
-    .map(c => extractFundCode(c))
-    .filter(c => c && c.length > 0)
+  return selectedCodes.value.filter(c => c && c.length > 0)
 })
 
 const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444']
@@ -254,41 +266,59 @@ const maxValues = computed(() => {
   }
 })
 
-const getSearchOptions = (index: number) => searchOptions.value.get(index) || []
+let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-const handleInput = (value: string, index: number) => {
-  const newCodes = [...selectedCodes.value]
-  newCodes[index] = value
-  selectedCodes.value = newCodes
+// 搜索基金
+const handleSearch = async (query: string, index: number) => {
+  if (searchTimer) clearTimeout(searchTimer)
 
-  if (!value || value.length < 1) {
-    searchOptions.value.delete(index)
+  // 获取已选的基金代码（排除当前选择器）
+  const selectedCodesSet = new Set(selectedCodes.value.filter((c, i) => i !== index && c))
+  const availableFavorites = favoriteOptions.value.filter(f => !selectedCodesSet.has(f.value))
+
+  if (!query) {
+    selectOptions.value.set(index, availableFavorites)
     return
   }
 
-  setTimeout(() => doSearch(value, index), 300)
+  searchLoading.value.set(index, true)
+  searchTimer = setTimeout(async () => {
+    try {
+      const data = await fundApi.searchByKeyword(query, 10)
+      const searchResults = (data || [])
+        .filter((f: Fund) => !selectedCodesSet.has(f.fundCode))
+        .map((f: Fund) => ({
+          label: `${f.fundCode} - ${f.fundName}`,
+          value: f.fundCode
+        }))
+      selectOptions.value.set(index, [...availableFavorites, ...searchResults])
+    } catch {
+      selectOptions.value.set(index, availableFavorites)
+    } finally {
+      searchLoading.value.set(index, false)
+    }
+  }, 300)
 }
 
-const doSearch = async (value: string, index: number) => {
-  if (selectedCodes.value[index] !== value) return
-
-  searchLoading.value = true
-  try {
-    const data = await fundApi.searchByKeyword(value, 10)
-    searchOptions.value.set(index, data.map((f: Fund) => ({
-      label: `${f.fundCode} - ${f.fundName}`,
-      value: f.fundCode,
-    })))
-  } catch {
-    searchOptions.value.delete(index)
-  } finally {
-    searchLoading.value = false
-  }
+// 选择基金
+const handleSelect = (value: string, index: number) => {
+  const newCodes = [...selectedCodes.value]
+  newCodes[index] = value
+  selectedCodes.value = newCodes
 }
+
+// 获取选项
+const getOptions = (index: number) => selectOptions.value.get(index) || favoriteOptions.value
+
+// 获取加载状态
+const getLoading = (index: number) => searchLoading.value.get(index) || false
 
 const addSelector = () => {
   if (selectedCodes.value.length < 4) {
+    const newIndex = selectedCodes.value.length
     selectedCodes.value.push('')
+    // 初始化新选择器的选项
+    selectOptions.value.set(newIndex, [...favoriteOptions.value])
   }
 }
 
@@ -320,7 +350,7 @@ const getBarStyle = (value: number | undefined, maxValue: number) => {
     return { width: '0%', backgroundColor: '#e5e7eb' }
   }
   const percentage = Math.min(Math.abs(value) / maxValue * 100, 100)
-  const color = value >= 0 ? '#22c55e' : '#ef4444'
+  const color = value >= 0 ? 'var(--up-color)' : 'var(--down-color)'
   return {
     width: `${percentage}%`,
     backgroundColor: color
@@ -416,7 +446,7 @@ const updateChart = () => {
           const value = p.value
           html += `<div style="display:flex;justify-content:space-between;gap:20px;margin:4px 0;">
             <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;"></span>${p.seriesName}</span>
-            <span style="font-weight:600;color:${value >= 0 ? '#22c55e' : '#ef4444'}">${value >= 0 ? '+' : ''}${value.toFixed(2)}%</span>
+            <span style="font-weight:600;color:${value >= 0 ? '#ef4444' : '#22c55e'}">${value >= 0 ? '+' : ''}${value.toFixed(2)}%</span>
           </div>`
         })
         return html
@@ -478,7 +508,7 @@ const tableColumns = computed(() => {
       render: (row: any) => {
         const value = row[`fund${index}`]
         if (typeof value === 'number') {
-          const color = value >= 0 ? '#22c55e' : '#ef4444'
+          const color = value >= 0 ? 'var(--up-color)' : 'var(--down-color)'
           return h('span', { style: { color, fontWeight: '600' } },
             `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`)
         }
@@ -510,6 +540,7 @@ const tableData = computed(() => {
 })
 
 onMounted(() => {
+  loadFavorites()
   window.addEventListener('resize', () => chart?.resize())
 })
 
@@ -640,11 +671,11 @@ onUnmounted(() => {
 }
 
 .stat-value.positive {
-  color: #22c55e;
+  color: var(--up-color);
 }
 
 .stat-value.negative {
-  color: #ef4444;
+  color: var(--down-color);
 }
 
 /* 业绩表现条形图 */
@@ -698,11 +729,11 @@ onUnmounted(() => {
 }
 
 .bar-value.positive {
-  color: #22c55e;
+  color: var(--up-color);
 }
 
 .bar-value.negative {
-  color: #ef4444;
+  color: var(--down-color);
 }
 
 /* 风险指标 */

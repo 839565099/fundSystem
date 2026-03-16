@@ -68,6 +68,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '投资组合', requiresAuth: true }
   },
   {
+    path: '/portfolio/:id',
+    name: 'PortfolioDetail',
+    component: () => import('../views/PortfolioDetail.vue'),
+    meta: { title: '组合详情', requiresAuth: true }
+  },
+  {
     path: '/alerts',
     name: 'Alerts',
     component: () => import('../views/Alerts.vue'),

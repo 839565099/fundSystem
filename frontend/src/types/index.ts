@@ -196,3 +196,31 @@ export interface Result<T> {
   message: string
   data: T
 }
+
+export interface AlertRuleVO {
+  id: number
+  alertType: string
+  fundCode: string
+  fundName?: string
+  alertName: string
+  alertCondition: string
+  threshold: number
+  unit?: string
+  notifyChannel?: string
+  cooldownMinutes?: number
+  status: number
+  lastTriggeredTime?: string
+  triggerCount?: number
+  createTime?: string
+}
+
+export interface AlertHistoryVO {
+  id: number
+  alertType: string
+  alertTitle: string
+  alertMessage: string
+  alertValue?: number
+  fundCode?: string
+  triggeredTime: string
+  isRead: number
+}

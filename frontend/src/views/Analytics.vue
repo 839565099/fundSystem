@@ -14,13 +14,16 @@
           <div class="analysis-form">
             <n-input-group>
               <n-input-group-label>基金代码</n-input-group-label>
-              <n-auto-complete
+              <n-select
                 v-model:value="riskForm.fundCode"
-                :options="getRiskOptions()"
-                :input-props="{ autocomplete: 'disabled' }"
-                placeholder="输入代码/名称搜索"
-                style="width: 200px"
-                @update:value="handleRiskInput"
+                :options="riskOptions"
+                placeholder="选择或搜索基金"
+                style="width: 240px"
+                filterable
+                remote
+                :loading="riskSearchLoading"
+                @search="handleRiskSearch"
+                @update:value="onRiskSelect"
                 clearable
               />
               <n-select v-model:value="riskForm.period" :options="periodOptions" style="width: 120px" />
@@ -58,22 +61,43 @@
       <!-- 相关性分析 -->
       <n-tab-pane name="correlation" tab="相关性分析">
         <n-card title="基金相关性矩阵" class="analysis-card">
+          <!-- 功能说明 -->
+          <n-alert type="info" style="margin-bottom: 16px;">
+            <template #header>什么是相关性分析？</template>
+            相关性分析用于衡量多只基金走势的相似程度。
+            <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+              <li><b>正相关（红色）</b>：两只基金同涨同跌，数值越接近1越相似</li>
+              <li><b>负相关（绿色）</b>：两只基金走势相反，一只涨另一只跌</li>
+              <li><b>无相关</b>：两只基金走势独立，互不影响</li>
+            </ul>
+            <div style="margin-top: 8px;"><b>投资建议</b>：选择相关性较低的基金组合，可以分散风险、平滑波动。</div>
+          </n-alert>
+
           <div class="analysis-form">
             <n-input-group>
               <n-input-group-label>添加基金</n-input-group-label>
-              <n-auto-complete
+              <n-select
                 v-model:value="selectedCorrelationFund"
-                :options="getCorrelationOptions()"
-                :input-props="{ autocomplete: 'disabled' }"
-                placeholder="输入代码/名称搜索"
-                style="width: 200px"
-                @update:value="handleCorrelationInput"
+                :options="correlationOptions"
+                placeholder="选择或搜索基金"
+                style="width: 240px"
+                filterable
+                remote
+                :loading="correlationSearchLoading"
+                @search="handleCorrelationSearch"
+                @update:value="onCorrelationSelect"
                 clearable
               />
+              <n-button size="small" @click="selectAllCorrelationFunds" :disabled="favoriteOptions.length === 0">
+                全选收藏
+              </n-button>
+              <n-button size="small" @click="clearCorrelationFunds" :disabled="!correlationCodes">
+                清空
+              </n-button>
               <n-input
                 v-model:value="correlationCodes"
                 placeholder="已选基金代码（逗号分隔）"
-                style="width: 300px"
+                style="width: 200px"
                 readonly
               />
               <n-select v-model:value="correlationPeriod" :options="periodOptions" style="width: 120px" />
@@ -95,6 +119,16 @@
             </div>
           </div>
 
+          <!-- 空状态引导 -->
+          <div v-if="!correlationResult" class="correlation-empty">
+            <n-empty description="请至少选择2只基金进行相关性分析">
+              <template #icon>
+                <n-icon size="48" :depth="3"><GitCompareOutline /></n-icon>
+              </template>
+            </n-empty>
+          </div>
+
+          <!-- 分析结果 -->
           <div v-if="correlationResult" class="correlation-result">
             <n-divider>已选基金</n-divider>
             <div class="fund-list">
@@ -110,35 +144,49 @@
                 <thead>
                   <tr>
                     <th class="corner-cell"></th>
-                    <th v-for="code in correlationResult.fundCodes" :key="code" class="header-cell">
-                      {{ code }}
+                    <th v-for="(name, i) in correlationResult.fundNames" :key="i" class="header-cell">
+                      {{ name?.substring(0, 6) }}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(row, i) in correlationResult.correlationMatrix" :key="i">
-                    <td class="header-cell">{{ correlationResult.fundCodes[i] }}</td>
+                    <td class="header-cell">{{ correlationResult.fundNames[i]?.substring(0, 6) }}</td>
                     <td
                       v-for="(val, j) in row"
                       :key="j"
                       class="data-cell"
-                      :style="{ backgroundColor: getCorrelationColor(val) }"
+                      :class="{ 'diagonal-cell': i === j }"
+                      :style="{ backgroundColor: getCorrelationColor(val, i === j) }"
+                      :title="getCorrelationTooltip(val, i, j)"
                     >
-                      {{ val?.toFixed(2) }}
+                      <span v-if="i === j">1.00</span>
+                      <span v-else class="cell-content">
+                        {{ val?.toFixed(2) }}
+                        <small class="correlation-label">{{ getCorrelationLabel(val) }}</small>
+                      </span>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
+            <!-- 改进的图例 -->
             <div class="correlation-legend">
-              <span class="legend-title">图例：</span>
-              <div class="legend-bar">
-                <span class="legend-item" style="background: rgba(239, 68, 68, 0.6)">正相关</span>
-                <span class="legend-item" style="background: rgba(156, 163, 175, 0.3)">无相关</span>
-                <span class="legend-item" style="background: rgba(34, 197, 94, 0.6)">负相关</span>
+              <div class="legend-gradient">
+                <div class="gradient-bar">
+                  <div class="gradient-scale"></div>
+                  <div class="gradient-labels">
+                    <span>-1 完全负相关</span>
+                    <span>0 无相关</span>
+                    <span>+1 完全正相关</span>
+                  </div>
+                </div>
               </div>
-              <span class="legend-hint">数值范围：-1 到 1，绝对值越大相关性越强</span>
+              <div class="legend-tips">
+                <n-tag size="small" type="success">绿色 = 走势相反（分散风险）</n-tag>
+                <n-tag size="small" type="error">红色 = 走势相同（集中风险）</n-tag>
+              </div>
             </div>
           </div>
         </n-card>
@@ -151,12 +199,15 @@
             <n-grid :cols="4" :x-gap="16">
               <n-gi>
                 <n-form-item label="基金代码">
-                  <n-auto-complete
+                  <n-select
                     v-model:value="dipForm.fundCode"
-                    :options="getDipOptions()"
-                    :input-props="{ autocomplete: 'disabled' }"
-                    placeholder="输入代码/名称搜索"
-                    @update:value="handleDipInput"
+                    :options="dipOptions"
+                    placeholder="选择或搜索基金"
+                    filterable
+                    remote
+                    :loading="dipSearchLoading"
+                    @search="handleDipSearch"
+                    @update:value="onDipSelect"
                     clearable
                   />
                 </n-form-item>
@@ -219,13 +270,16 @@
           <div class="analysis-form">
             <n-input-group>
               <n-input-group-label>基金代码</n-input-group-label>
-              <n-auto-complete
+              <n-select
                 v-model:value="reportFundCode"
-                :options="getReportOptions()"
-                :input-props="{ autocomplete: 'disabled' }"
-                placeholder="输入代码/名称搜索"
-                style="width: 200px"
-                @update:value="handleReportInput"
+                :options="reportOptions"
+                placeholder="选择或搜索基金"
+                style="width: 240px"
+                filterable
+                remote
+                :loading="reportSearchLoading"
+                @search="handleReportSearch"
+                @update:value="onReportSelect"
                 clearable
               />
               <n-button type="primary" @click="getReport" :loading="reportLoading">
@@ -311,9 +365,9 @@ import { ref, h, onMounted } from 'vue'
 import {
   NCard, NTabs, NTabPane, NInputGroup, NInputGroupLabel, NInput, NInputNumber,
   NSelect, NButton, NGrid, NGi, NStatistic, NDivider, NDescriptions, NDescriptionsItem,
-  NDataTable, NAlert, NFormItem, NDatePicker, NIcon, NAutoComplete, NTag, useMessage
+  NDataTable, NAlert, NFormItem, NDatePicker, NIcon, NTag, useMessage
 } from 'naive-ui'
-import { AnalyticsOutline, StarOutline } from '@vicons/ionicons5'
+import { AnalyticsOutline, GitCompareOutline } from '@vicons/ionicons5'
 import { fundApi, favoriteApi } from '@/api/fund'
 
 const message = useMessage()
@@ -337,19 +391,22 @@ const frequencyOptions = [
 
 // 收藏的基金列表
 const favoriteFunds = ref<any[]>([])
-const favoriteOptions = ref<Array<{label: string, value: string, type: 'favorite'}>>([])
+const favoriteOptions = ref<Array<{label: string, value: string}>>([])
 
 // 加载收藏的基金
 const loadFavorites = async () => {
   try {
     const list = await favoriteApi.getList()
     favoriteFunds.value = list || []
-    favoriteOptions.value = list.map((f: any) => ({
-      label: `${f.fundCode} - ${f.fundName}`,
-      value: `${f.fundCode} - ${f.fundName}`,
-      code: f.fundCode,
-      type: 'favorite' as const
+    favoriteOptions.value = (list || []).map((f: any) => ({
+      label: `⭐ ${f.fundCode} - ${f.fundName}`,
+      value: f.fundCode
     }))
+    // 初始化各选项列表
+    riskOptions.value = [...favoriteOptions.value]
+    correlationOptions.value = [...favoriteOptions.value]
+    dipOptions.value = [...favoriteOptions.value]
+    reportOptions.value = [...favoriteOptions.value]
   } catch {
     // 忽略错误
   }
@@ -362,101 +419,67 @@ onMounted(() => {
 // 基金搜索防抖定时器
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-// 搜索结果选项
-const searchOptions = ref<Array<{label: string, value: string, code: string, type: 'search'}>>([])
-
-// 执行基金搜索
-const searchFunds = async (keyword: string) => {
+// 执行基金搜索（返回选项数组）
+const searchFunds = async (keyword: string): Promise<Array<{label: string, value: string}>> => {
   if (!keyword || keyword.length < 1) {
-    searchOptions.value = []
-    return
+    return []
   }
   try {
     const results = await fundApi.searchByKeyword(keyword, 10)
-    searchOptions.value = (results || []).map((f: any) => ({
-      label: `${f.fundCode} - ${f.fundName}`,
-      value: `${f.fundCode} - ${f.fundName}`,
-      code: f.fundCode,
-      type: 'search' as const
-    }))
+    const favoriteCodes = new Set(favoriteOptions.value.map(f => f.value))
+    const searchResults = (results || [])
+      .filter((f: any) => !favoriteCodes.has(f.fundCode))
+      .map((f: any) => ({
+        label: `${f.fundCode} - ${f.fundName}`,
+        value: f.fundCode
+      }))
+    return searchResults
   } catch {
-    searchOptions.value = []
+    return []
   }
 }
 
-// 从显示值中提取基金代码
-const extractFundCode = (value: string): string => {
-  if (!value) return ''
-  // 移除星标前缀（如果有）
-  const cleanValue = value.replace(/^⭐\s*/, '')
-  // 格式为 "000001 - 基金名称"，提取代码部分
-  const match = cleanValue.match(/^(\d+)/)
-  return match ? match[1] : cleanValue.trim()
-}
-
-// 生成自动完成的选项（收藏 + 搜索结果）
-const getFundOptions = (searchResults: Array<{label: string, value: string, code: string, type: string}>) => {
-  const options: any[] = []
-  const favoriteCodes = new Set(favoriteOptions.value.map(f => f.code))
-
-  // 添加收藏的基金（带星标前缀）
-  favoriteOptions.value.forEach(f => {
-    options.push({
-      label: `⭐ ${f.label}`,
-      value: f.value
-    })
-  })
-
-  // 添加搜索结果（排除已在收藏中的）
-  searchResults.filter(f => !favoriteCodes.has(f.code)).forEach(f => {
-    options.push({
-      label: f.label,
-      value: f.value
-    })
-  })
-
-  return options
-}
-
-// 处理输入变化（带防抖）
-const handleFundInput = (value: string, callback: (results: any[]) => void) => {
-  if (searchTimer) {
-    clearTimeout(searchTimer)
-  }
-  searchTimer = setTimeout(async () => {
-    await searchFunds(value)
-    callback(searchOptions.value)
-  }, 300)
+// 合并收藏和搜索结果的选项
+const mergeOptions = (searchResults: Array<{label: string, value: string}>) => {
+  return [...favoriteOptions.value, ...searchResults]
 }
 
 // 风险分析
 const riskForm = ref({ fundCode: '', period: 'year' })
 const riskLoading = ref(false)
 const riskResult = ref<any>(null)
-const riskSearchOptions = ref<any[]>([])
+const riskOptions = ref<Array<{label: string, value: string}>>([])
+const riskSearchLoading = ref(false)
 
-const handleRiskInput = (value: string) => {
-  handleFundInput(value, (results) => {
-    riskSearchOptions.value = results
-  })
+const handleRiskSearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!query) {
+    riskOptions.value = [...favoriteOptions.value]
+    return
+  }
+  riskSearchLoading.value = true
+  searchTimer = setTimeout(async () => {
+    const results = await searchFunds(query)
+    riskOptions.value = mergeOptions(results)
+    riskSearchLoading.value = false
+  }, 300)
 }
 
-const getRiskOptions = () => {
-  return getFundOptions(riskSearchOptions.value)
+const onRiskSelect = (value: string) => {
+  riskForm.value.fundCode = value
 }
 
 const analyzeRisk = async () => {
-  const fundCode = extractFundCode(riskForm.value.fundCode)
-  if (!fundCode) {
-    message.warning('请输入基金代码')
+  if (!riskForm.value.fundCode) {
+    message.warning('请选择基金')
     return
   }
   riskLoading.value = true
   try {
     const [sharpe, drawdown, volatility] = await Promise.all([
-      fundApi.getSharpeRatio(fundCode, riskForm.value.period),
-      fundApi.getMaxDrawdown(fundCode, riskForm.value.period),
-      fundApi.getVolatility(fundCode, riskForm.value.period)
+      fundApi.getSharpeRatio(riskForm.value.fundCode, riskForm.value.period),
+      fundApi.getMaxDrawdown(riskForm.value.fundCode, riskForm.value.period),
+      fundApi.getVolatility(riskForm.value.fundCode, riskForm.value.period)
     ])
     riskResult.value = { ...sharpe, ...drawdown, ...volatility }
   } catch (e: any) {
@@ -471,68 +494,60 @@ const correlationCodes = ref('')
 const correlationPeriod = ref('year')
 const correlationLoading = ref(false)
 const correlationResult = ref<any>(null)
-const correlationSearchOptions = ref<any[]>([])
 const selectedCorrelationFund = ref('')
+const correlationOptions = ref<Array<{label: string, value: string}>>([])
+const correlationSearchLoading = ref(false)
 
-const handleCorrelationInput = (value: string) => {
-  // 检查是否选择了某个选项（值匹配选项的完整格式 "000001 - 基金名称"）
-  if (value && value.includes(' - ')) {
-    const fundCode = extractFundCode(value)
-    if (fundCode) {
-      const codes = correlationCodes.value.split(',').map(c => c.trim()).filter(Boolean)
-      if (!codes.includes(fundCode)) {
-        codes.push(fundCode)
-        correlationCodes.value = codes.join(',')
-      }
-      // 延迟清空，避免立即触发搜索
-      setTimeout(() => {
-        selectedCorrelationFund.value = ''
-        correlationSearchOptions.value = []
-      }, 50)
-      return
-    }
-  }
+const handleCorrelationSearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  const selectedCodes = new Set(correlationCodes.value.split(',').filter(Boolean))
+  const availableFavorites = favoriteOptions.value.filter(f => !selectedCodes.has(f.value))
 
-  // 执行搜索
-  if (value && value.length > 0) {
-    handleFundInput(value, (results) => {
-      correlationSearchOptions.value = results
-    })
-  } else {
-    correlationSearchOptions.value = []
+  if (!query) {
+    correlationOptions.value = availableFavorites
+    return
   }
+  correlationSearchLoading.value = true
+  searchTimer = setTimeout(async () => {
+    const results = await searchFunds(query)
+    const filteredResults = results.filter(r => !selectedCodes.has(r.value))
+    correlationOptions.value = [...availableFavorites, ...filteredResults]
+    correlationSearchLoading.value = false
+  }, 300)
 }
 
-const getCorrelationOptions = () => {
-  const options: any[] = []
-  const favoriteCodes = new Set(favoriteOptions.value.map(f => f.code))
-  const selectedCodes = new Set(correlationCodes.value.split(',').map(c => c.trim()).filter(Boolean))
-
-  // 添加收藏的基金（排除已选的）
-  favoriteOptions.value.filter(f => !selectedCodes.has(f.code)).forEach(f => {
-    options.push({
-      label: `⭐ ${f.label}`,
-      value: f.value
-    })
-  })
-
-  // 添加搜索结果（排除已收藏和已选的）
-  correlationSearchOptions.value
-    .filter(f => !favoriteCodes.has(f.code) && !selectedCodes.has(f.code))
-    .forEach(f => {
-      options.push({
-        label: f.label,
-        value: f.value
-      })
-    })
-
-  return options
+const onCorrelationSelect = (value: string) => {
+  if (!value) return
+  const codes = correlationCodes.value.split(',').map(c => c.trim()).filter(Boolean)
+  if (!codes.includes(value)) {
+    codes.push(value)
+    correlationCodes.value = codes.join(',')
+  }
+  // 清空选择，准备添加下一个
+  setTimeout(() => {
+    selectedCorrelationFund.value = ''
+    correlationOptions.value = favoriteOptions.value.filter(f => !codes.includes(f.value))
+  }, 50)
 }
 
 // 从相关性分析列表移除基金
 const removeCorrelationFund = (fundCode: string) => {
   const codes = correlationCodes.value.split(',').map(c => c.trim()).filter(c => c && c !== fundCode)
   correlationCodes.value = codes.join(',')
+}
+
+// 全选所有收藏的基金
+const selectAllCorrelationFunds = () => {
+  const allCodes = favoriteOptions.value.map(f => f.value)
+  correlationCodes.value = allCodes.join(',')
+  // 更新下拉选项（排除已选的）
+  correlationOptions.value = []
+}
+
+// 清空已选基金
+const clearCorrelationFunds = () => {
+  correlationCodes.value = ''
+  correlationOptions.value = [...favoriteOptions.value]
 }
 
 const analyzeCorrelation = async () => {
@@ -551,12 +566,40 @@ const analyzeCorrelation = async () => {
   }
 }
 
-const getCorrelationColor = (val: number) => {
-  if (val === 1) return 'rgba(59, 130, 246, 0.8)'
+// 获取相关性颜色（热力图）
+const getCorrelationColor = (val: number, isDiagonal: boolean = false) => {
+  if (isDiagonal) return 'var(--primary-color)'
+  if (val === null || val === undefined) return 'var(--bg-secondary)'
+
   const intensity = Math.abs(val)
-  if (val > 0) return `rgba(239, 68, 68, ${intensity * 0.6})`
-  if (val < 0) return `rgba(34, 197, 94, ${intensity * 0.6})`
-  return 'transparent'
+  if (val > 0) {
+    // 正相关 - 红色系
+    return `rgba(239, 68, 68, ${0.15 + intensity * 0.65})`
+  } else if (val < 0) {
+    // 负相关 - 绿色系
+    return `rgba(34, 197, 94, ${0.15 + intensity * 0.65})`
+  }
+  return 'var(--bg-secondary)'
+}
+
+// 获取相关性等级标签
+const getCorrelationLabel = (val: number): string => {
+  if (val >= 0.8) return '强正'
+  if (val >= 0.5) return '中正'
+  if (val >= 0.2) return '弱正'
+  if (val > -0.2) return '无'
+  if (val > -0.5) return '弱负'
+  if (val > -0.8) return '中负'
+  return '强负'
+}
+
+// 获取鼠标悬停提示
+const getCorrelationTooltip = (val: number, i: number, j: number): string => {
+  if (i === j) return `${correlationResult.value?.fundNames[i]} 自身相关性为1`
+  const label = getCorrelationLabel(val)
+  const nameA = correlationResult.value?.fundNames[i] || ''
+  const nameB = correlationResult.value?.fundNames[j] || ''
+  return `${nameA} vs ${nameB}\n相关性: ${val?.toFixed(4) || '-'} (${label})`
 }
 
 // 定投模拟
@@ -564,16 +607,25 @@ const dipForm = ref({ fundCode: '', amount: 1000, frequency: 'monthly' })
 const dipStartTime = ref(Date.now() - 365 * 24 * 60 * 60 * 1000)
 const dipLoading = ref(false)
 const dipResult = ref<any>(null)
-const dipSearchOptions = ref<any[]>([])
+const dipOptions = ref<Array<{label: string, value: string}>>([])
+const dipSearchLoading = ref(false)
 
-const handleDipInput = (value: string) => {
-  handleFundInput(value, (results) => {
-    dipSearchOptions.value = results
-  })
+const handleDipSearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!query) {
+    dipOptions.value = [...favoriteOptions.value]
+    return
+  }
+  dipSearchLoading.value = true
+  searchTimer = setTimeout(async () => {
+    const results = await searchFunds(query)
+    dipOptions.value = mergeOptions(results)
+    dipSearchLoading.value = false
+  }, 300)
 }
 
-const getDipOptions = () => {
-  return getFundOptions(dipSearchOptions.value)
+const onDipSelect = (value: string) => {
+  dipForm.value.fundCode = value
 }
 
 const dipColumns = [
@@ -584,15 +636,14 @@ const dipColumns = [
 ]
 
 const simulateDIP = async () => {
-  const fundCode = extractFundCode(dipForm.value.fundCode)
-  if (!fundCode) {
-    message.warning('请输入基金代码')
+  if (!dipForm.value.fundCode) {
+    message.warning('请选择基金')
     return
   }
   dipLoading.value = true
   try {
     dipResult.value = await fundApi.simulateDIP({
-      fundCode: fundCode,
+      fundCode: dipForm.value.fundCode,
       amount: dipForm.value.amount,
       frequency: dipForm.value.frequency,
       startDate: new Date(dipStartTime.value).toISOString().split('T')[0]
@@ -608,27 +659,35 @@ const simulateDIP = async () => {
 const reportFundCode = ref('')
 const reportLoading = ref(false)
 const reportResult = ref<any>(null)
-const reportSearchOptions = ref<any[]>([])
+const reportOptions = ref<Array<{label: string, value: string}>>([])
+const reportSearchLoading = ref(false)
 
-const handleReportInput = (value: string) => {
-  handleFundInput(value, (results) => {
-    reportSearchOptions.value = results
-  })
+const handleReportSearch = (query: string) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!query) {
+    reportOptions.value = [...favoriteOptions.value]
+    return
+  }
+  reportSearchLoading.value = true
+  searchTimer = setTimeout(async () => {
+    const results = await searchFunds(query)
+    reportOptions.value = mergeOptions(results)
+    reportSearchLoading.value = false
+  }, 300)
 }
 
-const getReportOptions = () => {
-  return getFundOptions(reportSearchOptions.value)
+const onReportSelect = (value: string) => {
+  reportFundCode.value = value
 }
 
 const getReport = async () => {
-  const fundCode = extractFundCode(reportFundCode.value)
-  if (!fundCode) {
-    message.warning('请输入基金代码')
+  if (!reportFundCode.value) {
+    message.warning('请选择基金')
     return
   }
   reportLoading.value = true
   try {
-    reportResult.value = await fundApi.getAnalyticsReport(fundCode)
+    reportResult.value = await fundApi.getAnalyticsReport(reportFundCode.value)
   } catch (e: any) {
     message.error(e.message || '获取报告失败')
   } finally {
@@ -666,6 +725,10 @@ const getPeriodText = (period: string) => {
   padding-top: 16px;
 }
 
+.correlation-empty {
+  padding: 40px 0;
+}
+
 .fund-list {
   display: flex;
   flex-wrap: wrap;
@@ -701,16 +764,24 @@ const getPeriodText = (period: string) => {
 .correlation-table {
   border-collapse: collapse;
   margin: 0 auto;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .correlation-table th,
 .correlation-table td {
-  min-width: 60px;
-  height: 40px;
+  min-width: 80px;
+  height: 50px;
   text-align: center;
   border: 1px solid var(--border-color);
   padding: 8px;
+  transition: all 0.2s;
+}
+
+.correlation-table td:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1;
+  position: relative;
 }
 
 .corner-cell {
@@ -725,38 +796,63 @@ const getPeriodText = (period: string) => {
 }
 
 .data-cell {
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.diagonal-cell {
+  color: white;
+  font-weight: 700;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.correlation-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-top: 2px;
 }
 
 .correlation-legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 16px;
-  flex-wrap: wrap;
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
 }
 
-.legend-title {
-  font-size: 14px;
-  color: var(--text-secondary);
+.legend-gradient {
+  margin-bottom: 12px;
 }
 
-.legend-bar {
-  display: flex;
-  gap: 8px;
+.gradient-bar {
+  max-width: 400px;
+  margin: 0 auto;
 }
 
-.legend-item {
-  padding: 4px 12px;
+.gradient-scale {
+  height: 20px;
   border-radius: 4px;
-  font-size: 12px;
-  color: white;
+  background: linear-gradient(to right, #22c55e, #f3f4f6 50%, #ef4444);
 }
 
-.legend-hint {
+.gradient-labels {
+  display: flex;
+  justify-content: space-between;
   font-size: 12px;
   color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.legend-tips {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }
 
 .dip-form {

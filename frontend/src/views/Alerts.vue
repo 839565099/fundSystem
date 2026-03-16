@@ -66,24 +66,83 @@
       <n-tab-pane name="rules" tab="预警规则">
         <n-spin :show="rulesLoading">
           <div v-if="rules.length" class="rule-list">
-            <n-card v-for="rule in rules" :key="rule.id" class="rule-card">
-              <div class="rule-info">
-                <div class="rule-name">{{ rule.alertName }}</div>
-                <div class="rule-detail">
-                  <n-tag size="small">{{ getAlertTypeText(rule.alertType) }}</n-tag>
-                  <span>{{ getConditionText(rule.alertCondition) }} {{ rule.threshold }}%</span>
-                  <span v-if="rule.fundCode">| 基金: {{ rule.fundCode }}</span>
+            <div
+              v-for="rule in rules"
+              :key="rule.id"
+              class="rule-card"
+              :class="{ 'rule-disabled': rule.status !== 1 }"
+            >
+              <div class="rule-status-bar"></div>
+              <div class="rule-content">
+                <div class="rule-header">
+                  <div class="rule-title-row">
+                    <div class="rule-icon" :class="getAlertTypeClass(rule.alertType)">
+                      <n-icon size="18">
+                        <TrendingUpOutline v-if="rule.alertType === 'GROWTH'" />
+                        <NewspaperOutline v-else-if="rule.alertType === 'NEWS'" />
+                        <BarChartOutline v-else />
+                      </n-icon>
+                    </div>
+                    <span class="rule-name">{{ rule.alertName }}</span>
+                    <n-tag size="small" :type="getAlertTagType(rule.alertType)" :bordered="false">
+                      {{ getAlertTypeText(rule.alertType) }}
+                    </n-tag>
+                  </div>
+                  <n-switch
+                    :value="rule.status === 1"
+                    size="small"
+                    @update:value="toggleRule(rule)"
+                  />
+                </div>
+
+                <div class="rule-body">
+                  <div class="rule-condition">
+                    <span class="condition-label">触发条件</span>
+                    <span class="condition-value">
+                      <template v-if="rule.alertCondition === 'GT'">涨幅 &gt;</template>
+                      <template v-else-if="rule.alertCondition === 'LT'">跌幅 &lt;</template>
+                      <template v-else-if="rule.alertCondition === 'GE'">涨幅 ≥</template>
+                      <template v-else-if="rule.alertCondition === 'LE'">跌幅 ≤</template>
+                      <span class="threshold">{{ rule.threshold }}%</span>
+                    </span>
+                  </div>
+                  <div class="rule-fund" v-if="rule.fundCode">
+                    <span class="fund-label">监控基金</span>
+                    <span class="fund-value">{{ rule.fundCode }}<span v-if="rule.fundName"> - {{ rule.fundName }}</span></span>
+                  </div>
+                  <div class="rule-fund" v-else>
+                    <span class="fund-label">监控范围</span>
+                    <span class="fund-value">全部基金（大盘预警）</span>
+                  </div>
+                </div>
+
+                <div class="rule-footer">
+                  <div class="rule-stats">
+                    <span class="stat-item">
+                      <n-icon size="14"><SpeedometerOutline /></n-icon>
+                      触发 {{ rule.triggerCount || 0 }} 次
+                    </span>
+                    <span class="stat-divider">|</span>
+                    <span class="stat-item" v-if="rule.lastTriggeredTime">
+                      最后触发: {{ formatTime(rule.lastTriggeredTime) }}
+                    </span>
+                    <span class="stat-item" v-else>
+                      暂未触发
+                    </span>
+                  </div>
+                  <div class="rule-actions">
+                    <n-button size="small" quaternary @click="editRule(rule)">
+                      <template #icon><n-icon><CreateOutline /></n-icon></template>
+                      编辑
+                    </n-button>
+                    <n-button size="small" quaternary type="error" @click="deleteRule(rule.id)">
+                      <template #icon><n-icon><TrashOutline /></n-icon></template>
+                      删除
+                    </n-button>
+                  </div>
                 </div>
               </div>
-              <div class="rule-actions">
-                <n-switch
-                  :value="rule.status === 1"
-                  @update:value="toggleRule(rule)"
-                />
-                <n-button text @click="editRule(rule)">编辑</n-button>
-                <n-button text type="error" @click="deleteRule(rule.id)">删除</n-button>
-              </div>
-            </n-card>
+            </div>
           </div>
           <n-empty v-else description="暂无预警规则">
             <template #extra>
@@ -106,7 +165,16 @@
           <n-select v-model:value="ruleForm.alertType" :options="typeOptions" />
         </n-form-item>
         <n-form-item label="基金代码" path="fundCode">
-          <n-input v-model:value="ruleForm.fundCode" placeholder="留空表示大盘预警" />
+          <n-select
+            v-model:value="ruleForm.fundCode"
+            filterable
+            remote
+            clearable
+            placeholder="搜索或选择基金（留空表示大盘预警）"
+            :loading="fundSearchLoading"
+            :options="fundOptions"
+            @search="searchFunds"
+          />
         </n-form-item>
         <n-form-item label="条件" path="alertCondition">
           <n-select v-model:value="ruleForm.alertCondition" :options="conditionOptions" />
@@ -124,13 +192,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
-  NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem,
+  NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem,
   NInput, NInputNumber, NSelect, NSwitch, NCheckbox, NTabs, NTabPane, NSpace,
   useMessage
 } from 'naive-ui'
-import { NotificationsOutline, AddOutline, TrendingUpOutline, NewspaperOutline } from '@vicons/ionicons5'
+import { NotificationsOutline, AddOutline, TrendingUpOutline, NewspaperOutline, SpeedometerOutline, BarChartOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
 import { fundApi } from '@/api/fund'
 import type { AlertHistoryVO, AlertRuleVO } from '@/types'
 
@@ -145,10 +213,45 @@ const submitting = ref(false)
 const ruleForm = ref({
   alertName: '',
   alertType: 'GROWTH',
-  fundCode: '',
+  fundCode: '' as string | null,
   alertCondition: 'GT',
   threshold: 5
 })
+
+// 基金搜索相关
+const fundSearchLoading = ref(false)
+const fundOptions = ref<{ label: string; value: string }[]>([])
+
+// 搜索基金
+const searchFunds = async (keyword: string) => {
+  if (!keyword) {
+    await loadFavoriteFunds()
+    return
+  }
+  fundSearchLoading.value = true
+  try {
+    const funds = await fundApi.searchByKeyword(keyword, 20)
+    fundOptions.value = funds.map((f: any) => ({
+      label: `${f.fundCode} - ${f.fundName}`,
+      value: f.fundCode
+    }))
+  } finally {
+    fundSearchLoading.value = false
+  }
+}
+
+// 加载收藏的基金作为默认选项
+const loadFavoriteFunds = async () => {
+  try {
+    const favorites = await fundApi.getFavorites()
+    fundOptions.value = favorites.map((f: any) => ({
+      label: `${f.fundCode} - ${f.fundName || '未知'}`,
+      value: f.fundCode
+    }))
+  } catch {
+    fundOptions.value = []
+  }
+}
 
 const typeOptions = [
   { label: '涨跌幅预警', value: 'GROWTH' },
@@ -228,11 +331,22 @@ const deleteRule = async (id: number) => {
 const submitRule = async () => {
   submitting.value = true
   try {
-    await fundApi.createAlertRule(ruleForm.value)
-    message.success('创建成功')
+    const data = {
+      ...ruleForm.value,
+      fundCode: ruleForm.value.fundCode || ''
+    }
+    if (ruleForm.value.alertName) {
+      await fundApi.createAlertRule(data)
+      message.success('创建成功')
+    } else {
+      await fundApi.updateAlertRule((ruleForm.value as any).id, data)
+      message.success('更新成功')
+    }
     showCreateModal.value = false
     ruleForm.value = { alertName: '', alertType: 'GROWTH', fundCode: '', alertCondition: 'GT', threshold: 5 }
     loadRules()
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
   } finally {
     submitting.value = false
   }
@@ -251,9 +365,18 @@ const getAlertTypeText = (type: string) => {
   return map[type] || type
 }
 
-const getConditionText = (cond: string) => {
-  const map: Record<string, string> = { GT: '大于', LT: '小于', GE: '≥', LE: '≤' }
-  return map[cond] || cond
+const getAlertTypeClass = (type: string) => {
+  const map: Record<string, string> = { GROWTH: 'growth', NEWS: 'news', MARKET: 'market' }
+  return map[type] || 'default'
+}
+
+const getAlertTagType = (type: string): 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary' => {
+  const map: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary'> = {
+    GROWTH: 'error',
+    NEWS: 'warning',
+    MARKET: 'info'
+  }
+  return map[type] || 'default'
 }
 
 const getValueClass = (alert: AlertHistoryVO) => alert.alertValue >= 0 ? 'positive' : 'negative'
@@ -272,6 +395,14 @@ const formatTime = (time: string) => {
 onMounted(() => {
   loadAlerts()
   loadRules()
+  loadFavoriteFunds()
+})
+
+// 弹窗打开时加载收藏基金
+watch(showCreateModal, (val) => {
+  if (val) {
+    loadFavoriteFunds()
+  }
 })
 </script>
 
@@ -375,32 +506,164 @@ onMounted(() => {
 .rule-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .rule-card {
   display: flex;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.rule-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.rule-card.rule-disabled {
+  opacity: 0.7;
+}
+
+.rule-card.rule-disabled .rule-status-bar {
+  background: var(--text-tertiary, #9ca3af);
+}
+
+.rule-status-bar {
+  width: 4px;
+  background: linear-gradient(180deg, #10b981, #059669);
+  flex-shrink: 0;
+}
+
+.rule-content {
+  flex: 1;
+  padding: 16px 20px;
+  min-width: 0;
+}
+
+.rule-header {
+  display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
+}
+
+.rule-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rule-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rule-icon.growth {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.rule-icon.news {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.rule-icon.market {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
 }
 
 .rule-name {
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.rule-detail {
+.rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rule-condition {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.condition-label,
+.fund-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.condition-value,
+.fund-value {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.condition-value .threshold {
+  font-weight: 600;
+  color: var(--danger-color, #ef4444);
+  margin-left: 2px;
+}
+
+.rule-fund {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fund-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rule-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.rule-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-divider {
+  color: var(--border-color);
 }
 
 .rule-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
 .positive { color: var(--up-color); }
