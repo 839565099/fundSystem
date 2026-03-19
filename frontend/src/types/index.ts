@@ -224,3 +224,85 @@ export interface AlertHistoryVO {
   triggeredTime: string
   isRead: number
 }
+
+export interface PortfolioItemVO {
+  id: number
+  fundCode: string
+  fundName: string
+  fundType?: string
+  shares?: number
+  amount?: number
+  targetRatio?: number
+  actualRatio?: number
+  buyNav?: number
+  currentNav?: number
+  currentValue?: number
+  profit?: number
+  profitRatio?: number
+  dayProfit?: number
+  dayGrowth?: number
+  yesterdayProfit?: number
+  yesterdayGrowth?: number
+  buyDate?: string
+  status?: number
+  updateTime?: string
+}
+
+export interface AssetAllocationVO {
+  type?: string
+  name: string
+  value?: number
+  ratio?: number
+  color?: string
+}
+
+export interface PortfolioVO {
+  id: number
+  name: string
+  description?: string
+  totalAmount?: number
+  currentValue?: number
+  totalProfit?: number
+  totalReturn?: number
+  dayProfit?: number
+  dayReturn?: number
+  yesterdayProfit?: number
+  yesterdayReturn?: number
+  fundCount?: number
+  isDefault?: number
+  createTime?: string
+  updateTime?: string
+  items?: PortfolioItemVO[]
+  allocations?: AssetAllocationVO[]
+}
+
+export interface PortfolioItemVO {
+  id: number
+  fundCode: string
+  fundName: string
+  fundType?: string
+  shares?: number
+  amount?: number
+  targetRatio?: number
+  actualRatio?: number
+  buyNav?: number
+  currentNav?: number
+  currentValue?: number
+  profit?: number
+  profitRatio?: number
+  dayProfit?: number
+  dayGrowth?: number
+  yesterdayProfit?: number
+  yesterdayGrowth?: number
+  buyDate?: string
+  status?: number
+  updateTime?: string
+}
+
+export interface AssetAllocationVO {
+  type?: string
+  name: string
+  value?: number
+  ratio?: number
+  color?: string
+}

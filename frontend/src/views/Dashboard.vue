@@ -47,6 +47,19 @@
         </div>
       </div>
       <div class="overview-card">
+        <div class="label">昨日收益</div>
+        <div class="value" :class="portfolio?.yesterdayProfit >= 0 ? 'positive' : 'negative'">
+          {{ portfolio?.yesterdayProfit >= 0 ? '+' : '' }}{{ formatMoney(portfolio?.yesterdayProfit || 0) }}
+        </div>
+        <div class="change" :class="portfolio?.yesterdayReturn >= 0 ? 'positive' : 'negative'">
+          <n-icon>
+            <TrendingUpOutline v-if="portfolio?.yesterdayReturn >= 0" />
+            <TrendingDownOutline v-else />
+          </n-icon>
+          {{ portfolio?.yesterdayReturn >= 0 ? '+' : '' }}{{ portfolio?.yesterdayReturn?.toFixed(2) || 0 }}%
+        </div>
+      </div>
+      <div class="overview-card">
         <div class="label">持仓基金</div>
         <div class="value">{{ portfolio?.fundCount || 0 }}</div>
         <div class="change">
@@ -262,7 +275,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -308,11 +321,12 @@ const quickQuestions = [
 // 持仓表格列
 const holdingColumns = [
   { title: '基金名称', key: 'fundName', ellipsis: { tooltip: true } },
-  { title: '持有金额', key: 'amount', width: 100, render: (row: any) => `¥${row.amount}` },
+  { title: '持有金额', key: 'amount', width: 100, render: (row: any) => `¥${row.amount?.toFixed(2) || '0.00'}` },
   { title: '收益率', key: 'profitRatio', width: 90, render: (row: any) => {
     const val = row.profitRatio
+    if (val === null || val === undefined) return '-'
     const cls = val >= 0 ? 'positive' : 'negative'
-    return { text: `${val >= 0 ? '+' : ''}${val?.toFixed(2)}%`, class: cls }
+    return h('span', { class: cls }, `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
   }}
 ]
 

@@ -16,6 +16,8 @@ import com.fund.service.FundService;
 import com.fund.vo.AIChatResponse;
 import com.fund.vo.AIChatHistoryVO;
 import com.fund.vo.AIChatSessionVO;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -60,8 +62,8 @@ public class AIChatServiceImpl implements AIChatService {
         userHistory.setCreateTime(LocalDateTime.now());
         historyMapper.insert(userHistory);
 
-        List<Map<String, String>> messages = buildChatContext(sessionId, userMessage);
-        String aiResponse = callQwenAPI(messages, request.getModel());
+        ChatContext chatContext = buildChatContext(sessionId, userMessage);
+        String aiResponse = callClaudeAPI(chatContext.getMessages(), chatContext.getSystemPrompt(), request.getModel());
         int tokensUsed = estimateTokens(userMessage) + estimateTokens(aiResponse);
 
         AIChatHistory aiHistory = new AIChatHistory();
@@ -131,25 +133,35 @@ public class AIChatServiceImpl implements AIChatService {
         return historyList.stream().map(this::convertToHistoryVO).collect(Collectors.toList());
     }
 
-    private String callQwenAPI(List<Map<String, String>> messages, String model) {
+    /**
+     * 调用 Claude API
+     */
+    private String callClaudeAPI(List<Map<String, String>> messages, String systemPrompt, String model) {
         try {
             // 检查 API Key 是否配置
-            if (aiConfig.getApiKey() == null || aiConfig.getApiKey().isEmpty() ||
-                "your-qwen-api-key-here".equals(aiConfig.getApiKey())) {
-                log.error("Qwen API Key not configured");
-                return "AI 助手未配置，请联系管理员配置通义千问 API Key。";
+            if (aiConfig.getApiKey() == null || aiConfig.getApiKey().isEmpty()) {
+                log.error("Claude API Key not configured");
+                return "AI 助手未配置，请联系管理员配置 Claude API Key。";
             }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + aiConfig.getApiKey());
+            headers.set("x-api-key", aiConfig.getApiKey());
+            headers.set("anthropic-version", aiConfig.getApiVersion());
 
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", model != null ? model : aiConfig.getDefaultModel());
+            requestBody.put("max_tokens", aiConfig.getMaxTokens());
+            requestBody.put("system", systemPrompt);
 
-            // 使用 OpenAI 兼容格式的 messages 数组
+            // 构建 messages 数组（不包含 system）
             JSONArray messagesArray = new JSONArray();
             for (Map<String, String> msg : messages) {
+                // 跳过 system 角色
+                if ("system".equals(msg.get("role"))) {
+                    continue;
+                }
+
                 JSONObject msgObj = new JSONObject();
                 msgObj.put("role", msg.get("role"));
                 msgObj.put("content", msg.get("content"));
@@ -157,16 +169,13 @@ public class AIChatServiceImpl implements AIChatService {
             }
             requestBody.put("messages", messagesArray);
 
-            // 添加其他参数
-            requestBody.put("max_tokens", aiConfig.getMaxTokens());
-            requestBody.put("temperature", aiConfig.getTemperature());
-
             HttpEntity<String> entity = new HttpEntity<>(requestBody.toJSONString(), headers);
 
-            log.debug("Calling Qwen API: {}", requestBody.toJSONString());
+            log.debug("Calling Claude API: {}", requestBody.toJSONString());
 
+            String endpoint = aiConfig.getBaseUrl() + "/v1/messages";
             ResponseEntity<String> response = restTemplate.exchange(
-                    aiConfig.getEndpoint(),
+                    endpoint,
                     HttpMethod.POST,
                     entity,
                     String.class
@@ -174,38 +183,42 @@ public class AIChatServiceImpl implements AIChatService {
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 JSONObject responseJson = JSON.parseObject(response.getBody());
-                // OpenAI 兼容格式：choices 在根级别
-                JSONArray choices = responseJson.getJSONArray("choices");
-                if (choices != null && !choices.isEmpty()) {
-                    return choices.getJSONObject(0).getJSONObject("message").getString("content");
-                }
-                // 也支持旧版格式
-                JSONObject output = responseJson.getJSONObject("output");
-                if (output != null) {
-                    JSONArray outputChoices = output.getJSONArray("choices");
-                    if (outputChoices != null && !outputChoices.isEmpty()) {
-                        return outputChoices.getJSONObject(0).getJSONObject("message").getString("content");
+                // Claude 响应格式: content[0].text
+                JSONArray content = responseJson.getJSONArray("content");
+                if (content != null && !content.isEmpty()) {
+                    JSONObject firstContent = content.getJSONObject(0);
+                    if ("text".equals(firstContent.getString("type"))) {
+                        return firstContent.getString("text");
                     }
+                }
+
+                // 检查错误信息
+                JSONObject error = responseJson.getJSONObject("error");
+                if (error != null) {
+                    log.error("Claude API error: {}", error.getString("message"));
+                    return "AI 服务返回错误：" + error.getString("message");
                 }
             }
 
-            log.error("API call failed: {}, body: {}", response.getStatusCode(), response.getBody());
+            log.error("Claude API call failed: {}, body: {}", response.getStatusCode(), response.getBody());
             return "抱歉，AI 服务暂时不可用，请稍后再试。";
 
         } catch (Exception e) {
-            log.error("Failed to call Qwen API", e);
+            log.error("Failed to call Claude API", e);
+            if (e.getMessage() != null && e.getMessage().contains("401")) {
+                return "AI 助手认证失败，请检查 API Key 配置。";
+            }
             return "抱歉，处理请求时发生错误，请稍后再试。";
         }
     }
 
-    private List<Map<String, String>> buildChatContext(String sessionId, String userMessage) {
+    /**
+     * 构建聊天上下文（返回 System Prompt 和 Messages 分离的结构）
+     */
+    private ChatContext buildChatContext(String sessionId, String userMessage) {
         List<Map<String, String>> messages = new ArrayList<>();
 
-        Map<String, String> systemMsg = new HashMap<>();
-        systemMsg.put("role", "system");
-        systemMsg.put("content", getSystemPrompt());
-        messages.add(systemMsg);
-
+        // 加载历史消息（最近 10 条）
         LambdaQueryWrapper<AIChatHistory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AIChatHistory::getSessionId, sessionId)
                 .orderByDesc(AIChatHistory::getCreateTime)
@@ -220,13 +233,14 @@ public class AIChatServiceImpl implements AIChatService {
             messages.add(historyMsg);
         }
 
+        // 添加用户消息（增强后）
         String enhancedMessage = enhanceWithFundContext(userMessage);
         Map<String, String> userMsg = new HashMap<>();
         userMsg.put("role", "user");
         userMsg.put("content", enhancedMessage);
         messages.add(userMsg);
 
-        return messages;
+        return new ChatContext(getSystemPrompt(), messages);
     }
 
     private String getSystemPrompt() {
@@ -240,7 +254,8 @@ public class AIChatServiceImpl implements AIChatService {
                "Response requirements: Professional, objective, and well-founded. " +
                "Use simple language to explain complex concepts. " +
                "For advice involving funds, you must indicate risks. " +
-               "If users ask about specific funds, try to use the provided fund data.";
+               "If users ask about specific funds, try to use the provided fund data. " +
+               "Please respond in Chinese.";
     }
 
     private String enhanceWithFundContext(String userMessage) {
@@ -311,5 +326,15 @@ public class AIChatServiceImpl implements AIChatService {
         AIChatHistoryVO vo = new AIChatHistoryVO();
         BeanUtils.copyProperties(history, vo);
         return vo;
+    }
+
+    /**
+     * 聊天上下文（包含 System Prompt 和 Messages）
+     */
+    @Data
+    @AllArgsConstructor
+    private static class ChatContext {
+        private String systemPrompt;
+        private List<Map<String, String>> messages;
     }
 }

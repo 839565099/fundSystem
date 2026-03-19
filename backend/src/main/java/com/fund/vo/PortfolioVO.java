@@ -29,6 +29,16 @@ public class PortfolioVO {
 
     private BigDecimal dayReturn;
 
+    /**
+     * 昨日盈亏
+     */
+    private BigDecimal yesterdayProfit;
+
+    /**
+     * 昨日收益率(%)
+     */
+    private BigDecimal yesterdayReturn;
+
     private Integer fundCount;
 
     private Integer isDefault;

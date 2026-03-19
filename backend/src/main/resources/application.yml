@@ -104,11 +104,12 @@ fund:
     data-update-interval: 30000
     cache-expire: 300
 
-# AI 助手配置（通义千问）
+# AI 助手配置（Claude）
 ai:
-  qwen:
-    api-key: ${AI_QWEN_API_KEY:your-qwen-api-key-here}
-    endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
-    default-model: qwen-turbo
-    max-tokens: 2000
+  claude:
+    api-key: ${ANTHROPIC_AUTH_TOKEN:sk-qvlpdbwjBk6QDUGEO3jqOfkugJ14Bc6vRQqI1Z00Etr4W04e}
+    base-url: ${ANTHROPIC_BASE_URL:https://cc.580ai.net}
+    default-model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
+    api-version: 2023-06-01
+    max-tokens: 4096
     temperature: 0.7

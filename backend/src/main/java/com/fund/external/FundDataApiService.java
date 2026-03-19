@@ -294,6 +294,19 @@ public class FundDataApiService {
                             }
                         }
                     }
+
+                    // 获取昨日涨跌幅（倒数第二条记录）
+                    if (netArray.size() >= 2) {
+                        JSONObject yesterday = netArray.getJSONObject(netArray.size() - 2);
+                        if (yesterday != null && yesterday.get("equityReturn") != null) {
+                            try {
+                                fund.setYesterdayGrowth(yesterday.getBigDecimal("equityReturn"));
+                                log.info("设置昨日涨跌幅: {}%", fund.getYesterdayGrowth());
+                            } catch (Exception e) {
+                                log.warn("解析昨日涨跌幅失败: {}", fund.getFundCode());
+                            }
+                        }
+                    }
                     
                     if (netArray.size() >= 5) {
                         JSONObject weekAgo = netArray.getJSONObject(netArray.size() - 5);

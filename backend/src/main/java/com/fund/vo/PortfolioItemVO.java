@@ -41,6 +41,16 @@ public class PortfolioItemVO {
 
     private BigDecimal dayGrowth;
 
+    /**
+     * 昨日盈亏
+     */
+    private BigDecimal yesterdayProfit;
+
+    /**
+     * 昨日涨跌幅(%)
+     */
+    private BigDecimal yesterdayGrowth;
+
     private LocalDate buyDate;
 
     private Integer status;

@@ -145,14 +145,14 @@ const currentSessionId = ref<string>('')
 const messages = ref<any[]>([])
 const inputText = ref('')
 const loading = ref(false)
-const currentModel = ref('qwen-turbo')
+const currentModel = ref('claude-sonnet-4-6')
 const messagesContainer = ref<HTMLElement | null>(null)
 
 // 模型选项
 const modelOptions = [
-  { label: '通义千问 Turbo', value: 'qwen-turbo' },
-  { label: '通义千问 Plus', value: 'qwen-plus' },
-  { label: '通义千问 Max', value: 'qwen-max' }
+  { label: 'Claude Sonnet 4.6', value: 'claude-sonnet-4-6' },
+  { label: 'Claude Opus 4', value: 'claude-opus-4-20250514' },
+  { label: 'Claude Haiku 3.5', value: 'claude-3-5-haiku-20241022' }
 ]
 
 // 快捷操作

@@ -5,32 +5,37 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * AI 配置
+ * AI 配置（Claude）
  */
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "ai.qwen")
+@ConfigurationProperties(prefix = "ai.claude")
 public class AIConfig {
 
     /**
-     * 通义千问 API Key
+     * Claude API Key (x-api-key)
      */
     private String apiKey;
 
     /**
-     * API 端点
+     * API 基础 URL
      */
-    private String endpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
+    private String baseUrl = "https://api.anthropic.com";
 
     /**
      * 默认模型
      */
-    private String defaultModel = "qwen-turbo";
+    private String defaultModel = "claude-sonnet-4-6";
+
+    /**
+     * API 版本
+     */
+    private String apiVersion = "2023-06-01";
 
     /**
      * 最大 token 数
      */
-    private Integer maxTokens = 2000;
+    private Integer maxTokens = 4096;
 
     /**
      * 温度参数

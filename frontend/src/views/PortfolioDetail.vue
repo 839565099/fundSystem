@@ -130,14 +130,56 @@
         <n-button type="primary" @click="addFund" :loading="adding">确定</n-button>
       </template>
     </n-modal>
+
+    <!-- 编辑持仓弹窗 -->
+    <n-modal v-model:show="showEditModal" preset="dialog" title="编辑持仓">
+      <n-form ref="editFormRef" :model="editForm" label-placement="left" label-width="80">
+        <n-form-item label="基金">
+          <span>{{ editForm.fundName }} ({{ editForm.fundCode }})</span>
+        </n-form-item>
+        <n-form-item label="买入金额" path="amount" required>
+          <n-input-number
+            v-model:value="editForm.amount"
+            placeholder="投入了多少钱"
+            :min="0"
+            :precision="2"
+            style="width: 100%"
+          >
+            <template #prefix>¥</template>
+          </n-input-number>
+        </n-form-item>
+        <n-form-item label="买入净值" path="buyNav">
+          <n-input-number
+            v-model:value="editForm.buyNav"
+            placeholder="买入时的净值"
+            :min="0"
+            :precision="4"
+            style="width: 100%"
+          />
+        </n-form-item>
+        <n-form-item label="份额" path="shares">
+          <n-input-number
+            v-model:value="editForm.shares"
+            placeholder="持有份额（可选，根据金额/净值自动计算）"
+            :min="0"
+            :precision="2"
+            style="width: 100%"
+          />
+        </n-form-item>
+      </n-form>
+      <template #action>
+        <n-button @click="showEditModal = false">取消</n-button>
+        <n-button type="primary" @click="updateItem" :loading="updating">确定</n-button>
+      </template>
+    </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, watch, nextTick } from 'vue'
+import { ref, h, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInputNumber, NDataTable, NSelect, useMessage, type DataTableColumns } from 'naive-ui'
-import { ArrowBackOutline, AddOutline, RefreshOutline, TrashOutline } from '@vicons/ionicons5'
+import { ArrowBackOutline, AddOutline, RefreshOutline, TrashOutline, CreateOutline } from '@vicons/ionicons5'
 import { fundApi, favoriteApi } from '../api/fund'
 import type { UserFavorite, Fund } from '../types'
 import * as echarts from 'echarts'
@@ -207,6 +249,29 @@ const fundOptions = ref<Array<{ label: string; value: string }>>([])
 const favoriteFunds = ref<Array<{ fundCode: string; fundName: string }>>([])
 const searchingFund = ref(false)
 
+// 编辑持仓相关
+const showEditModal = ref(false)
+const updating = ref(false)
+const editForm = ref({
+  itemId: 0,
+  fundCode: '',
+  fundName: '',
+  amount: null as number | null,
+  buyNav: null as number | null,
+  shares: null as number | null
+})
+
+// 获取已添加基金的代码集合
+const existingFundCodes = computed(() => {
+  return new Set(portfolio.value?.items?.map((item: PortfolioItem) => item.fundCode) || [])
+})
+
+// 过滤掉已添加的基金
+const filterExistingFunds = (funds: Array<{ fundCode: string; fundName: string }>) => {
+  const existing = existingFundCodes.value
+  return funds.filter(f => !existing.has(f.fundCode))
+}
+
 const loadFavoriteFunds = async () => {
   try {
     const favorites = await favoriteApi.getList()
@@ -214,7 +279,9 @@ const loadFavoriteFunds = async () => {
       fundCode: f.fundCode,
       fundName: f.fundName || ''
     }))
-    fundOptions.value = favoriteFunds.value.map(f => ({
+    // 过滤掉已添加的基金
+    const availableFunds = filterExistingFunds(favoriteFunds.value)
+    fundOptions.value = availableFunds.map(f => ({
       label: `${f.fundName} (${f.fundCode})`,
       value: f.fundCode
     }))
@@ -224,27 +291,34 @@ const loadFavoriteFunds = async () => {
 }
 
 const handleSelectDropdown = (show: boolean) => {
-  if (show && fundOptions.value.length === 0) {
+  if (show) {
+    // 每次打开下拉框时重新加载并过滤
     loadFavoriteFunds()
   }
 }
 
 const handleFundSearch = async (query: string) => {
   if (!query) {
-    fundOptions.value = favoriteFunds.value.map(f => ({
+    // 清空搜索时显示收藏基金（过滤已添加的）
+    const availableFunds = filterExistingFunds(favoriteFunds.value)
+    fundOptions.value = availableFunds.map(f => ({
       label: `${f.fundName} (${f.fundCode})`,
       value: f.fundCode
     }))
     return
   }
-  
+
   searchingFund.value = true
   try {
     const results = await fundApi.searchByKeyword(query, 20)
-    fundOptions.value = (results || []).map((f: Fund) => ({
-      label: `${f.fundName} (${f.fundCode})`,
-      value: f.fundCode
-    }))
+    const existing = existingFundCodes.value
+    // 搜索结果也要过滤已添加的基金
+    fundOptions.value = (results || [])
+      .filter((f: Fund) => !existing.has(f.fundCode))
+      .map((f: Fund) => ({
+        label: `${f.fundName} (${f.fundCode})`,
+        value: f.fundCode
+      }))
   } catch (e) {
     console.error('搜索基金失败', e)
   } finally {
@@ -328,6 +402,46 @@ const deleteItem = async (itemId: number) => {
   }
 }
 
+// 打开编辑弹窗
+const openEditModal = (item: PortfolioItem) => {
+  editForm.value = {
+    itemId: item.id,
+    fundCode: item.fundCode,
+    fundName: item.fundName,
+    amount: item.amount,
+    buyNav: item.buyNav,
+    shares: item.shares
+  }
+  showEditModal.value = true
+}
+
+// 更新持仓
+const updateItem = async () => {
+  const id = Number(route.params.id)
+  if (!id || !editForm.value.itemId) return
+
+  if (!editForm.value.amount || editForm.value.amount <= 0) {
+    message.warning('请输入买入金额')
+    return
+  }
+
+  updating.value = true
+  try {
+    await fundApi.updatePortfolioItem(id, editForm.value.itemId, {
+      amount: editForm.value.amount,
+      buyNav: editForm.value.buyNav,
+      shares: editForm.value.shares
+    })
+    message.success('更新成功')
+    showEditModal.value = false
+    await loadPortfolio()
+  } catch (e: any) {
+    message.error(e.message || '更新失败')
+  } finally {
+    updating.value = false
+  }
+}
+
 const renderPieChart = () => {
   if (!pieChartRef.value || !portfolio.value?.allocations?.length) return
 
@@ -380,19 +494,19 @@ const columns: DataTableColumns<PortfolioItem> = [
   {
     title: '成本',
     key: 'amount',
-    width: 100,
+    width: 110,
     render: (row) => formatMoney(row.amount)
   },
   {
     title: '市值',
     key: 'currentValue',
-    width: 100,
+    width: 110,
     render: (row) => formatMoney(row.currentValue)
   },
   {
     title: '收益',
     key: 'profit',
-    width: 100,
+    width: 110,
     render: (row) => h('span', { class: row.profit >= 0 ? 'positive' : 'negative' },
       `${row.profit >= 0 ? '+' : ''}${formatMoney(row.profit)}`)
   },
@@ -417,12 +531,19 @@ const columns: DataTableColumns<PortfolioItem> = [
   {
     title: '操作',
     key: 'actions',
-    width: 80,
-    render: (row) => h(NButton, {
-      text: true,
-      type: 'error',
-      onClick: () => deleteItem(row.id)
-    }, { icon: () => h(NIcon, null, { default: () => h(TrashOutline) }) })
+    width: 100,
+    render: (row) => h('div', { style: { display: 'flex', gap: '8px' } }, [
+      h(NButton, {
+        text: true,
+        type: 'primary',
+        onClick: () => openEditModal(row)
+      }, { icon: () => h(NIcon, null, { default: () => h(CreateOutline) }) }),
+      h(NButton, {
+        text: true,
+        type: 'error',
+        onClick: () => deleteItem(row.id)
+      }, { icon: () => h(NIcon, null, { default: () => h(TrashOutline) }) })
+    ])
   }
 ]
 
@@ -470,7 +591,7 @@ watch(() => route.params.id, () => {
 
 .overview-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -486,8 +607,11 @@ watch(() => route.params.id, () => {
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .allocation-card {

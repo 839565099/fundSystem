@@ -36,7 +36,12 @@ public class Fund implements Serializable {
     private LocalDate navDate;
     
     private BigDecimal dayGrowth;
-    
+
+    /**
+     * 昨日涨跌幅(%)
+     */
+    private BigDecimal yesterdayGrowth;
+
     private BigDecimal weekGrowth;
     
     private BigDecimal monthGrowth;
