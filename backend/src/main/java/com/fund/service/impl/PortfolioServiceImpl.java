@@ -298,8 +298,17 @@ public class PortfolioServiceImpl implements PortfolioService {
         if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
             portfolio.setTotalReturn(totalProfit.divide(totalAmount, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100")));
+        }
+        // 日收益率基于前一日市值（近似为 currentValue - dayProfit）
+        BigDecimal yesterdayValue = currentValue.subtract(dayProfit);
+        if (yesterdayValue.compareTo(BigDecimal.ZERO) > 0) {
+            portfolio.setDayReturn(dayProfit.divide(yesterdayValue, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100")));
+        } else if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
             portfolio.setDayReturn(dayProfit.divide(totalAmount, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100")));
+        } else {
+            portfolio.setDayReturn(BigDecimal.ZERO);
         }
 
         portfolioMapper.updateById(portfolio);
@@ -334,6 +343,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         if (portfolio == null) {
             return null;
         }
+
+        // 刷新数据，确保使用最新净值计算收益
+        refreshPortfolio(portfolio.getId());
+        portfolio = portfolioMapper.selectById(portfolio.getId());
+
         return convertToVOWithItems(portfolio);
     }
 
@@ -347,31 +361,66 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     /**
-     * 计算持仓市值和盈亏（简化版：用日涨跌幅计算今日收益）
+     * 计算持仓市值和盈亏（基于净值精确计算，兼容无份额数据的情况）
      */
     private void calculateItemValue(PortfolioItem item, Fund fund) {
         BigDecimal amount = item.getAmount() != null ? item.getAmount() : BigDecimal.ZERO;
+        BigDecimal shares = item.getShares();
+        BigDecimal currentNav = fund.getNav();
 
-        // 今日盈亏 = 投资金额 × 日涨跌幅 / 100
-        if (fund.getDayGrowth() != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal dayProfit = amount.multiply(fund.getDayGrowth())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            item.setDayProfit(dayProfit);
-            // 总收益 = 今日盈亏
-            item.setProfit(dayProfit);
-            // 收益率 = 日涨跌幅
-            item.setProfitRatio(fund.getDayGrowth());
-            // 当前市值 = 投资金额 + 今日盈亏
-            item.setCurrentValue(amount.add(dayProfit));
-        } else {
-            item.setDayProfit(BigDecimal.ZERO);
-            item.setProfit(BigDecimal.ZERO);
-            item.setProfitRatio(BigDecimal.ZERO);
-            item.setCurrentValue(amount);
+        // 更新当前净值
+        if (currentNav != null) {
+            item.setCurrentNav(currentNav);
         }
 
-        log.info("计算收益: fundCode={}, amount={}, dayGrowth={}%, dayProfit={}, currentValue={}",
-                item.getFundCode(), amount, fund.getDayGrowth(), item.getDayProfit(), item.getCurrentValue());
+        if (shares != null && shares.compareTo(BigDecimal.ZERO) > 0
+                && currentNav != null && currentNav.compareTo(BigDecimal.ZERO) > 0) {
+            // 精确模式：基于份额和净值计算
+            BigDecimal currentValue = shares.multiply(currentNav)
+                    .setScale(2, RoundingMode.HALF_UP);
+            item.setCurrentValue(currentValue);
+
+            // 总收益 = 当前市值 - 投资金额
+            BigDecimal totalProfit = currentValue.subtract(amount);
+            item.setProfit(totalProfit);
+
+            // 总收益率 = 总收益 / 投资金额 × 100
+            if (amount.compareTo(BigDecimal.ZERO) > 0) {
+                item.setProfitRatio(totalProfit.divide(amount, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100")));
+            } else {
+                item.setProfitRatio(BigDecimal.ZERO);
+            }
+
+            // 今日盈亏 = 当前市值 × 日涨跌幅 / (100 + 日涨跌幅)
+            if (fund.getDayGrowth() != null) {
+                BigDecimal divisor = new BigDecimal("100").add(fund.getDayGrowth());
+                if (divisor.compareTo(BigDecimal.ZERO) != 0) {
+                    item.setDayProfit(currentValue.multiply(fund.getDayGrowth())
+                            .divide(divisor, 2, RoundingMode.HALF_UP));
+                } else {
+                    item.setDayProfit(BigDecimal.ZERO);
+                }
+            } else {
+                item.setDayProfit(BigDecimal.ZERO);
+            }
+        } else {
+            // 降级模式：没有份额数据，总收益无法计算
+            item.setCurrentValue(amount);
+            item.setProfit(BigDecimal.ZERO);
+            item.setProfitRatio(BigDecimal.ZERO);
+
+            if (fund.getDayGrowth() != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+                item.setDayProfit(amount.multiply(fund.getDayGrowth())
+                        .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP));
+            } else {
+                item.setDayProfit(BigDecimal.ZERO);
+            }
+        }
+
+        log.info("计算收益: fundCode={}, shares={}, nav={}, amount={}, currentValue={}, profit={}, dayProfit={}",
+                item.getFundCode(), shares, currentNav, amount,
+                item.getCurrentValue(), item.getProfit(), item.getDayProfit());
     }
 
     /**
@@ -432,7 +481,6 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         // 计算实际占比和资产配置
         BigDecimal totalValue = vo.getCurrentValue() != null ? vo.getCurrentValue() : BigDecimal.ONE;
-        BigDecimal totalAmount = vo.getTotalAmount() != null ? vo.getTotalAmount() : BigDecimal.ONE;
         BigDecimal yesterdayProfit = BigDecimal.ZERO;
         List<AssetAllocationVO> allocations = new ArrayList<>();
         int colorIndex = 0;
@@ -465,8 +513,8 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         // 设置昨日收益
         vo.setYesterdayProfit(yesterdayProfit);
-        if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
-            vo.setYesterdayReturn(yesterdayProfit.divide(totalAmount, 4, RoundingMode.HALF_UP)
+        if (totalValue.compareTo(BigDecimal.ZERO) > 0) {
+            vo.setYesterdayReturn(yesterdayProfit.divide(totalValue, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100")));
         } else {
             vo.setYesterdayReturn(BigDecimal.ZERO);
@@ -487,11 +535,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         if (fund != null) {
             vo.setFundType(fund.getFundType());
             vo.setDayGrowth(fund.getDayGrowth());
-            // 获取昨日涨跌幅并计算昨日盈亏
+            // 获取昨日涨跌幅并计算昨日盈亏（基于当前市值）
             vo.setYesterdayGrowth(fund.getYesterdayGrowth());
-            if (fund.getYesterdayGrowth() != null && item.getAmount() != null
-                    && item.getAmount().compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal yesterdayProfit = item.getAmount().multiply(fund.getYesterdayGrowth())
+            if (fund.getYesterdayGrowth() != null && item.getCurrentValue() != null
+                    && item.getCurrentValue().compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal yesterdayProfit = item.getCurrentValue().multiply(fund.getYesterdayGrowth())
                         .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
                 vo.setYesterdayProfit(yesterdayProfit);
             }
