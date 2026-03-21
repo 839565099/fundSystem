@@ -1,17 +1,15 @@
 <template>
   <div class="portfolio-page page-container">
-    <div class="page-header">
-      <h1 class="page-title">
-        <n-icon size="28"><WalletOutline /></n-icon>
-        投资组合
-      </h1>
-      <n-button type="primary" @click="showCreateModal = true">
-        <template #icon>
-          <n-icon><AddOutline /></n-icon>
-        </template>
-        创建组合
-      </n-button>
-    </div>
+    <PageHeader title="投资组合" icon="💼">
+      <template #actions>
+        <n-button type="primary" @click="showCreateModal = true">
+          <template #icon>
+            <n-icon><AddOutline /></n-icon>
+          </template>
+          创建组合
+        </n-button>
+      </template>
+    </PageHeader>
 
     <n-spin :show="loading">
       <div v-if="portfolios.length" class="portfolio-grid">
@@ -92,7 +90,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage } from 'naive-ui'
-import { WalletOutline, AddOutline } from '@vicons/ionicons5'
+import { AddOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { fundApi } from '@/api/fund'
 import type { PortfolioVO } from '@/types'
 
@@ -176,12 +175,12 @@ onMounted(loadPortfolios)
 
 .portfolio-card {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .portfolio-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow);
+  border-color: var(--primary-color);
 }
 
 .portfolio-card.is-default {

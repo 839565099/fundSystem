@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <!-- 选择区域 -->
-    <div class="compare-header glass-card">
+    <div class="compare-header card">
       <h2 class="section-title">
         <n-icon size="24"><GitCompareOutline /></n-icon>
         基金对比
@@ -245,7 +245,7 @@ const validCodes = computed(() => {
   return selectedCodes.value.filter(c => c && c.length > 0)
 })
 
-const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444']
+const colors = ['#4f46e5', '#16a34a', '#d97706', '#dc2626']
 
 // 计算各指标的最大值（用于条形图比例）
 const maxValues = computed(() => {
@@ -347,7 +347,7 @@ const handleCompare = async () => {
 // 生成条形图样式
 const getBarStyle = (value: number | undefined, maxValue: number) => {
   if (value === undefined || value === null) {
-    return { width: '0%', backgroundColor: '#e5e7eb' }
+    return { width: '0%', backgroundColor: 'var(--bg-secondary)' }
   }
   const percentage = Math.min(Math.abs(value) / maxValue * 100, 100)
   const color = value >= 0 ? 'var(--up-color)' : 'var(--down-color)'
@@ -435,9 +435,9 @@ const updateChart = () => {
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#e5e7eb',
+      borderColor: 'var(--border-color)',
       borderWidth: 1,
-      textStyle: { color: '#1f2937', fontSize: 12 },
+      textStyle: { color: 'var(--text-color)', fontSize: 12 },
       formatter: (params: any[]) => {
         const date = dates[params[0].dataIndex]
         let html = `<div style="font-weight:600;margin-bottom:8px;">${date}</div>`
@@ -446,7 +446,7 @@ const updateChart = () => {
           const value = p.value
           html += `<div style="display:flex;justify-content:space-between;gap:20px;margin:4px 0;">
             <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;"></span>${p.seriesName}</span>
-            <span style="font-weight:600;color:${value >= 0 ? '#ef4444' : '#22c55e'}">${value >= 0 ? '+' : ''}${value.toFixed(2)}%</span>
+            <span style="font-weight:600;color:${value >= 0 ? 'var(--up-color)' : 'var(--down-color)'}">${value >= 0 ? '+' : ''}${value.toFixed(2)}%</span>
           </div>`
         })
         return html
@@ -455,7 +455,7 @@ const updateChart = () => {
     legend: {
       data: compareData.value.map(f => f.fundName),
       bottom: 0,
-      textStyle: { color: '#6b7280' }
+      textStyle: { color: 'var(--text-secondary)' }
     },
     grid: {
       left: 60,
@@ -539,14 +539,16 @@ const tableData = computed(() => {
   })
 })
 
+const handleResize = () => chart?.resize()
+
 onMounted(() => {
   loadFavorites()
-  window.addEventListener('resize', () => chart?.resize())
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
   chart?.dispose()
-  window.removeEventListener('resize', () => chart?.resize())
 })
 </script>
 
@@ -667,7 +669,7 @@ onUnmounted(() => {
 }
 
 .stat-value.primary {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .stat-value.positive {
@@ -711,14 +713,14 @@ onUnmounted(() => {
 
 .bar-wrapper {
   height: 8px;
-  background: #f3f4f6;
-  border-radius: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .bar {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: width 0.5s ease;
 }
 

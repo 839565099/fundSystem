@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="profile-header glass-card">
+    <div class="profile-header card">
       <div class="avatar-section">
         <n-avatar round :size="80">{{ user?.nickname?.charAt(0) || user?.username?.charAt(0) || 'U' }}</n-avatar>
         <div class="user-info">
@@ -179,7 +179,7 @@ onMounted(() => {
 
 .profile-content {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   padding: 20px;
   box-shadow: var(--shadow);
 }

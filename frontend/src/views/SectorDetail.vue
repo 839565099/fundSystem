@@ -212,7 +212,7 @@ const updateChart = () => {
   const firstClose = closes[0] || 1
   const growths = closes.map(c => ((c - firstClose) / firstClose) * 100)
   const lastGrowth = growths[growths.length - 1] || 0
-  const lineColor = lastGrowth >= 0 ? '#ef4444' : '#22c55e'
+  const lineColor = lastGrowth >= 0 ? getComputedStyle(document.documentElement).getPropertyValue('--up-color').trim() : getComputedStyle(document.documentElement).getPropertyValue('--down-color').trim()
 
   // 日期格式化
   const formatDate = (date: string) => {
@@ -230,36 +230,45 @@ const updateChart = () => {
   if (chartMode.value === 'week') zoomStart = 50
   if (chartMode.value === 'month') zoomStart = 30
 
+  const tc = {
+    upColor: getComputedStyle(document.documentElement).getPropertyValue('--up-color').trim(),
+    downColor: getComputedStyle(document.documentElement).getPropertyValue('--down-color').trim(),
+    primaryColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim(),
+    textSecondary: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748b',
+    textColor: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#0f172a',
+    textTertiary: getComputedStyle(document.documentElement).getPropertyValue('--text-tertiary').trim() || '#94a3b8',
+  }
+
   const option: any = {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'cross' },
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#e5e7eb',
+      borderColor: 'var(--border-color)',
       borderWidth: 1,
-      textStyle: { color: '#1f2937', fontSize: 12 },
+      textStyle: { color: tc.textColor, fontSize: 12 },
       formatter: (params: any[]) => {
         const idx = params[0].dataIndex
         const item = sortedData[idx]
         const growth = growths[idx]
         return `
           <div style="padding: 10px; min-width: 150px;">
-            <div style="font-weight: 600; margin-bottom: 8px; color: #1f2937;">${item.date}</div>
+            <div style="font-weight: 600; margin-bottom: 8px; color: ${tc.textColor};">${item.date}</div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: #6b7280;">收盘点位</span>
-              <span style="color: #3b82f6; font-weight: 600;">${item.close?.toFixed(2)}</span>
+              <span style="color: ${tc.textSecondary};">收盘点位</span>
+              <span style="color: ${tc.primaryColor}; font-weight: 600;">${item.close?.toFixed(2)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: #6b7280;">区间涨跌</span>
-              <span style="color: ${item.changePercent >= 0 ? '#ef4444' : '#22c55e'}; font-weight: 600;">${item.changePercent >= 0 ? '+' : ''}${item.changePercent?.toFixed(2)}%</span>
+              <span style="color: ${tc.textSecondary};">区间涨跌</span>
+              <span style="color: ${item.changePercent >= 0 ? tc.upColor : tc.downColor}; font-weight: 600;">${item.changePercent >= 0 ? '+' : ''}${item.changePercent?.toFixed(2)}%</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: #6b7280;">累计涨跌</span>
-              <span style="color: ${growth >= 0 ? '#ef4444' : '#22c55e'}; font-weight: 600;">${growth >= 0 ? '+' : ''}${growth?.toFixed(2)}%</span>
+              <span style="color: ${tc.textSecondary};">累计涨跌</span>
+              <span style="color: ${growth >= 0 ? tc.upColor : tc.downColor}; font-weight: 600;">${growth >= 0 ? '+' : ''}${growth?.toFixed(2)}%</span>
             </div>
             <div style="display: flex; justify-content: space-between;">
-              <span style="color: #6b7280;">成交额</span>
-              <span style="color: #1f2937;">${item.volume?.toFixed(2)}亿</span>
+              <span style="color: ${tc.textSecondary};">成交额</span>
+              <span style="color: ${tc.textColor};">${item.volume?.toFixed(2)}亿</span>
             </div>
           </div>
         `
@@ -275,11 +284,11 @@ const updateChart = () => {
         end: 100,
         borderColor: 'transparent',
         backgroundColor: 'rgba(0,0,0,0.02)',
-        fillerColor: 'rgba(59, 130, 246, 0.15)',
-        handleStyle: { color: '#3b82f6' },
-        moveHandleStyle: { color: '#3b82f6', opacity: 0.3 },
-        selectedDataBackground: { lineStyle: { color: '#3b82f6' }, areaStyle: { color: '#3b82f6' } },
-        textStyle: { color: '#6b7280', fontSize: 10 },
+        fillerColor: `${tc.primaryColor}26`,
+        handleStyle: { color: tc.primaryColor },
+        moveHandleStyle: { color: tc.primaryColor, opacity: 0.3 },
+        selectedDataBackground: { lineStyle: { color: tc.primaryColor }, areaStyle: { color: tc.primaryColor } },
+        textStyle: { color: tc.textSecondary, fontSize: 10 },
         labelFormatter: (value: number) => formatDate(dates[value] || '')
       }
     ],
@@ -289,19 +298,19 @@ const updateChart = () => {
       boundaryGap: false,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#6b7280', fontSize: 11, interval: 'auto' as const, formatter: formatDate }
+      axisLabel: { color: tc.textSecondary, fontSize: 11, interval: 'auto' as const, formatter: formatDate }
     },
     yAxis: {
       type: 'value',
       name: '累计涨跌幅(%)',
-      nameTextStyle: { color: '#6b7280', fontSize: 11, align: 'right' },
+      nameTextStyle: { color: tc.textSecondary, fontSize: 11, align: 'right' },
       min: (value: { min: number }) => Math.floor(value.min - padding),
       max: (value: { max: number }) => Math.ceil(value.max + padding),
-      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
+      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: '#6b7280',
+        color: tc.textSecondary,
         fontSize: 11,
         formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`
       }
@@ -323,7 +332,7 @@ const updateChart = () => {
         markLine: {
           silent: true,
           symbol: 'none',
-          data: [{ yAxis: 0, lineStyle: { color: '#9ca3af', type: 'dashed', width: 1 } }]
+          data: [{ yAxis: 0, lineStyle: { color: tc.textTertiary, type: 'dashed', width: 1 } }]
         }
       }
     ],
@@ -356,19 +365,19 @@ onUnmounted(() => {
 .code { color: var(--text-secondary); margin-bottom: 20px; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 800px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-.stat-card { text-align: center; padding: 16px; background: var(--bg-color); border-radius: 12px; }
+.stat-card { text-align: center; padding: 16px; background: var(--bg-color); border-radius: var(--radius-lg); }
 .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
 .stat-value { font-size: 22px; font-weight: 700; }
-.stat-value.primary { color: #3b82f6; }
+.stat-value.primary { color: var(--primary-color); }
 .chart-section { padding: 20px; margin-bottom: 20px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .section-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0; }
-.chart-modes { display: flex; background: var(--bg-color); border-radius: 8px; padding: 3px; gap: 1px; }
-.mode-btn { padding: 6px 16px; font-size: 13px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; border-radius: 6px; }
+.chart-modes { display: flex; background: var(--bg-color); border-radius: var(--radius-md); padding: 3px; gap: 1px; }
+.mode-btn { padding: 6px 16px; font-size: 13px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; border-radius: var(--radius-sm); }
 .mode-btn:hover { background: rgba(0,0,0,0.04); }
-.mode-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2); }
+.mode-btn.active { background: var(--primary-color); color: white; font-weight: 600; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15); }
 .chart-container { height: 380px; width: 100%; }
 .stocks-section { padding: 20px; }
-.growth-positive { color: #ef4444; }
-.growth-negative { color: #22c55e; }
+.growth-positive { color: var(--up-color); }
+.growth-negative { color: var(--down-color); }
 </style>

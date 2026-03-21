@@ -8,8 +8,11 @@
             <n-button text @click="router.back()">
               <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
             </n-button>
-            <h1 class="page-title">{{ portfolio.name }}</h1>
-            <n-tag v-if="portfolio.isDefault" type="primary" size="small">默认</n-tag>
+            <PageHeader :title="portfolio.name" style="margin-bottom: 0;">
+              <template #actions>
+                <n-tag v-if="portfolio.isDefault" type="primary" size="small">默认</n-tag>
+              </template>
+            </PageHeader>
           </div>
           <div class="header-actions">
             <n-button @click="showAddFundModal = true">
@@ -180,6 +183,7 @@ import { ref, h, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInputNumber, NDataTable, NSelect, useMessage, type DataTableColumns } from 'naive-ui'
 import { ArrowBackOutline, AddOutline, RefreshOutline, TrashOutline, CreateOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { fundApi, favoriteApi } from '../api/fund'
 import type { UserFavorite, Fund } from '../types'
 import * as echarts from 'echarts'
@@ -462,7 +466,7 @@ const renderPieChart = () => {
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#fff',
+          borderColor: 'var(--card-bg)',
           borderWidth: 2
         },
         label: { show: false },
@@ -576,11 +580,6 @@ watch(() => route.params.id, () => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.header-actions {
-  display: flex;
   gap: 12px;
 }
 

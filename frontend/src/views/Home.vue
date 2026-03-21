@@ -4,7 +4,7 @@
       <div class="hero-content">
         <h1 class="hero-title">智能基金投资平台</h1>
         <p class="hero-subtitle">专业的基金数据分析与投资决策工具</p>
-        <div class="search-box glass-card">
+        <div class="search-box">
           <n-auto-complete
             v-model:value="searchKeyword"
             :options="searchOptions"
@@ -26,7 +26,7 @@
     <div class="stats-section">
       <div class="stats-grid">
         <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #60a5fa);">
+          <div class="stat-icon stat-icon--primary">
             <n-icon size="28"><TrendingUpOutline /></n-icon>
           </div>
           <div class="stat-info">
@@ -35,7 +35,7 @@
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e, #4ade80);">
+          <div class="stat-icon stat-icon--success">
             <n-icon size="28"><StatsChartOutline /></n-icon>
           </div>
           <div class="stat-info">
@@ -44,7 +44,7 @@
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
+          <div class="stat-icon stat-icon--danger">
             <n-icon size="28"><TrendingDownOutline /></n-icon>
           </div>
           <div class="stat-info">
@@ -53,7 +53,7 @@
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+          <div class="stat-icon stat-icon--purple">
             <n-icon size="28"><StarOutline /></n-icon>
           </div>
           <div class="stat-info">
@@ -359,7 +359,7 @@ const initMiniChart = (el: HTMLElement, market: MarketDataVO) => {
   chartInstances.set(market.marketCode, chart)
   
   const isUp = (market.changeRatio || 0) >= 0
-  const color = isUp ? '#ef4444' : '#22c55e'
+  const rawColor = isUp ? getComputedStyle(document.documentElement).getPropertyValue('--up-color').trim() : getComputedStyle(document.documentElement).getPropertyValue('--down-color').trim()
   const basePoint = market.currentPoint || 3000
   const changeRatio = market.changeRatio || 0
   
@@ -387,11 +387,11 @@ const initMiniChart = (el: HTMLElement, market: MarketDataVO) => {
       data: data,
       smooth: true,
       symbol: 'none',
-      lineStyle: { width: 2, color },
+      lineStyle: { width: 2, color: rawColor },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: `${color}60` },
-          { offset: 1, color: `${color}05` },
+          { offset: 0, color: `${rawColor}60` },
+          { offset: 1, color: `${rawColor}05` },
         ]),
       },
     }],
@@ -450,8 +450,8 @@ onMounted(() => {
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
+  background: var(--gradient-brand);
+  border-radius: var(--radius-xl);
   padding: 48px 32px;
   margin-bottom: 24px;
   color: white;
@@ -477,7 +477,8 @@ onMounted(() => {
 
 .search-box {
   padding: 8px;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
 }
 
 .stats-section {
@@ -512,11 +513,27 @@ onMounted(() => {
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+}
+
+.stat-icon--primary {
+  background: var(--primary-color);
+}
+
+.stat-icon--success {
+  background: var(--success-color);
+}
+
+.stat-icon--danger {
+  background: var(--danger-color);
+}
+
+.stat-icon--purple {
+  background: #7c3aed;
 }
 
 .stat-value {
@@ -569,11 +586,6 @@ onMounted(() => {
 .market-card {
   padding: 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.market-card:hover {
-  transform: translateY(-2px);
 }
 
 .market-header {
@@ -591,9 +603,9 @@ onMounted(() => {
 .market-code {
   font-size: 12px;
   color: var(--text-secondary);
-  background: var(--bg-color);
+  background: var(--bg-secondary);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .market-body {
@@ -615,11 +627,11 @@ onMounted(() => {
 }
 
 .market-change.positive {
-  color: #ef4444;
+  color: var(--up-color);
 }
 
 .market-change.negative {
-  color: #22c55e;
+  color: var(--down-color);
 }
 
 .change-value {
@@ -673,38 +685,33 @@ onMounted(() => {
   gap: 16px;
   padding: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.hot-fund-item:hover, .favorite-item:hover {
-  transform: translateX(4px);
 }
 
 .fund-rank {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 14px;
-  background: var(--bg-color);
+  background: var(--bg-secondary);
   color: var(--text-secondary);
 }
 
 .fund-rank.gold {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: #fbbf24;
   color: white;
 }
 
 .fund-rank.silver {
-  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  background: #9ca3af;
   color: white;
 }
 
 .fund-rank.bronze {
-  background: linear-gradient(135deg, #d97706, #b45309);
+  background: #d97706;
   color: white;
 }
 
@@ -732,11 +739,11 @@ onMounted(() => {
 }
 
 .fund-growth.positive, .fav-growth.positive {
-  color: #ef4444;
+  color: var(--up-color);
 }
 
 .fund-growth.negative, .fav-growth.negative {
-  color: #22c55e;
+  color: var(--down-color);
 }
 
 .favorite-item {
@@ -799,10 +806,6 @@ onMounted(() => {
   padding: 16px;
   cursor: pointer;
   gap: 12px;
-}
-
-.news-card:hover {
-  transform: translateY(-2px);
 }
 
 .news-content {

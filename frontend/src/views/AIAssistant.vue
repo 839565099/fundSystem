@@ -295,7 +295,7 @@ onMounted(() => {
   display: flex;
   height: 100%;
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow);
 }
@@ -324,7 +324,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 4px;
@@ -335,7 +335,7 @@ onMounted(() => {
 }
 
 .session-item.active {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(79, 70, 229, 0.12);
   color: var(--primary-color);
 }
 
@@ -414,13 +414,13 @@ onMounted(() => {
   padding: 16px 20px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
 }
 
 .quick-action-btn:hover {
   border-color: var(--primary-color);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .message {
@@ -460,7 +460,7 @@ onMounted(() => {
 
 .message-text {
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   line-height: 1.6;
   font-size: 14px;
 }

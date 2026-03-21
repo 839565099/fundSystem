@@ -1,97 +1,83 @@
 <template>
   <div class="dashboard-page page-container">
-    <div class="page-header">
-      <h1 class="page-title">
-        <n-icon size="28"><GridOutline /></n-icon>
-        投资概览
-      </h1>
-      <div class="header-actions">
-        <div class="realtime-indicator">
-          <span class="pulse-dot"></span>
-          实时更新
-        </div>
-        <n-button @click="refreshData" :loading="refreshing">
-          <template #icon>
-            <n-icon><RefreshOutline /></n-icon>
-          </template>
-          刷新
-        </n-button>
-      </div>
-    </div>
-
-    <!-- 概览卡片 -->
-    <div class="dashboard-grid">
-      <div class="overview-card">
-        <div class="label">总资产</div>
-        <div class="value">{{ formatMoney(portfolio?.currentValue || 0) }}</div>
-        <div class="change" :class="portfolio?.totalReturn >= 0 ? 'positive' : 'negative'">
-          <n-icon>
-            <TrendingUpOutline v-if="portfolio?.totalReturn >= 0" />
-            <TrendingDownOutline v-else />
-          </n-icon>
-          {{ portfolio?.totalReturn >= 0 ? '+' : '' }}{{ portfolio?.totalProfit?.toFixed(2) || 0 }} 元
-          ({{ portfolio?.totalReturn >= 0 ? '+' : '' }}{{ portfolio?.totalReturn?.toFixed(2) || 0 }}%)
-        </div>
-      </div>
-      <div class="overview-card">
-        <div class="label">今日收益</div>
-        <div class="value" :class="portfolio?.dayProfit >= 0 ? 'positive' : 'negative'">
-          {{ portfolio?.dayProfit >= 0 ? '+' : '' }}{{ formatMoney(portfolio?.dayProfit || 0) }}
-        </div>
-        <div class="change" :class="portfolio?.dayReturn >= 0 ? 'positive' : 'negative'">
-          <n-icon>
-            <TrendingUpOutline v-if="portfolio?.dayReturn >= 0" />
-            <TrendingDownOutline v-else />
-          </n-icon>
-          {{ portfolio?.dayReturn >= 0 ? '+' : '' }}{{ portfolio?.dayReturn?.toFixed(2) || 0 }}%
-        </div>
-      </div>
-      <div class="overview-card">
-        <div class="label">昨日收益</div>
-        <div class="value" :class="portfolio?.yesterdayProfit >= 0 ? 'positive' : 'negative'">
-          {{ portfolio?.yesterdayProfit >= 0 ? '+' : '' }}{{ formatMoney(portfolio?.yesterdayProfit || 0) }}
-        </div>
-        <div class="change" :class="portfolio?.yesterdayReturn >= 0 ? 'positive' : 'negative'">
-          <n-icon>
-            <TrendingUpOutline v-if="portfolio?.yesterdayReturn >= 0" />
-            <TrendingDownOutline v-else />
-          </n-icon>
-          {{ portfolio?.yesterdayReturn >= 0 ? '+' : '' }}{{ portfolio?.yesterdayReturn?.toFixed(2) || 0 }}%
-        </div>
-      </div>
-      <div class="overview-card">
-        <div class="label">持仓基金</div>
-        <div class="value">{{ portfolio?.fundCount || 0 }}</div>
-        <div class="change">
-          <n-button text type="primary" @click="router.push('/portfolio')">
-            管理组合 <n-icon><ChevronForwardOutline /></n-icon>
+    <PageHeader title="投资概览" icon="📈">
+      <template #actions>
+        <div class="header-actions">
+          <div class="realtime-indicator">
+            <span class="pulse-dot"></span>
+            实时更新
+          </div>
+          <n-button @click="refreshData" :loading="refreshing">
+            <template #icon>
+              <n-icon><RefreshOutline /></n-icon>
+            </template>
+            刷新
           </n-button>
         </div>
-      </div>
-      <div class="overview-card" @click="router.push('/alerts')" style="cursor: pointer;">
-        <div class="label">预警通知</div>
-        <div class="value">
-          <n-badge :value="unreadAlertCount" :show="unreadAlertCount > 0">
-            <n-icon size="32"><NotificationsOutline /></n-icon>
-          </n-badge>
-        </div>
-        <div class="change">
-          {{ unreadAlertCount > 0 ? `${unreadAlertCount} 条未读` : '暂无预警' }}
-        </div>
-      </div>
+      </template>
+    </PageHeader>
+
+    <Skeleton v-if="initialLoading" type="stat" />
+    
+    <div v-else class="dashboard-grid">
+      <StatCard
+        label="总资产"
+        :value="portfolio?.currentValue || 0"
+        prefix="¥"
+        icon="💰"
+        :change="portfolio?.totalReturn"
+        trend-label="总收益率"
+        variant="primary"
+      />
+      
+      <StatCard
+        label="今日收益"
+        :value="portfolio?.dayProfit || 0"
+        prefix="¥"
+        icon="📈"
+        :change="portfolio?.dayReturn"
+        :change-type="portfolio?.dayReturn >= 0 ? 'up' : 'down'"
+        show-sign
+      />
+      
+      <StatCard
+        label="昨日收益"
+        :value="portfolio?.yesterdayProfit || 0"
+        prefix="¥"
+        icon="📊"
+        :change="portfolio?.yesterdayReturn"
+        :change-type="portfolio?.yesterdayReturn >= 0 ? 'up' : 'down'"
+        show-sign
+      />
+      
+      <StatCard
+        label="持仓基金"
+        :value="portfolio?.fundCount || 0"
+        icon="🏦"
+        clickable
+        @click="router.push('/portfolio')"
+      />
+      
+      <StatCard
+        label="预警通知"
+        :value="unreadAlertCount"
+        icon="🔔"
+        clickable
+        variant="danger"
+        @click="router.push('/alerts')"
+      />
     </div>
 
-    <!-- 主体内容 -->
     <div class="main-content">
       <div class="left-panel">
-        <!-- 资产配置 -->
-        <n-card title="资产配置" class="chart-card">
+        <n-card title="资产配置" class="chart-card card--elevated">
           <template #header-extra>
             <n-button text @click="router.push('/portfolio')">
               详情
             </n-button>
           </template>
-          <div v-if="portfolio?.allocations?.length" class="chart-container" ref="allocationChartRef"></div>
+          <Skeleton v-if="loading" type="chart" />
+          <div v-else-if="portfolio?.allocations?.length" class="chart-container" ref="allocationChartRef"></div>
           <n-empty v-else description="暂无持仓数据">
             <template #extra>
               <n-button type="primary" @click="router.push('/portfolio')">
@@ -101,15 +87,15 @@
           </n-empty>
         </n-card>
 
-        <!-- 持仓列表 -->
-        <n-card title="持仓明细" class="holdings-card">
+        <n-card title="持仓明细" class="holdings-card card--elevated">
           <template #header-extra>
             <n-button text @click="router.push('/portfolio')">
               管理
             </n-button>
           </template>
+          <Skeleton v-if="loading" type="table" :rows="5" :columns="3" />
           <n-data-table
-            v-if="portfolio?.items?.length"
+            v-else-if="portfolio?.items?.length"
             :columns="holdingColumns"
             :data="portfolio.items"
             :bordered="false"
@@ -120,8 +106,7 @@
       </div>
 
       <div class="right-panel">
-        <!-- AI 快捷助手 -->
-        <n-card title="AI 投资助手" class="ai-card">
+        <n-card title="AI 投资助手" class="ai-card card--gradient">
           <div class="ai-quick-questions">
             <n-tag
               v-for="q in quickQuestions"
@@ -150,14 +135,14 @@
           </div>
         </n-card>
 
-        <!-- 预警中心 -->
-        <n-card title="预警中心" class="alert-card">
+        <n-card title="预警中心" class="alert-card card--elevated">
           <template #header-extra>
             <n-button text @click="router.push('/alerts')">
               全部
             </n-button>
           </template>
-          <div v-if="recentAlerts.length" class="alert-list">
+          <Skeleton v-if="loading" type="list" :rows="3" />
+          <div v-else-if="recentAlerts.length" class="alert-list">
             <div
               v-for="alert in recentAlerts.slice(0, 5)"
               :key="alert.id"
@@ -181,8 +166,7 @@
           <n-empty v-else description="暂无预警" />
         </n-card>
 
-        <!-- 收藏基金 -->
-        <n-card title="我的收藏" class="favorites-card">
+        <n-card title="我的收藏" class="favorites-card card--elevated">
           <template #header-extra>
             <n-button text @click="router.push('/favorites')">
               全部
@@ -193,15 +177,15 @@
               <div
                 v-for="fav in topFavorites.slice(0, 5)"
                 :key="fav.fundCode"
-                class="favorite-item"
+                class="favorite-item hover-lift"
                 @click="router.push(`/fund/${fav.fundCode}`)"
               >
                 <div class="fav-info">
                   <div class="fav-name">{{ fav.fundName }}</div>
                   <div class="fav-code">{{ fav.fundCode }}</div>
                 </div>
-                <div class="fav-growth" :class="fav.dayGrowth >= 0 ? 'positive' : 'negative'">
-                  {{ fav.dayGrowth >= 0 ? '+' : '' }}{{ fav.dayGrowth?.toFixed(2) }}%
+                <div class="fav-growth">
+                  <GrowthText :value="fav.dayGrowth" />
                 </div>
               </div>
             </div>
@@ -211,10 +195,8 @@
       </div>
     </div>
 
-    <!-- 底部区域 -->
     <div class="bottom-section">
-      <!-- 推荐基金 -->
-      <n-card title="智能推荐" class="recommend-card">
+      <n-card title="智能推荐" class="recommend-card card--elevated">
         <template #header-extra>
           <n-button text @click="router.push('/recommend')">
             更多
@@ -225,7 +207,7 @@
             <div
               v-for="fund in recommendFunds"
               :key="fund.fundCode"
-              class="fund-card"
+              class="fund-card card-stagger"
               @click="router.push(`/fund/${fund.fundCode}`)"
             >
               <div class="header">
@@ -238,16 +220,15 @@
                 </n-tag>
               </div>
               <div class="nav">{{ fund.nav?.toFixed(4) }}</div>
-              <div class="growth" :class="fund.dayGrowth >= 0 ? 'positive' : 'negative'">
-                {{ fund.dayGrowth >= 0 ? '+' : '' }}{{ fund.dayGrowth?.toFixed(2) }}%
+              <div class="growth">
+                <GrowthText :value="fund.dayGrowth" />
               </div>
             </div>
           </div>
         </n-spin>
       </n-card>
 
-      <!-- 市场热点 -->
-      <n-card title="市场热点" class="news-card">
+      <n-card title="市场热点" class="news-card card--elevated">
         <template #header-extra>
           <n-button text @click="router.push('/news')">
             更多
@@ -258,7 +239,7 @@
             <div
               v-for="news in hotNews"
               :key="news.id"
-              class="news-item"
+              class="news-item hover-lift"
               @click="router.push(`/news/${news.id}`)"
             >
               <div class="news-title">{{ news.title }}</div>
@@ -275,18 +256,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, h } from 'vue'
+import { ref, onMounted, nextTick, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
-  NCard, NButton, NIcon, NBadge, NTag, NInput, NDataTable, NEmpty, NSpin,
+  NCard, NButton, NIcon, NTag, NInput, NDataTable, NEmpty, NSpin,
   useMessage
 } from 'naive-ui'
 import {
-  GridOutline, RefreshOutline, TrendingUpOutline, TrendingDownOutline,
-  NotificationsOutline, ChevronForwardOutline, ChatbubbleOutline,
+  RefreshOutline,
+  NotificationsOutline, ChatbubbleOutline,
   AlertCircleOutline, NewspaperOutline
 } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
+import StatCard from '../components/StatCard.vue'
+import GrowthText from '../components/GrowthText.vue'
+import Skeleton from '../components/Skeleton.vue'
 import * as echarts from 'echarts'
 import { fundApi } from '@/api/fund'
 import type { PortfolioVO, AlertHistoryVO, Fund } from '@/types'
@@ -295,7 +280,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 
-// 状态
+const loading = ref(true)
+const initialLoading = ref(true)
 const refreshing = ref(false)
 const portfolio = ref<PortfolioVO | null>(null)
 const unreadAlertCount = ref(0)
@@ -311,35 +297,32 @@ const aiLoading = ref(false)
 const allocationChartRef = ref<HTMLElement | null>(null)
 let allocationChart: echarts.ECharts | null = null
 
-// 快捷问题
 const quickQuestions = [
   '今日大盘走势如何？',
   '推荐几只稳健基金',
   '如何降低投资风险？'
 ]
 
-// 持仓表格列
 const holdingColumns = [
   { title: '基金名称', key: 'fundName', ellipsis: { tooltip: true } },
   { title: '持有金额', key: 'amount', width: 100, render: (row: any) => `¥${row.amount?.toFixed(2) || '0.00'}` },
   { title: '收益率', key: 'profitRatio', width: 90, render: (row: any) => {
     const val = row.profitRatio
     if (val === null || val === undefined) return '-'
-    const cls = val >= 0 ? 'positive' : 'negative'
+    const cls = val >= 0 ? 'growth-positive' : 'growth-negative'
     return h('span', { class: cls }, `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
   }}
 ]
 
-// 加载数据
 const loadData = async () => {
   if (!authStore.isLoggedIn) return
 
   try {
-    // 并行加载数据
+    loading.value = true
     const [portfolioRes, alertCountRes, alertsRes, favoritesRes, newsRes] = await Promise.all([
       fundApi.getDefaultPortfolio(),
       fundApi.getUnreadAlertCount(),
-      fundApi.getAlertHistory(null, 5),
+      fundApi.getAlertHistory(undefined, 5),
       fundApi.getFavorites(),
       fundApi.getNewsList(1, 5)
     ])
@@ -350,18 +333,18 @@ const loadData = async () => {
     topFavorites.value = favoritesRes.slice(0, 5)
     hotNews.value = newsRes.records || []
 
-    // 加载推荐基金
     loadRecommendFunds()
-
-    // 渲染资产配置图
-    await nextTick()
-    renderAllocationChart()
   } catch (error: any) {
     console.error('加载数据失败', error)
+  } finally {
+    loading.value = false
+    initialLoading.value = false
   }
+  
+  await nextTick()
+  renderAllocationChart()
 }
 
-// 加载推荐基金
 const loadRecommendFunds = async () => {
   recommendLoading.value = true
   try {
@@ -374,7 +357,6 @@ const loadRecommendFunds = async () => {
   }
 }
 
-// 刷新数据
 const refreshData = async () => {
   refreshing.value = true
   await loadData()
@@ -382,7 +364,6 @@ const refreshData = async () => {
   message.success('数据已刷新')
 }
 
-// 渲染资产配置图
 const renderAllocationChart = () => {
   if (!allocationChartRef.value || !portfolio.value?.allocations?.length) return
 
@@ -391,27 +372,45 @@ const renderAllocationChart = () => {
   }
 
   allocationChart = echarts.init(allocationChartRef.value)
+  
+  const style = getComputedStyle(document.documentElement)
+  const textColor = style.getPropertyValue('--text-color').trim() || '#475569'
+  const cardBg = style.getPropertyValue('--card-bg').trim() || '#ffffff'
 
   const option = {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: ¥{c} ({d}%)'
+      formatter: '{b}: ¥{c} ({d}%)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      borderColor: 'transparent',
+      borderRadius: 12,
+      padding: [12, 16],
+      textStyle: {
+        color: '#fff',
+        fontSize: 13
+      }
     },
     legend: {
       orient: 'vertical',
-      right: 10,
+      right: 20,
       top: 'center',
-      textStyle: { color: 'var(--text-color)' }
+      textStyle: { 
+        color: textColor,
+        fontSize: 13
+      },
+      itemWidth: 12,
+      itemHeight: 12,
+      itemGap: 16
     },
     series: [{
       type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['40%', '50%'],
+      radius: ['45%', '75%'],
+      center: ['30%', '50%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 8,
-        borderColor: 'var(--card-bg)',
-        borderWidth: 2
+        borderColor: cardBg,
+        borderWidth: 3
       },
       label: {
         show: false
@@ -421,6 +420,11 @@ const renderAllocationChart = () => {
           show: true,
           fontSize: 14,
           fontWeight: 'bold'
+        },
+        itemStyle: {
+          shadowBlur: 20,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.2)'
         }
       },
       data: portfolio.value.allocations.map((a: any) => ({
@@ -434,23 +438,16 @@ const renderAllocationChart = () => {
   allocationChart.setOption(option)
 }
 
-// AI 提问
 const askAI = async (question?: string) => {
   const q = question || aiQuestion.value
   if (!q.trim()) return
 
   aiLoading.value = true
   try {
-    // 跳转到 AI 助手页面并传递问题
     router.push({ path: '/ai-assistant', query: { q } })
   } finally {
     aiLoading.value = false
   }
-}
-
-// 工具函数
-const formatMoney = (value: number) => {
-  return '¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 const formatTime = (time: string) => {
@@ -468,7 +465,7 @@ const getAlertIconClass = (type: string) => {
   switch (type) {
     case 'GROWTH': return 'danger'
     case 'NEWS': return 'warning'
-    default: return 'success'
+    default: return 'info'
   }
 }
 
@@ -495,13 +492,6 @@ onMounted(() => {
 <style scoped>
 .dashboard-page {
   padding: 24px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
 }
 
 .header-actions {
@@ -531,7 +521,12 @@ onMounted(() => {
 }
 
 .chart-card {
-  min-height: 350px;
+  min-height: 380px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 320px;
 }
 
 .holdings-card {
@@ -547,12 +542,14 @@ onMounted(() => {
 
 .quick-question {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-full);
 }
 
 .quick-question:hover {
   background: var(--primary-color);
   color: white;
+  transform: translateY(-2px);
 }
 
 .alert-list {
@@ -564,35 +561,47 @@ onMounted(() => {
 .alert-item {
   display: flex;
   gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
   background: var(--bg-secondary);
   cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.alert-item:hover {
+  background: var(--bg-tertiary);
+  transform: translateX(4px);
 }
 
 .alert-item.unread {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.08);
   border-left: 3px solid var(--primary-color);
 }
 
 .alert-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: 18px;
 }
 
 .alert-icon.danger {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--up-bg);
   color: var(--danger-color);
 }
 
 .alert-icon.warning {
   background: rgba(245, 158, 11, 0.1);
   color: var(--warning-color);
+}
+
+.alert-icon.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--info-color);
 }
 
 .alert-content {
@@ -604,6 +613,7 @@ onMounted(() => {
   font-weight: 600;
   font-size: 14px;
   margin-bottom: 4px;
+  color: var(--text-primary);
 }
 
 .alert-message {
@@ -630,29 +640,32 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
   background: var(--bg-secondary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-fast);
 }
 
 .favorite-item:hover {
-  background: var(--card-bg-hover);
+  background: var(--bg-tertiary);
 }
 
 .fav-name {
   font-weight: 500;
   font-size: 14px;
+  color: var(--text-primary);
 }
 
 .fav-code {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  margin-top: 2px;
 }
 
 .fav-growth {
   font-weight: 600;
+  font-size: 15px;
 }
 
 .bottom-section {
@@ -686,20 +699,21 @@ onMounted(() => {
 }
 
 .news-item {
-  padding: 12px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
   background: var(--bg-secondary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-fast);
 }
 
 .news-item:hover {
-  background: var(--card-bg-hover);
+  background: var(--bg-tertiary);
 }
 
 .news-title {
   font-weight: 500;
   margin-bottom: 8px;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -709,14 +723,25 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
-.positive {
-  color: var(--up-color);
-}
-
-.negative {
-  color: var(--down-color);
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 16px;
+  }
+  
+  .main-content {
+    gap: 16px;
+  }
+  
+  .left-panel,
+  .right-panel {
+    gap: 16px;
+  }
+  
+  .bottom-section {
+    gap: 16px;
+  }
 }
 </style>

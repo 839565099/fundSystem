@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <div class="login-card glass-card">
+    <div class="login-card card">
       <h1 class="login-title">登录</h1>
       <n-form ref="formRef" :model="form" :rules="rules">
         <n-form-item path="username" label="用户名">
@@ -92,7 +92,7 @@ const handleLogin = async () => {
   font-weight: 700;
   text-align: center;
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: var(--gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

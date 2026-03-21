@@ -1,5 +1,5 @@
 import api from './index'
-import type { Fund, FundDetailVO, FundNavHistoryVO, PageResult, FundSearchDTO, UserFavorite, FundCompareVO, FundManagerVO, MarketDataVO, FundNews, NewsSentimentOverview, Result } from '../types'
+import type { Fund, FundDetailVO, FundNavHistoryVO, PageResult, FundSearchDTO, UserFavorite, FundCompareVO, FundManagerVO, FundHoldingVO, MarketDataVO, FundNews, NewsSentimentOverview, Result } from '../types'
 
 const handleResponse = <T>(response: { data: Result<T> }): T => {
   const res = response.data
@@ -49,6 +49,11 @@ const fundBaseApi = {
 
   getManager: async (fundCode: string) => {
     const response = await api.get<Result<FundManagerVO[]>>(`/fund-info/managers/${fundCode}`)
+    return handleResponse(response)
+  },
+  
+  getHoldings: async (fundCode: string, limit: number = 10) => {
+    const response = await api.get<Result<FundHoldingVO[]>>(`/fund-info/holdings/${fundCode}`, { params: { limit } })
     return handleResponse(response)
   },
 }

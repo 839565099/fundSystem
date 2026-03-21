@@ -10,9 +10,9 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.1.20:3306/fund_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: R00t@qiyeanquan2018
+    url: jdbc:mysql://${DB_HOST:192.168.1.20}:${DB_PORT:3306}/${DB_NAME:fund_system}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:R00t@qiyeanquan2018}
     druid:
       initial-size: 5
       min-idle: 5
@@ -35,13 +35,13 @@ spring:
         enabled: true
         url-pattern: /druid/*
         reset-enable: false
-        login-username: admin
-        login-password: admin123
+        login-username: ${DRUID_USERNAME:admin}
+        login-password: ${DRUID_PASSWORD:changeme}
 
   redis:
-    host: 192.168.1.20
-    port: 6378
-    password: 
+    host: ${REDIS_HOST:192.168.1.20}
+    port: ${REDIS_PORT:6378}
+    password: ${REDIS_PASSWORD:}
     database: 0
     timeout: 10000
     lettuce:
@@ -91,7 +91,7 @@ logging:
     max-history: 30
 
 jwt:
-  secret: fundSystemSecretKey2024FundSystemSecretKey2024FundSystemSecretKey2024
+  secret: ${JWT_SECRET:fundSystemSecretKey2024FundSystemSecretKey2024FundSystemSecretKey2024}
   expiration: 86400000
   header: Authorization
   prefix: Bearer
@@ -107,9 +107,19 @@ fund:
 # AI 助手配置（Claude）
 ai:
   claude:
-    api-key: ${ANTHROPIC_AUTH_TOKEN:sk-qvlpdbwjBk6QDUGEO3jqOfkugJ14Bc6vRQqI1Z00Etr4W04e}
-    base-url: ${ANTHROPIC_BASE_URL:https://cc.580ai.net}
-    default-model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
+    api-key: ${AI_API_KEY:}
+    base-url: ${AI_BASE_URL:https://cc.580ai.net}
+    default-model: ${AI_MODEL:claude-sonnet-4-6}
     api-version: 2023-06-01
     max-tokens: 4096
     temperature: 0.7
+
+# Actuator 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

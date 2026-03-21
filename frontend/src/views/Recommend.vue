@@ -1,11 +1,6 @@
 <template>
   <div class="recommend-page page-container">
-    <div class="page-header">
-      <h1 class="page-title">
-        <n-icon size="28"><SparklesOutline /></n-icon>
-        智能推荐
-      </h1>
-    </div>
+    <PageHeader title="智能推荐" icon="✨" />
 
     <!-- 风险偏好选择 -->
     <n-card class="preference-card">
@@ -29,7 +24,7 @@
       </div>
     </n-card>
 
-    <!-- 掙跌幅排行 -->
+    <!-- 涨跌幅排行 -->
     <n-card class="ranking-card">
       <template #header>
         <div class="section-header">
@@ -66,13 +61,24 @@
         </template>
         <n-spin :show="hotLoading">
           <div class="fund-grid">
-            <fund-recommend-card
+            <div
               v-for="fund in hotFunds"
               :key="fund.fundCode"
-              :fund="fund"
-              source="热门"
+              class="fund-recommend-card"
               @click="goToFund(fund.fundCode)"
-            />
+            >
+              <div class="card-header">
+                <div class="fund-name">{{ fund.fundName }}</div>
+                <div class="fund-code">{{ fund.fundCode }}</div>
+              </div>
+              <div class="card-body">
+                <div class="nav-value">净值: {{ fund.nav?.toFixed(4) }}</div>
+                <div :class="['growth-value', fund.yearGrowth >= 0 ? 'positive' : 'negative']">
+                  {{ fund.yearGrowth >= 0 ? '+' : '' }}{{ fund.yearGrowth?.toFixed(2) }}%
+                </div>
+              </div>
+              <n-tag size="small" type="info" class="source-tag">热门</n-tag>
+            </div>
           </div>
         </n-spin>
       </n-card>
@@ -90,14 +96,25 @@
         </template>
         <n-spin :show="personalLoading">
           <div v-if="personalFunds.length" class="fund-grid">
-            <fund-recommend-card
+            <div
               v-for="fund in personalFunds"
               :key="fund.fundCode"
-              :fund="fund"
-              :source="fund.source"
-              :reason="fund.reason"
+              class="fund-recommend-card"
               @click="goToFund(fund.fundCode)"
-            />
+            >
+              <div class="card-header">
+                <div class="fund-name">{{ fund.fundName }}</div>
+                <div class="fund-code">{{ fund.fundCode }}</div>
+              </div>
+              <div class="card-body">
+                <div class="nav-value">净值: {{ fund.nav?.toFixed(4) }}</div>
+                <div :class="['growth-value', fund.yearGrowth >= 0 ? 'positive' : 'negative']">
+                  {{ fund.yearGrowth >= 0 ? '+' : '' }}{{ fund.yearGrowth?.toFixed(2) }}%
+                </div>
+              </div>
+              <n-tag v-if="fund.source" size="small" type="info" class="source-tag">{{ fund.source }}</n-tag>
+              <div v-if="fund.reason" class="recommend-reason">{{ fund.reason }}</div>
+            </div>
           </div>
           <n-empty v-else description="登录后获取个性化推荐">
             <template #extra>
@@ -121,19 +138,30 @@
           :key="type"
           :checked="selectedType === type"
           checkable
-          @click="selectType = type"
+          @click="selectedType = type"
         >
           {{ type }}
         </n-tag>
       </div>
       <n-spin :show="typeLoading">
         <div class="fund-grid">
-          <fund-recommend-card
+          <div
             v-for="fund in typeFunds"
             :key="fund.fundCode"
-            :fund="fund"
+            class="fund-recommend-card"
             @click="goToFund(fund.fundCode)"
-          />
+          >
+            <div class="card-header">
+              <div class="fund-name">{{ fund.fundName }}</div>
+              <div class="fund-code">{{ fund.fundCode }}</div>
+            </div>
+            <div class="card-body">
+              <div class="nav-value">净值: {{ fund.nav?.toFixed(4) }}</div>
+              <div :class="['growth-value', fund.yearGrowth >= 0 ? 'positive' : 'negative']">
+                {{ fund.yearGrowth >= 0 ? '+' : '' }}{{ fund.yearGrowth?.toFixed(2) }}%
+              </div>
+            </div>
+          </div>
         </div>
       </n-spin>
     </n-card>
@@ -141,21 +169,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, h } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  NCard, NIcon, NDataTable, NSpin, NEmpty, NButton, NTag, useMessage
+  NCard, NIcon, NDataTable, NSpin, NEmpty, NButton, NTag
 } from 'naive-ui'
 import {
-  SparklesOutline, TrendingUpOutline, ChevronForwardOutline, FlameOutline,
+  TrendingUpOutline, ChevronForwardOutline, FlameOutline,
   PersonOutline, ShieldCheckmarkOutline, WarningOutline, FlashOutline
 } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 import { fundApi } from '@/api/fund'
-import type { Fund } from '@/types'
 
 const router = useRouter()
-const message = useMessage()
 const authStore = useAuthStore()
 
 const loading = ref(false)
@@ -200,7 +227,7 @@ const loadRanking = async () => {
   loading.value = true
   try {
     const res = await fundApi.getRanking('dayGrowth', 'desc', 1, 10)
-    growthRanking.value = res.list || []
+    growthRanking.value = res.records || res.list || []
   } finally {
     loading.value = false
   }
@@ -235,7 +262,7 @@ const loadTypeFunds = async (type: string) => {
       typeFunds.value = res || []
     } else {
       const res = await fundApi.search({ fundType: type, pageNum: 1, pageSize: 8 })
-      typeFunds.value = res.list || []
+      typeFunds.value = res.records || res.list || []
     }
   } finally {
     typeLoading.value = false
@@ -259,8 +286,7 @@ const showMoreGrowth = () => {
 }
 
 // 监听偏好变化
-watch(selectedPreference, async (val) => {
-  // 更新推荐
+watch(selectedPreference, () => {
   loadPersonalFunds()
 })
 
@@ -274,44 +300,6 @@ onMounted(() => {
   loadHotFunds()
   loadPersonalFunds()
   loadTypeFunds('全部')
-})
-
-// 推荐卡片组件
-const FundRecommendCard = defineComponent({
-  name: 'FundRecommendCard',
-  props: {
-    fund: { type: Object, required: true },
-    source: { type: String, default: '' },
-    reason: { type: String, default: '' }
-  },
-  emits: ['click'],
-  setup(props) {
-    return () => h('div', {
-      class: 'fund-recommend-card',
-      onClick: () => emit('click'),
-    }, [
-      h('div', { class: 'card-header' }, [
-        h('div', { class: 'fund-name' }, props.fund.fundName),
-        h('div', { class: 'fund-code' }, props.fund.fundCode)
-      ]),
-      h('div', { class: 'card-body' }, [
-        h('div', { class: 'nav-value' }, `净值: ${props.fund.nav?.toFixed(4)}`),
-        h('div', {
-          class: ['growth-value', props.fund.yearGrowth >= 0 ? 'positive' : 'negative']
-        }, [
-          h('span', null, props.fund.yearGrowth >= 0 ? '+' : ''),
-          props.fund.yearGrowth?.toFixed(2),
-          '%'
-        ])
-      ]),
-      props.source && h('n-tag', {
-        size: 'small',
-        type: 'info',
-        class: 'source-tag'
-      }, props.source),
-      props.reason && h('div', { class: 'recommend-reason' }, props.reason)
-    ])
-  }
 })
 </script>
 
@@ -334,7 +322,7 @@ const FundRecommendCard = defineComponent({
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 2px solid var(--border-color);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -343,12 +331,12 @@ const FundRecommendCard = defineComponent({
 
 .preference-item:hover {
   border-color: var(--primary-color);
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(79, 70, 229, 0.05);
 }
 
 .preference-item.active {
   border-color: var(--primary-color);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(79, 70, 229, 0.1);
 }
 
 .preference-info {
@@ -431,16 +419,16 @@ const FundRecommendCard = defineComponent({
 
 .fund-recommend-card {
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .fund-recommend-card:hover {
   border-color: var(--primary-color);
   background: var(--card-bg-hover);
-  transform: translateY(-2px);
 }
 
 .fund-recommend-card .card-header {

@@ -4,6 +4,7 @@ import com.fund.common.Result;
 import com.fund.entity.FundHoldings;
 import com.fund.service.FundHoldingsService;
 import com.fund.service.FundManagerService;
+import com.fund.vo.FundHoldingVO;
 import com.fund.vo.FundManagerVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -24,10 +25,10 @@ public class FundInfoController {
     }
     
     @GetMapping("/holdings/{fundCode}")
-    public Result<List<FundHoldings>> getHoldings(
+    public Result<List<FundHoldingVO>> getHoldings(
             @PathVariable String fundCode,
             @RequestParam(defaultValue = "10") int limit) {
-        List<FundHoldings> holdings = fundHoldingsService.getLatestHoldings(fundCode, limit);
+        List<FundHoldingVO> holdings = fundHoldingsService.getLatestHoldingsWithRealtime(fundCode, limit);
         return Result.success(holdings);
     }
 }

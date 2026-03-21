@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="search-header glass-card">
+    <div class="search-header card">
       <n-input
         v-model:value="keyword"
         placeholder="输入基金代码或名称搜索"
@@ -149,8 +149,8 @@ const columns: DataTableColumns<Fund> = [
     title: '基金代码',
     key: 'fundCode',
     width: 100,
-    render: (row) => h('a', { 
-      style: 'color: #3b82f6; cursor: pointer;',
+    render: (row) => h('a', {
+      style: 'color: var(--primary-color); cursor: pointer;',
       onClick: () => router.push(`/fund/${row.fundCode}`)
     }, row.fundCode),
   },
@@ -281,9 +281,10 @@ const handleRowClick = (keys: Array<string | number>) => {
 
 .results-section {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 .results-header {

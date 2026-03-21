@@ -294,7 +294,7 @@ onMounted(loadNews)
 }
 
 .meta-item.source {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .impact-section {
@@ -333,7 +333,7 @@ onMounted(loadNews)
 
 .content-text :deep(img) {
   max-width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin: 16px 0;
 }
 
@@ -373,14 +373,13 @@ onMounted(loadNews)
 .related-item {
   padding: 12px 16px;
   background: var(--bg-color);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .related-item:hover {
   background: var(--bg-color-secondary);
-  transform: translateX(4px);
 }
 
 .related-content {

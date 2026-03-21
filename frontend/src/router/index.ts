@@ -127,6 +127,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/Profile.vue'),
     meta: { title: '个人中心', requiresAuth: true }
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue'),
+    meta: { title: '页面未找到' }
+  },
 ]
 
 const router = createRouter({

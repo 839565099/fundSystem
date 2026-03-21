@@ -31,8 +31,13 @@ public class FundManager implements Serializable {
     private String education;
     
     private String resume;
-    
+
+    private String investmentIdea;
+
     private String photo;
+
+    @TableField(exist = false)
+    private Integer fundCount;
     
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

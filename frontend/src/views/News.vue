@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <!-- 搜索栏 -->
-    <div class="search-header glass-card">
+    <div class="search-header card">
       <h2 class="section-title">
         <n-icon size="24"><NewspaperOutline /></n-icon>
         资讯中心
@@ -413,7 +413,6 @@ onUnmounted(() => {
 }
 
 .news-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
@@ -498,7 +497,7 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 10px;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -510,7 +509,7 @@ onUnmounted(() => {
 .hot-rank {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -522,18 +521,18 @@ onUnmounted(() => {
 }
 
 .hot-rank.gold {
-  background: linear-gradient(135deg, #ffd700 0%, #ffec8b 100%);
-  color: #8b6914;
+  background: #fbbf24;
+  color: #78350f;
 }
 
 .hot-rank.silver {
-  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-  color: #5a5a5a;
+  background: #9ca3af;
+  color: #374151;
 }
 
 .hot-rank.bronze {
-  background: linear-gradient(135deg, #cd7f32 0%, #daa06d 100%);
-  color: #5c3d1e;
+  background: #d97706;
+  color: #451a03;
 }
 
 .hot-title {
@@ -567,29 +566,29 @@ onUnmounted(() => {
 .stat-bar {
   flex: 1;
   height: 8px;
-  background: #f3f4f6;
-  border-radius: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .stat-item.bullish .bar-fill {
-  background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+  background: var(--down-color);
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: width 0.5s ease;
 }
 
 .stat-item.neutral .bar-fill {
-  background: linear-gradient(90deg, #6b7280 0%, #9ca3af 100%);
+  background: var(--text-tertiary);
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: width 0.5s ease;
 }
 
 .stat-item.bearish .bar-fill {
-  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  background: var(--up-color);
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: width 0.5s ease;
 }
 
@@ -600,9 +599,9 @@ onUnmounted(() => {
   text-align: right;
 }
 
-.stat-item.bullish .stat-value { color: #22c55e; }
-.stat-item.neutral .stat-value { color: #6b7280; }
-.stat-item.bearish .stat-value { color: #ef4444; }
+.stat-item.bullish .stat-value { color: var(--down-color); }
+.stat-item.neutral .stat-value { color: var(--text-secondary); }
+.stat-item.bearish .stat-value { color: var(--up-color); }
 
 /* 响应式 */
 @media (max-width: 900px) {

@@ -1,15 +1,13 @@
 <template>
   <div class="page-container">
-    <div class="favorites-header">
-      <h2 class="section-title">
-        <n-icon size="24"><StarOutline /></n-icon>
-        我的收藏
-      </h2>
-      <n-button v-if="favorites.length > 0" @click="handleExport">
-        <template #icon><n-icon><DownloadOutline /></n-icon></template>
-        导出
-      </n-button>
-    </div>
+    <PageHeader title="我的收藏" icon="⭐">
+      <template #actions>
+        <n-button v-if="favorites.length > 0" @click="handleExport">
+          <template #icon><n-icon><DownloadOutline /></n-icon></template>
+          导出
+        </n-button>
+      </template>
+    </PageHeader>
 
     <n-spin :show="loading">
       <div v-if="favorites.length > 0">
@@ -19,8 +17,8 @@
             <span class="stat-label">收藏基金</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value" :class="avgGrowth >= 0 ? 'growth-positive' : 'growth-negative'">
-              {{ avgGrowth >= 0 ? '+' : '' }}{{ avgGrowth.toFixed(2) }}%
+            <span class="stat-value">
+              <GrowthText :value="avgGrowth" size="lg" />
             </span>
             <span class="stat-label">平均日涨跌</span>
           </div>
@@ -96,21 +94,15 @@
             <div class="fav-growth">
               <div class="growth-item">
                 <span class="label">今日</span>
-                <span :class="fav.dayGrowth != null && fav.dayGrowth >= 0 ? 'growth-positive' : 'growth-negative'">
-                  {{ fav.dayGrowth != null ? (fav.dayGrowth >= 0 ? '+' : '') + fav.dayGrowth.toFixed(2) : '--' }}%
-                </span>
+                <GrowthText :value="fav.dayGrowth" size="sm" />
               </div>
               <div class="growth-item">
                 <span class="label">7日</span>
-                <span :class="fav.weekGrowth != null && fav.weekGrowth >= 0 ? 'growth-positive' : 'growth-negative'">
-                  {{ fav.weekGrowth != null ? (fav.weekGrowth >= 0 ? '+' : '') + fav.weekGrowth.toFixed(2) : '--' }}%
-                </span>
+                <GrowthText :value="fav.weekGrowth" size="sm" />
               </div>
               <div class="growth-item">
                 <span class="label">30日</span>
-                <span :class="fav.monthGrowth != null && fav.monthGrowth >= 0 ? 'growth-positive' : 'growth-negative'">
-                  {{ fav.monthGrowth != null ? (fav.monthGrowth >= 0 ? '+' : '') + fav.monthGrowth.toFixed(2) : '--' }}%
-                </span>
+                <GrowthText :value="fav.monthGrowth" size="sm" />
               </div>
             </div>
             <n-button 
@@ -140,11 +132,17 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon, NButton, NSpin, NEmpty, NButtonGroup, NPopover, NCheckboxGroup, NCheckbox, NSpace, createDiscreteApi } from 'naive-ui'
 import { StarOutline, DownloadOutline, TrendingUpOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
+import GrowthText from '../components/GrowthText.vue'
 import { favoriteApi, exportApi, fundApi } from '../api/fund'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import type { UserFavorite, FundNavHistoryVO } from '../types'
 import * as echarts from 'echarts'
+
+const getCssColor = (varName: string, fallback: string) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback
+}
 
 const { message } = createDiscreteApi(['message'])
 const themeStore = useThemeStore()
@@ -285,9 +283,9 @@ const loadTrendChart = async () => {
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#e5e7eb',
+      borderColor: 'var(--border-color)',
       borderWidth: 1,
-      textStyle: { color: '#1f2937' },
+      textStyle: { color: 'var(--text-color)' },
       confine: true,
       formatter: (params: any[]) => {
         if (!params || params.length === 0) return ''
@@ -295,7 +293,7 @@ const loadTrendChart = async () => {
         let html = `<div style="padding: 8px;"><div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`
         params.forEach((p: any) => {
           if (p.value !== null && p.value !== undefined) {
-            const color = p.value >= 0 ? '#ef4444' : '#22c55e'
+            const color = p.value >= 0 ? 'var(--up-color)' : 'var(--down-color)'
             html += `<div style="display: flex; justify-content: space-between; gap: 16px;">
               <span>${p.seriesName}</span>
               <span style="color: ${color}; font-weight: 600;">${p.value >= 0 ? '+' : ''}${p.value.toFixed(2)}%</span>
@@ -326,7 +324,7 @@ const loadTrendChart = async () => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: '#6b7280',
+        color: getCssColor('--text-secondary', '#64748b'),
         fontSize: 11,
         formatter: (value: string) => value.slice(5),
       },
@@ -335,15 +333,15 @@ const loadTrendChart = async () => {
       type: 'value',
       name: '涨跌幅(%)',
       nameTextStyle: {
-        color: '#6b7280',
+        color: getCssColor('--text-secondary', '#64748b'),
         fontSize: 12,
         padding: [0, 0, 0, 40],
       },
-      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
+      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : getCssColor('--border-light', '#f1f5f9'), type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: '#6b7280',
+        color: getCssColor('--text-secondary', '#64748b'),
         fontSize: 11,
         formatter: (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
       },
@@ -406,13 +404,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.favorites-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
 .stats-card {
   display: flex;
   justify-content: space-around;

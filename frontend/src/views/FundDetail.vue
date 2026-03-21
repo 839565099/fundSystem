@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="detail-header glass-card">
+    <div class="detail-header card">
       <n-spin :show="loading">
         <div v-if="fund" class="fund-info">
           <div class="fund-title">
@@ -98,14 +98,85 @@
           <n-spin :show="managerLoading">
             <div v-if="managers.length > 0" class="manager-list">
               <div v-for="m in managers" :key="m.managerId" class="manager-card">
-                <n-avatar round size="large">{{ m.managerName?.charAt(0) }}</n-avatar>
+                <n-avatar v-if="m.photo" round size="large" :src="m.photo" :fallback-src="undefined">
+                  {{ m.managerName?.charAt(0) }}
+                </n-avatar>
+                <n-avatar v-else round size="large">{{ m.managerName?.charAt(0) }}</n-avatar>
                 <div class="manager-info">
                   <div class="manager-name">{{ m.managerName }}</div>
-                  <div class="manager-detail">任职: {{ m.startDate }} | 任职回报: {{ m.bestReturn?.toFixed(2) }}%</div>
+                  <div v-if="m.company" class="manager-company">{{ m.company }}</div>
+                  <div class="manager-meta">
+                    <span v-if="m.startDate">任职: {{ m.startDate }}</span>
+                    <span v-if="m.workYears != null"> | 从业{{ m.workYears }}年</span>
+                    <span v-if="m.totalAsset != null"> | 管理规模{{ m.totalAsset }}亿</span>
+                    <span v-if="m.fundCount != null"> | 管理{{ m.fundCount }}只基金</span>
+                  </div>
+                  <div v-if="m.bestReturn != null" class="manager-detail">
+                    任职回报: <span :class="m.bestReturn >= 0 ? 'growth-positive' : 'growth-negative'">{{ m.bestReturn >= 0 ? '+' : '' }}{{ m.bestReturn.toFixed(2) }}%</span>
+                  </div>
+                  <div v-if="m.investmentIdea" class="manager-idea">
+                    <div
+                      class="idea-content"
+                      :class="{ 'idea-collapsed': !expandedIdeas[m.managerId] }"
+                    >
+                      <span class="idea-label">投资理念：</span>{{ m.investmentIdea }}
+                    </div>
+                    <span
+                      v-if="m.investmentIdea.length > 60"
+                      class="idea-toggle"
+                      @click="expandedIdeas[m.managerId] = !expandedIdeas[m.managerId]"
+                    >
+                      {{ expandedIdeas[m.managerId] ? '收起' : '展开' }}
+                    </span>
+                  </div>
+                  <div v-if="m.resume" class="manager-resume">
+                    <div
+                      class="resume-content"
+                      :class="{ 'resume-collapsed': !expandedResumes[m.managerId] }"
+                    >
+                      <span class="resume-label">简历：</span>{{ m.resume }}
+                    </div>
+                    <span
+                      class="resume-toggle"
+                      @click="expandedResumes[m.managerId] = !expandedResumes[m.managerId]"
+                    >
+                      {{ expandedResumes[m.managerId] ? '收起' : '展开' }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
             <n-empty v-else description="暂无基金经理信息" />
+          </n-spin>
+        </n-tab-pane>
+        
+        <n-tab-pane name="holdings" tab="重仓股票">
+          <n-spin :show="holdingsLoading">
+            <div v-if="holdings.length > 0" class="holdings-section">
+              <div class="holdings-header">
+                <span class="report-date">报告日期: {{ holdings[0]?.reportDate }}</span>
+              </div>
+              <div class="holdings-list">
+                <div v-for="(h, index) in holdings" :key="h.id" class="holding-item">
+                  <div class="holding-rank">{{ index + 1 }}</div>
+                  <div class="holding-info">
+                    <div class="stock-name">{{ h.stockName }}</div>
+                    <div class="stock-code">{{ h.stockCode }}</div>
+                  </div>
+                  <div class="holding-ratio">
+                    <div class="ratio-label">持仓比例</div>
+                    <div class="ratio-value">{{ h.holdingRatio?.toFixed(2) }}%</div>
+                  </div>
+                  <div class="stock-growth">
+                    <div class="growth-label">今日涨跌</div>
+                    <div class="growth-value" :class="h.dayGrowth! >= 0 ? 'growth-positive' : 'growth-negative'">
+                      {{ h.dayGrowth !== undefined && h.dayGrowth !== null ? (h.dayGrowth >= 0 ? '+' : '') + h.dayGrowth.toFixed(2) + '%' : '--' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <n-empty v-else description="暂无重仓股票信息" />
           </n-spin>
         </n-tab-pane>
         
@@ -135,14 +206,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NButton, NIcon, NTag, NTabs, NTabPane, NSpin, NEmpty, NAvatar, createDiscreteApi } from 'naive-ui'
 import { StarOutline, TrendingUpOutline } from '@vicons/ionicons5'
 import { fundApi, favoriteApi } from '../api/fund'
 import { useAuthStore } from '../stores/auth'
 import FundTrendChart from '../components/FundTrendChart.vue'
-import type { FundDetailVO, FundNavHistoryVO, FundManagerVO } from '../types'
+import type { FundDetailVO, FundNavHistoryVO, FundManagerVO, FundHoldingVO } from '../types'
 
 const { message } = createDiscreteApi(['message'])
 
@@ -153,10 +224,14 @@ const authStore = useAuthStore()
 const fund = ref<FundDetailVO>()
 const navHistory = ref<FundNavHistoryVO[]>([])
 const managers = ref<FundManagerVO[]>([])
+const holdings = ref<FundHoldingVO[]>([])
 const loading = ref(true)
 const managerLoading = ref(false)
+const holdingsLoading = ref(false)
 const favoriteLoading = ref(false)
 const isFavorite = ref(false)
+const expandedIdeas = reactive<Record<string, boolean>>({})
+const expandedResumes = reactive<Record<string, boolean>>({})
 
 const fundCode = computed(() => route.params.fundCode as string)
 
@@ -190,6 +265,17 @@ const loadManagers = async () => {
     managers.value = []
   } finally {
     managerLoading.value = false
+  }
+}
+
+const loadHoldings = async () => {
+  holdingsLoading.value = true
+  try {
+    holdings.value = await fundApi.getHoldings(fundCode.value, 10) || []
+  } catch {
+    holdings.value = []
+  } finally {
+    holdingsLoading.value = false
   }
 }
 
@@ -230,6 +316,7 @@ const toggleFavorite = async () => {
 onMounted(() => {
   loadFundDetail()
   loadManagers()
+  loadHoldings()
 })
 </script>
 
@@ -273,8 +360,8 @@ onMounted(() => {
 .stat-card {
   text-align: center;
   padding: 16px;
-  background: var(--bg-color);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .stat-label {
@@ -289,7 +376,7 @@ onMounted(() => {
 }
 
 .stat-value.primary {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .stat-date {
@@ -309,9 +396,10 @@ onMounted(() => {
 
 .info-section {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 .performance-grid, .fee-grid {
@@ -332,8 +420,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 16px;
-  background: var(--bg-color);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .perf-item .label, .fee-item .label {
@@ -355,15 +443,27 @@ onMounted(() => {
 
 .manager-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-color);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .manager-name {
   font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.manager-company {
+  font-size: 13px;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.manager-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
@@ -371,4 +471,147 @@ onMounted(() => {
   font-size: 13px;
   color: var(--text-secondary);
 }
-</style>
+
+.manager-idea,
+.manager-resume {
+  margin-top: 8px;
+}
+
+.idea-content,
+.resume-content {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.idea-collapsed,
+.resume-collapsed {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.idea-label,
+.resume-label {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.idea-toggle,
+.resume-toggle {
+  font-size: 12px;
+  color: var(--primary-color);
+  cursor: pointer;
+  user-select: none;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.idea-toggle:hover,
+.resume-toggle:hover {
+  opacity: 0.8;
+}
+
+.holdings-section {
+  padding: 16px 0;
+}
+
+.holdings-header {
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.report-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.holdings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.holding-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.holding-rank {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.holding-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stock-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-code {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.holding-ratio {
+  text-align: center;
+  min-width: 80px;
+}
+
+.ratio-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.ratio-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.stock-growth {
+  text-align: center;
+  min-width: 80px;
+}
+
+.growth-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.growth-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.growth-positive {
+  color: #f5222d;
+}
+
+.growth-negative {
+  color: #18a058;
+}</style>

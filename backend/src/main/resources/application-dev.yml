@@ -1,0 +1,21 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://192.168.1.20:3306/fund_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:changeme}
+    druid:
+      stat-view-servlet:
+        enabled: true
+
+  redis:
+    host: 192.168.1.20
+    port: 6378
+
+logging:
+  level:
+    com.fund: debug
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

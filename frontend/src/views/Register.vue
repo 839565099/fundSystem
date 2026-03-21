@@ -1,6 +1,6 @@
 <template>
   <div class="register-page">
-    <div class="register-card glass-card">
+    <div class="register-card card">
       <h1 class="register-title">注册</h1>
       <n-form ref="formRef" :model="form" :rules="rules">
         <n-form-item path="username" label="用户名">
@@ -81,8 +81,16 @@ const handleRegister = async () => {
       nickname: form.nickname || undefined,
       email: form.email || undefined,
     })
-    message.success('注册成功')
-    router.push('/')
+    message.success('注册成功，正在自动登录...')
+    // 注册成功后自动登录
+    try {
+      await authStore.login({ username: form.username, password: form.password })
+      const redirect = (router.currentRoute.value.query.redirect as string) || '/'
+      router.push(redirect)
+    } catch {
+      // 自动登录失败，跳转到登录页
+      router.push('/login')
+    }
   } catch (e: any) {
     message.error(e.message || '注册失败')
   } finally {
@@ -111,7 +119,7 @@ const handleRegister = async () => {
   font-weight: 700;
   text-align: center;
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: var(--gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

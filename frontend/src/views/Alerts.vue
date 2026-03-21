@@ -1,17 +1,15 @@
 <template>
   <div class="alerts-page page-container">
-    <div class="page-header">
-      <h1 class="page-title">
-        <n-icon size="28"><NotificationsOutline /></n-icon>
-        预警管理
-      </h1>
-      <n-button type="primary" @click="showCreateModal = true">
-        <template #icon>
-          <n-icon><AddOutline /></n-icon>
-        </template>
-        创建预警
-      </n-button>
-    </div>
+    <PageHeader title="预警管理" icon="🔔">
+      <template #actions>
+        <n-button type="primary" @click="openCreateModal">
+          <template #icon>
+            <n-icon><AddOutline /></n-icon>
+          </template>
+          创建预警
+        </n-button>
+      </template>
+    </PageHeader>
 
     <n-tabs v-model:value="activeTab">
       <n-tab-pane name="history" tab="预警通知">
@@ -146,7 +144,7 @@
           </div>
           <n-empty v-else description="暂无预警规则">
             <template #extra>
-              <n-button type="primary" @click="showCreateModal = true">
+              <n-button type="primary" @click="openCreateModal">
                 创建第一个预警
               </n-button>
             </template>
@@ -156,7 +154,7 @@
     </n-tabs>
 
     <!-- 创建预警弹窗 -->
-    <n-modal v-model:show="showCreateModal" preset="dialog" title="创建预警规则">
+    <n-modal v-model:show="showCreateModal" preset="dialog" :title="editingId ? '编辑预警规则' : '创建预警规则'">
       <n-form ref="formRef" :model="ruleForm" label-placement="left" label-width="80">
         <n-form-item label="预警名称" path="alertName">
           <n-input v-model:value="ruleForm.alertName" placeholder="如：涨幅超过5%" />
@@ -199,6 +197,7 @@ import {
   useMessage
 } from 'naive-ui'
 import { NotificationsOutline, AddOutline, TrendingUpOutline, NewspaperOutline, SpeedometerOutline, BarChartOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { fundApi } from '@/api/fund'
 import type { AlertHistoryVO, AlertRuleVO } from '@/types'
 
@@ -210,6 +209,7 @@ const alerts = ref<(AlertHistoryVO & { _selected?: boolean })[]>([])
 const rules = ref<AlertRuleVO[]>([])
 const showCreateModal = ref(false)
 const submitting = ref(false)
+const editingId = ref<number | null>(null)
 const ruleForm = ref({
   alertName: '',
   alertType: 'GROWTH',
@@ -317,7 +317,14 @@ const toggleRule = async (rule: AlertRuleVO) => {
   message.success('已更新')
 }
 
+const openCreateModal = () => {
+  editingId.value = null
+  ruleForm.value = { alertName: '', alertType: 'GROWTH', fundCode: '', alertCondition: 'GT', threshold: 5 }
+  showCreateModal.value = true
+}
+
 const editRule = (rule: AlertRuleVO) => {
+  editingId.value = rule.id
   ruleForm.value = { ...rule, threshold: Number(rule.threshold) } as any
   showCreateModal.value = true
 }
@@ -335,14 +342,15 @@ const submitRule = async () => {
       ...ruleForm.value,
       fundCode: ruleForm.value.fundCode || ''
     }
-    if (ruleForm.value.alertName) {
+    if (editingId.value) {
+      await fundApi.updateAlertRule(editingId.value, data)
+      message.success('更新成功')
+    } else {
       await fundApi.createAlertRule(data)
       message.success('创建成功')
-    } else {
-      await fundApi.updateAlertRule((ruleForm.value as any).id, data)
-      message.success('更新成功')
     }
     showCreateModal.value = false
+    editingId.value = null
     ruleForm.value = { alertName: '', alertType: 'GROWTH', fundCode: '', alertCondition: 'GT', threshold: 5 }
     loadRules()
   } catch (e: any) {
@@ -427,7 +435,7 @@ watch(showCreateModal, (val) => {
   gap: 16px;
   padding: 16px;
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -439,7 +447,7 @@ watch(showCreateModal, (val) => {
 
 .alert-item.unread {
   border-left: 3px solid var(--primary-color);
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(79, 70, 229, 0.05);
 }
 
 .alert-checkbox {
@@ -457,17 +465,17 @@ watch(showCreateModal, (val) => {
 }
 
 .alert-icon.danger {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(220, 38, 38, 0.1);
   color: var(--danger-color);
 }
 
 .alert-icon.warning {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(217, 119, 6, 0.1);
   color: var(--warning-color);
 }
 
 .alert-icon.info {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(79, 70, 229, 0.1);
   color: var(--primary-color);
 }
 
@@ -512,7 +520,7 @@ watch(showCreateModal, (val) => {
 .rule-card {
   display: flex;
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   overflow: hidden;
   transition: all 0.3s ease;
@@ -520,7 +528,6 @@ watch(showCreateModal, (val) => {
 
 .rule-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
 }
 
 .rule-card.rule-disabled {
@@ -528,12 +535,12 @@ watch(showCreateModal, (val) => {
 }
 
 .rule-card.rule-disabled .rule-status-bar {
-  background: var(--text-tertiary, #9ca3af);
+  background: var(--text-tertiary);
 }
 
 .rule-status-bar {
   width: 4px;
-  background: linear-gradient(180deg, #10b981, #059669);
+  background: var(--success-color);
   flex-shrink: 0;
 }
 
@@ -560,7 +567,7 @@ watch(showCreateModal, (val) => {
 .rule-icon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -568,18 +575,18 @@ watch(showCreateModal, (val) => {
 }
 
 .rule-icon.growth {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--danger-color);
 }
 
 .rule-icon.news {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+  background: rgba(217, 119, 6, 0.1);
+  color: var(--warning-color);
 }
 
 .rule-icon.market {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--primary-color);
 }
 
 .rule-name {
@@ -618,7 +625,7 @@ watch(showCreateModal, (val) => {
 
 .condition-value .threshold {
   font-weight: 600;
-  color: var(--danger-color, #ef4444);
+  color: var(--danger-color);
   margin-left: 2px;
 }
 

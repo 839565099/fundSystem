@@ -46,9 +46,7 @@
             </div>
             <div class="stat">
               <span class="label">涨跌幅</span>
-              <span class="value" :class="fund.dayGrowth! >= 0 ? 'growth-positive' : 'growth-negative'">
-                {{ fund.dayGrowth! >= 0 ? '+' : '' }}{{ fund.dayGrowth?.toFixed(2) }}%
-              </span>
+              <GrowthText :value="fund.dayGrowth" />
             </div>
           </div>
         </div>
@@ -70,6 +68,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NRadioGroup, NRadioButton, NSpin, NTag, NPagination, createDiscreteApi } from 'naive-ui'
 import { fundApi } from '../api/fund'
+import GrowthText from '../components/GrowthText.vue'
 import type { Fund } from '../types'
 
 const { message } = createDiscreteApi(['message'])
@@ -151,23 +150,23 @@ onMounted(loadRanking)
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
-  background: var(--bg-color);
+  background: var(--bg-secondary);
   color: var(--text-secondary);
 }
 
 .rank-badge.gold {
-  background: linear-gradient(135deg, #ffd700 0%, #ffec8b 100%);
-  color: #8b6914;
+  background: #fbbf24;
+  color: #78350f;
 }
 
 .rank-badge.silver {
-  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-  color: #5a5a5a;
+  background: #9ca3af;
+  color: #374151;
 }
 
 .rank-badge.bronze {
-  background: linear-gradient(135deg, #cd7f32 0%, #daa06d 100%);
-  color: #5c3d1e;
+  background: #d97706;
+  color: #451a03;
 }
 
 .fund-info {

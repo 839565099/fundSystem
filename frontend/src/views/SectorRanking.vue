@@ -1,15 +1,13 @@
 <template>
   <div class="page-container">
-    <div class="page-header">
-      <h2 class="section-title">
-        <n-icon size="24"><GridOutline /></n-icon>
-        板块涨跌排行
-      </h2>
-      <n-button @click="loadSectors" :loading="loading">
-        <template #icon><n-icon><RefreshOutline /></n-icon></template>
-        刷新
-      </n-button>
-    </div>
+    <PageHeader title="板块涨跌排行" icon="📊">
+      <template #actions>
+        <n-button @click="loadSectors" :loading="loading">
+          <template #icon><n-icon><RefreshOutline /></n-icon></template>
+          刷新
+        </n-button>
+      </template>
+    </PageHeader>
 
     <!-- 筛选条件 -->
     <div class="filter-card card">
@@ -62,7 +60,7 @@
     <div class="overview-section" v-if="sectors.length > 0">
       <div class="overview-card up">
         <div class="overview-header">
-          <n-icon size="18" color="#ef4444"><TrendingUpOutline /></n-icon>
+          <n-icon size="18" color="var(--up-color)"><TrendingUpOutline /></n-icon>
           <span>涨幅榜 TOP 5</span>
         </div>
         <div class="overview-list">
@@ -81,7 +79,7 @@
 
       <div class="overview-card down">
         <div class="overview-header">
-          <n-icon size="18" color="#22c55e"><TrendingDownOutline /></n-icon>
+          <n-icon size="18" color="var(--down-color)"><TrendingDownOutline /></n-icon>
           <span>跌幅榜 TOP 5</span>
         </div>
         <div class="overview-list">
@@ -117,7 +115,8 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon, NButton, NDataTable, NButtonGroup, NSelect, NInput, NTag, createDiscreteApi } from 'naive-ui'
-import { GridOutline, RefreshOutline, SearchOutline, TrendingUpOutline, TrendingDownOutline } from '@vicons/ionicons5'
+import { RefreshOutline, SearchOutline, TrendingUpOutline, TrendingDownOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { sectorApi } from '../api/sector'
 import type { SectorVO, SectorType } from '../types/sector'
 
@@ -280,13 +279,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
 .filter-card {
   padding: 16px;
   margin-bottom: 20px;
@@ -326,7 +318,7 @@ onMounted(() => {
 
 .overview-card {
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px;
   box-shadow: var(--shadow);
 }
@@ -350,7 +342,7 @@ onMounted(() => {
   align-items: center;
   padding: 8px 12px;
   background: var(--bg-color);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -371,12 +363,12 @@ onMounted(() => {
 }
 
 .overview-card.up .overview-item .growth {
-  color: #ef4444;
+  color: var(--up-color);
   font-weight: 600;
 }
 
 .overview-card.down .overview-item .growth {
-  color: #22c55e;
+  color: var(--down-color);
   font-weight: 600;
 }
 
@@ -395,10 +387,10 @@ onMounted(() => {
 }
 
 .growth-positive {
-  color: #ef4444;
+  color: var(--up-color);
 }
 
 .growth-negative {
-  color: #22c55e;
+  color: var(--down-color);
 }
 </style>

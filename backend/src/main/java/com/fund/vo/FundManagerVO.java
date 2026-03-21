@@ -17,4 +17,6 @@ public class FundManagerVO {
     private String education;
     private String resume;
     private String photo;
+    private String investmentIdea;
+    private Integer fundCount;
 }

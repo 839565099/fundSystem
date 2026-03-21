@@ -170,6 +170,22 @@ export interface FundManagerVO {
   education?: string
   resume?: string
   photo?: string
+  investmentIdea?: string
+  fundCount?: number
+}
+
+export interface FundHoldingVO {
+  id: number
+  fundCode: string
+  reportDate: string
+  stockCode: string
+  stockName: string
+  holdingRatio: number
+  holdingShares?: number
+  holdingValue?: number
+  holdingType?: string
+  dayGrowth?: number
+  currentPrice?: number
 }
 
 export interface FundCompareVO {

@@ -138,7 +138,7 @@ public class RecommendServiceImpl implements RecommendService {
         LambdaQueryWrapper<FundSimilarity> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.eq(FundSimilarity::getFundCodeA, fundCode).or().eq(FundSimilarity::getFundCodeB, fundCode))
                 .orderByDesc(FundSimilarity::getSimilarityScore)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + Math.min(limit, 50));
 
         List<FundSimilarity> similarities = similarityMapper.selectList(wrapper);
 
@@ -193,7 +193,7 @@ public class RecommendServiceImpl implements RecommendService {
                 .ge(Fund::getFundScale, new BigDecimal("10"))
                 .le(Fund::getFundScale, new BigDecimal("100"))
                 .orderByDesc(Fund::getYearGrowth)
-                .last("LIMIT " + limit * 2);
+                .last("LIMIT " + Math.min(limit * 2, 100));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
 
@@ -276,7 +276,7 @@ public class RecommendServiceImpl implements RecommendService {
         }
 
         wrapper.orderByDesc(Fund::getYearGrowth)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + Math.min(limit, 50));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
 
@@ -425,7 +425,7 @@ public class RecommendServiceImpl implements RecommendService {
         }
 
         wrapper.orderByDesc(Fund::getYearGrowth)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + Math.min(limit, 50));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
         return funds.stream().map(this::convertToVO).collect(Collectors.toList());
@@ -493,7 +493,7 @@ public class RecommendServiceImpl implements RecommendService {
                 .eq(Fund::getRiskLevel, riskLevel)
                 .notIn(Fund::getFundCode, excludeCodes)
                 .orderByDesc(Fund::getYearGrowth)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + Math.min(limit, 50));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
         return funds.stream()

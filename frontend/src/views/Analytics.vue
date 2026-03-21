@@ -1,11 +1,6 @@
 <template>
   <div class="analytics-page page-container">
-    <div class="page-header">
-      <h1 class="page-title">
-        <n-icon size="28"><AnalyticsOutline /></n-icon>
-        高级分析
-      </h1>
-    </div>
+    <PageHeader title="高级分析" icon="📊" />
 
     <n-tabs v-model:value="activeTab" type="line" animated>
       <!-- 风险分析 -->
@@ -367,7 +362,8 @@ import {
   NSelect, NButton, NGrid, NGi, NStatistic, NDivider, NDescriptions, NDescriptionsItem,
   NDataTable, NAlert, NFormItem, NDatePicker, NIcon, NTag, useMessage
 } from 'naive-ui'
-import { AnalyticsOutline, GitCompareOutline } from '@vicons/ionicons5'
+import { GitCompareOutline } from '@vicons/ionicons5'
+import PageHeader from '../components/PageHeader.vue'
 import { fundApi, favoriteApi } from '@/api/fund'
 
 const message = useMessage()
@@ -741,7 +737,7 @@ const getPeriodText = (period: string) => {
   flex-direction: column;
   padding: 12px 16px;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .fund-code {
@@ -823,7 +819,7 @@ const getPeriodText = (period: string) => {
   margin-top: 24px;
   padding: 16px;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .legend-gradient {
@@ -837,8 +833,8 @@ const getPeriodText = (period: string) => {
 
 .gradient-scale {
   height: 20px;
-  border-radius: 4px;
-  background: linear-gradient(to right, #22c55e, #f3f4f6 50%, #ef4444);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(to right, var(--down-color), var(--bg-secondary) 50%, var(--up-color));
 }
 
 .gradient-labels {
@@ -871,7 +867,7 @@ const getPeriodText = (period: string) => {
   text-align: center;
   padding: 16px;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .rating-label {

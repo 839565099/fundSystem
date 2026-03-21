@@ -16,6 +16,7 @@ import com.fund.vo.AlertRuleVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,11 @@ public class AlertServiceImpl implements AlertService {
     private final AlertHistoryMapper alertHistoryMapper;
     private final FundService fundService;
     private final RealtimeDataService realtimeDataService;
+    private final ApplicationContext applicationContext;
+
+    private AlertServiceImpl getSelf() {
+        return applicationContext.getBean(AlertServiceImpl.class);
+    }
 
     @Override
     @Transactional
@@ -134,7 +140,8 @@ public class AlertServiceImpl implements AlertService {
         }
         wrapper.orderByDesc(AlertHistory::getTriggeredTime);
         if (limit != null && limit > 0) {
-            wrapper.last("LIMIT " + limit);
+            int safeLimit = Math.min(limit, 100);
+            wrapper.last("LIMIT " + safeLimit);
         }
         List<AlertHistory> histories = alertHistoryMapper.selectList(wrapper);
         return histories.stream().map(this::convertHistoryToVO).collect(Collectors.toList());
@@ -246,7 +253,7 @@ public class AlertServiceImpl implements AlertService {
         boolean shouldTrigger = checkCondition(rule.getAlertCondition(), currentValue, rule.getThreshold());
 
         if (shouldTrigger) {
-            triggerAlert(rule, fund, currentValue);
+            getSelf().triggerAlert(rule, fund, currentValue);
         }
     }
 
@@ -290,7 +297,7 @@ public class AlertServiceImpl implements AlertService {
      * 触发预警
      */
     @Transactional
-    private void triggerAlert(UserAlertRule rule, Fund fund, BigDecimal currentValue) {
+    public void triggerAlert(UserAlertRule rule, Fund fund, BigDecimal currentValue) {
         // 生成预警标题和消息
         String title = generateAlertTitle(rule, fund);
         String message = generateAlertMessage(rule, fund, currentValue);

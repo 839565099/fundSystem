@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="market-header glass-card">
+    <div class="market-header card">
       <n-spin :show="loading">
         <div v-if="marketData" class="market-info">
           <div class="market-title">
@@ -121,6 +121,23 @@ import type { MarketDataVO } from '../types'
 import * as echarts from 'echarts'
 import { useThemeStore } from '../stores/theme'
 
+const getCssColor = (varName: string, fallback: string) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback
+}
+
+const getThemeColors = () => ({
+  upColor: getCssColor('--up-color', '#dc2626'),
+  downColor: getCssColor('--down-color', '#16a34a'),
+  primaryColor: getCssColor('--primary-color', '#4f46e5'),
+  warningColor: getCssColor('--warning-color', '#d97706'),
+  textSecondary: getCssColor('--text-secondary', '#64748b'),
+  textTertiary: getCssColor('--text-tertiary', '#94a3b8'),
+  textColor: getCssColor('--text-color', '#0f172a'),
+  borderColor: getCssColor('--border-color', '#e2e8f0'),
+  bgSecondary: getCssColor('--bg-secondary', '#f1f5f9'),
+  purpleColor: '#8b5cf6',
+})
+
 const { message } = createDiscreteApi(['message'])
 const themeStore = useThemeStore()
 const isDark = computed(() => themeStore.theme === 'dark')
@@ -192,9 +209,10 @@ const columns = [
     key: 'changeRatio',
     width: 100,
     render: (row: any) => {
+      const tc = getThemeColors()
       const value = row.changeRatio || 0
       return h('span', {
-        style: { color: value >= 0 ? '#ef4444' : '#22c55e' }
+        style: { color: value >= 0 ? tc.upColor : tc.downColor }
       }, `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`)
     },
   },
@@ -297,28 +315,29 @@ const initMainChart = () => {
 
   // 分时图模式
   if (chartMode.value === 'minute') {
+    const tc = getThemeColors()
     const closes = sortedData.map(d => d.close)
     const firstClose = closes[0] || 1
     const growths = closes.map(c => ((c - firstClose) / firstClose) * 100)
     const lastGrowth = growths[growths.length - 1] || 0
-    const lineColor = lastGrowth >= 0 ? '#ef4444' : '#22c55e'
+    const lineColor = lastGrowth >= 0 ? tc.upColor : tc.downColor
 
     mainChart.setOption({
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937' },
+        textStyle: { color: tc.textColor },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           const d = sortedData[idx]
           return `
             <div style="padding: 8px;">
               <div style="font-weight: 600; margin-bottom: 8px;">${d.date}</div>
-              <div>收盘: <span style="color: #3b82f6; font-weight: 600;">${d.close?.toFixed(2)}</span></div>
-              <div>涨跌幅: <span style="color: ${d.changeRatio >= 0 ? '#ef4444' : '#22c55e'};">${d.changeRatio >= 0 ? '+' : ''}${d.changeRatio?.toFixed(2) || '--'}%</span></div>
+              <div>收盘: <span style="color: ${tc.primaryColor}; font-weight: 600;">${d.close?.toFixed(2)}</span></div>
+              <div>涨跌幅: <span style="color: ${d.changeRatio >= 0 ? tc.upColor : tc.downColor};">${d.changeRatio >= 0 ? '+' : ''}${d.changeRatio?.toFixed(2) || '--'}%</span></div>
             </div>
           `
         },
@@ -333,11 +352,11 @@ const initMainChart = () => {
           end: 100,
           borderColor: 'transparent',
           backgroundColor: 'rgba(0,0,0,0.02)',
-          fillerColor: 'rgba(59, 130, 246, 0.15)',
-          handleStyle: { color: '#3b82f6' },
-          moveHandleStyle: { color: '#3b82f6', opacity: 0.3 },
-          selectedDataBackground: { lineStyle: { color: '#3b82f6' }, areaStyle: { color: '#3b82f6' } },
-          textStyle: { color: '#6b7280', fontSize: 10 },
+          fillerColor: tc.primaryColor + '26',
+          handleStyle: { color: tc.primaryColor },
+          moveHandleStyle: { color: tc.primaryColor, opacity: 0.3 },
+          selectedDataBackground: { lineStyle: { color: tc.primaryColor }, areaStyle: { color: tc.primaryColor } },
+          textStyle: { color: tc.textSecondary, fontSize: 10 },
           labelFormatter: (value: number) => {
             const date = dates[value]
             return date ? date.slice(5) : ''
@@ -350,17 +369,17 @@ const initMainChart = () => {
         boundaryGap: false,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 11, interval: 'auto' as const, formatter: formatDate },
+        axisLabel: { color: tc.textSecondary, fontSize: 11, interval: 'auto' as const, formatter: formatDate },
       },
       yAxis: {
         type: 'value',
         name: '涨跌幅(%)',
-        nameTextStyle: { color: '#6b7280', fontSize: 11, align: 'right' },
+        nameTextStyle: { color: tc.textSecondary, fontSize: 11, align: 'right' },
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#6b7280',
+          color: tc.textSecondary,
           fontSize: 11,
           formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
         },
@@ -383,6 +402,7 @@ const initMainChart = () => {
     })
   } else {
     // K线图模式（日K、周K、月K）
+    const tc = getThemeColors()
     const klineData = sortedData.map(d => [d.open, d.close, d.low, d.high])
 
     // 根据周期设置dataZoom的起始位置
@@ -398,9 +418,9 @@ const initMainChart = () => {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937' },
+        textStyle: { color: tc.textColor },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           const d = sortedData[idx]
@@ -411,7 +431,7 @@ const initMainChart = () => {
               <div>收盘: ${d.close?.toFixed(2)}</div>
               <div>最高: ${d.high?.toFixed(2)}</div>
               <div>最低: ${d.low?.toFixed(2)}</div>
-              <div>涨跌幅: <span style="color: ${d.changeRatio >= 0 ? '#ef4444' : '#22c55e'}">${d.changeRatio >= 0 ? '+' : ''}${d.changeRatio?.toFixed(2) || '--'}%</span></div>
+              <div>涨跌幅: <span style="color: ${d.changeRatio >= 0 ? tc.upColor : tc.downColor}">${d.changeRatio >= 0 ? '+' : ''}${d.changeRatio?.toFixed(2) || '--'}%</span></div>
             </div>
           `
         },
@@ -427,11 +447,11 @@ const initMainChart = () => {
           end: 100,
           borderColor: 'transparent',
           backgroundColor: 'rgba(0,0,0,0.02)',
-          fillerColor: 'rgba(59, 130, 246, 0.15)',
-          handleStyle: { color: '#3b82f6' },
-          moveHandleStyle: { color: '#3b82f6', opacity: 0.3 },
-          selectedDataBackground: { lineStyle: { color: '#3b82f6' }, areaStyle: { color: '#3b82f6' } },
-          textStyle: { color: '#6b7280', fontSize: 10 },
+          fillerColor: tc.primaryColor + '26',
+          handleStyle: { color: tc.primaryColor },
+          moveHandleStyle: { color: tc.primaryColor, opacity: 0.3 },
+          selectedDataBackground: { lineStyle: { color: tc.primaryColor }, areaStyle: { color: tc.primaryColor } },
+          textStyle: { color: tc.textSecondary, fontSize: 10 },
           labelFormatter: (value: number) => {
             const date = dates[value]
             return date ? formatDate(date) : ''
@@ -443,17 +463,17 @@ const initMainChart = () => {
         data: dates,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 11, interval: 'auto' as const, formatter: formatDate },
+        axisLabel: { color: tc.textSecondary, fontSize: 11, interval: 'auto' as const, formatter: formatDate },
       },
       yAxis: {
         type: 'value',
         name: '点位',
-        nameTextStyle: { color: '#6b7280', fontSize: 11, align: 'right' },
+        nameTextStyle: { color: tc.textSecondary, fontSize: 11, align: 'right' },
         scale: true,
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 11 },
+        axisLabel: { color: tc.textSecondary, fontSize: 11 },
       },
       series: [
         {
@@ -461,10 +481,10 @@ const initMainChart = () => {
           type: 'candlestick',
           data: klineData,
           itemStyle: {
-            color: '#ef4444',
-            color0: '#22c55e',
-            borderColor: '#ef4444',
-            borderColor0: '#22c55e',
+            color: tc.upColor,
+            color0: tc.downColor,
+            borderColor: tc.upColor,
+            borderColor0: tc.downColor,
           },
         },
       ],
@@ -477,6 +497,7 @@ const initMainChart = () => {
 const initIndicatorCharts = () => {
   if (historyData.value.length === 0) return
 
+  const tc = getThemeColors()
   const sortedData = [...historyData.value].sort((a, b) => a.date.localeCompare(b.date))
   const closes = sortedData.map(d => d.close)
   const dates = sortedData.map(d => d.date)
@@ -519,7 +540,7 @@ const initIndicatorCharts = () => {
     data: dates,
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: '#9ca3af', fontSize: 10, interval: 'auto' as const, formatter: formatDate }
+    axisLabel: { color: tc.textTertiary, fontSize: 10, interval: 'auto' as const, formatter: formatDate }
   }
 
   // MACD 图表
@@ -529,22 +550,22 @@ const initIndicatorCharts = () => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           return `
             <div style="padding: 8px;">
               <div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div>
-              <div style="color:#3b82f6;">DIF: ${macdData.dif[idx]?.toFixed(4) || '--'}</div>
-              <div style="color:#f59e0b;">DEA: ${macdData.dea[idx]?.toFixed(4) || '--'}</div>
-              <div style="color:${macdData.macd[idx] >= 0 ? '#ef4444' : '#22c55e'};">MACD: ${(macdData.macd[idx] * 2)?.toFixed(4) || '--'}</div>
+              <div style="color:${tc.primaryColor};">DIF: ${macdData.dif[idx]?.toFixed(4) || '--'}</div>
+              <div style="color:${tc.warningColor};">DEA: ${macdData.dea[idx]?.toFixed(4) || '--'}</div>
+              <div style="color:${macdData.macd[idx] >= 0 ? tc.upColor : tc.downColor};">MACD: ${(macdData.macd[idx] * 2)?.toFixed(4) || '--'}</div>
             </div>
           `
         }
       },
-      legend: { data: ['DIF', 'DEA', 'MACD'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['DIF', 'DEA', 'MACD'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -553,12 +574,12 @@ const initIndicatorCharts = () => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10 }
+        axisLabel: { color: tc.textSecondary, fontSize: 10 }
       },
       series: [
-        { name: 'DIF', type: 'line', data: macdData.dif, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#3b82f6' } },
-        { name: 'DEA', type: 'line', data: macdData.dea, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#f59e0b' } },
-        { name: 'MACD', type: 'bar', data: macdData.macd, barWidth: '40%', itemStyle: { color: (p: any) => p.value >= 0 ? '#ef4444' : '#22c55e', borderRadius: [2, 2, 0, 0] } },
+        { name: 'DIF', type: 'line', data: macdData.dif, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.primaryColor } },
+        { name: 'DEA', type: 'line', data: macdData.dea, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.warningColor } },
+        { name: 'MACD', type: 'bar', data: macdData.macd, barWidth: '40%', itemStyle: { color: (p: any) => p.value >= 0 ? tc.upColor : tc.downColor, borderRadius: [2, 2, 0, 0] } },
       ],
     })
   }
@@ -570,20 +591,20 @@ const initIndicatorCharts = () => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           return `
             <div style="padding: 8px;">
               <div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div>
-              <div style="color:#8b5cf6;">RSI(14): ${rsiData[idx]?.toFixed(2) || '--'}</div>
+              <div style="color:${tc.purpleColor};">RSI(14): ${rsiData[idx]?.toFixed(2) || '--'}</div>
             </div>
           `
         }
       },
-      legend: { data: ['RSI(14)'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['RSI(14)'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -594,7 +615,7 @@ const initIndicatorCharts = () => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10, formatter: '{value}' }
+        axisLabel: { color: tc.textSecondary, fontSize: 10, formatter: '{value}' }
       },
       series: [{
         name: 'RSI(14)',
@@ -602,7 +623,7 @@ const initIndicatorCharts = () => {
         data: rsiData,
         smooth: true,
         symbol: 'none',
-        lineStyle: { width: 1.5, color: '#8b5cf6' },
+        lineStyle: { width: 1.5, color: tc.purpleColor },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(139, 92, 246, 0.15)' },
@@ -614,9 +635,9 @@ const initIndicatorCharts = () => {
         silent: true,
         symbol: 'none',
         data: [
-          { yAxis: 70, lineStyle: { color: '#ef4444', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超买', color: '#ef4444', fontSize: 9 } },
-          { yAxis: 50, lineStyle: { color: '#9ca3af', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '50', color: '#9ca3af', fontSize: 9 } },
-          { yAxis: 30, lineStyle: { color: '#22c55e', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超卖', color: '#22c55e', fontSize: 9 } },
+          { yAxis: 70, lineStyle: { color: tc.upColor, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超买', color: tc.upColor, fontSize: 9 } },
+          { yAxis: 50, lineStyle: { color: tc.textTertiary, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '50', color: tc.textTertiary, fontSize: 9 } },
+          { yAxis: 30, lineStyle: { color: tc.downColor, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超卖', color: tc.downColor, fontSize: 9 } },
         ]
       }
     })
@@ -629,22 +650,22 @@ const initIndicatorCharts = () => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           return `
             <div style="padding: 8px;">
               <div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div>
-              <div style="color:#3b82f6;">K: ${kdjData.k[idx]?.toFixed(2) || '--'}</div>
-              <div style="color:#f59e0b;">D: ${kdjData.d[idx]?.toFixed(2) || '--'}</div>
-              <div style="color:#22c55e;">J: ${kdjData.j[idx]?.toFixed(2) || '--'}</div>
+              <div style="color:${tc.primaryColor};">K: ${kdjData.k[idx]?.toFixed(2) || '--'}</div>
+              <div style="color:${tc.warningColor};">D: ${kdjData.d[idx]?.toFixed(2) || '--'}</div>
+              <div style="color:${tc.downColor};">J: ${kdjData.j[idx]?.toFixed(2) || '--'}</div>
             </div>
           `
         }
       },
-      legend: { data: ['K', 'D', 'J'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['K', 'D', 'J'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -653,12 +674,12 @@ const initIndicatorCharts = () => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10 }
+        axisLabel: { color: tc.textSecondary, fontSize: 10 }
       },
       series: [
-        { name: 'K', type: 'line', data: kdjData.k, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#3b82f6' } },
-        { name: 'D', type: 'line', data: kdjData.d, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#f59e0b' } },
-        { name: 'J', type: 'line', data: kdjData.j, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#22c55e' } },
+        { name: 'K', type: 'line', data: kdjData.k, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.primaryColor } },
+        { name: 'D', type: 'line', data: kdjData.d, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.warningColor } },
+        { name: 'J', type: 'line', data: kdjData.j, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.downColor } },
       ]
     })
   }
@@ -708,6 +729,7 @@ const handleIndicatorTabChange = (name: string) => {
 const initSingleIndicatorChart = (name: string) => {
   if (historyData.value.length === 0) return
 
+  const tc = getThemeColors()
   const sortedData = [...historyData.value].sort((a, b) => a.date.localeCompare(b.date))
   const closes = sortedData.map(d => d.close)
   const dates = sortedData.map(d => d.date)
@@ -746,7 +768,7 @@ const initSingleIndicatorChart = (name: string) => {
     data: dates,
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: '#9ca3af', fontSize: 10, interval: 'auto' as const, formatter: formatDate }
+    axisLabel: { color: tc.textTertiary, fontSize: 10, interval: 'auto' as const, formatter: formatDate }
   }
 
   if (name === 'macd' && macdChartRef.value && !macdChart) {
@@ -756,22 +778,22 @@ const initSingleIndicatorChart = (name: string) => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
           return `
             <div style="padding: 8px;">
               <div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div>
-              <div style="color:#3b82f6;">DIF: ${macdData.dif[idx]?.toFixed(4) || '--'}</div>
-              <div style="color:#f59e0b;">DEA: ${macdData.dea[idx]?.toFixed(4) || '--'}</div>
-              <div style="color:${macdData.macd[idx] >= 0 ? '#ef4444' : '#22c55e'};">MACD: ${(macdData.macd[idx] * 2)?.toFixed(4) || '--'}</div>
+              <div style="color:${tc.primaryColor};">DIF: ${macdData.dif[idx]?.toFixed(4) || '--'}</div>
+              <div style="color:${tc.warningColor};">DEA: ${macdData.dea[idx]?.toFixed(4) || '--'}</div>
+              <div style="color:${macdData.macd[idx] >= 0 ? tc.upColor : tc.downColor};">MACD: ${(macdData.macd[idx] * 2)?.toFixed(4) || '--'}</div>
             </div>
           `
         }
       },
-      legend: { data: ['DIF', 'DEA', 'MACD'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['DIF', 'DEA', 'MACD'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -780,12 +802,12 @@ const initSingleIndicatorChart = (name: string) => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10 }
+        axisLabel: { color: tc.textSecondary, fontSize: 10 }
       },
       series: [
-        { name: 'DIF', type: 'line', data: macdData.dif, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#3b82f6' } },
-        { name: 'DEA', type: 'line', data: macdData.dea, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#f59e0b' } },
-        { name: 'MACD', type: 'bar', data: macdData.macd, barWidth: '40%', itemStyle: { color: (p: any) => p.value >= 0 ? '#ef4444' : '#22c55e', borderRadius: [2, 2, 0, 0] } },
+        { name: 'DIF', type: 'line', data: macdData.dif, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.primaryColor } },
+        { name: 'DEA', type: 'line', data: macdData.dea, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.warningColor } },
+        { name: 'MACD', type: 'bar', data: macdData.macd, barWidth: '40%', itemStyle: { color: (p: any) => p.value >= 0 ? tc.upColor : tc.downColor, borderRadius: [2, 2, 0, 0] } },
       ],
     })
   } else if (name === 'rsi' && rsiChartRef.value && !rsiChart) {
@@ -795,15 +817,15 @@ const initSingleIndicatorChart = (name: string) => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
-          return `<div style="padding:8px;"><div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div><div style="color:#8b5cf6;">RSI(14): ${rsiData[idx]?.toFixed(2) || '--'}</div></div>`
+          return `<div style="padding:8px;"><div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div><div style="color:${tc.purpleColor};">RSI(14): ${rsiData[idx]?.toFixed(2) || '--'}</div></div>`
         }
       },
-      legend: { data: ['RSI(14)'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['RSI(14)'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -814,7 +836,7 @@ const initSingleIndicatorChart = (name: string) => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10 }
+        axisLabel: { color: tc.textSecondary, fontSize: 10 }
       },
       series: [{
         name: 'RSI(14)',
@@ -822,7 +844,7 @@ const initSingleIndicatorChart = (name: string) => {
         data: rsiData,
         smooth: true,
         symbol: 'none',
-        lineStyle: { width: 1.5, color: '#8b5cf6' },
+        lineStyle: { width: 1.5, color: tc.purpleColor },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(139, 92, 246, 0.15)' },
@@ -834,9 +856,9 @@ const initSingleIndicatorChart = (name: string) => {
         silent: true,
         symbol: 'none',
         data: [
-          { yAxis: 70, lineStyle: { color: '#ef4444', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超买', color: '#ef4444', fontSize: 9 } },
-          { yAxis: 50, lineStyle: { color: '#9ca3af', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '50', color: '#9ca3af', fontSize: 9 } },
-          { yAxis: 30, lineStyle: { color: '#22c55e', type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超卖', color: '#22c55e', fontSize: 9 } },
+          { yAxis: 70, lineStyle: { color: tc.upColor, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超买', color: tc.upColor, fontSize: 9 } },
+          { yAxis: 50, lineStyle: { color: tc.textTertiary, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '50', color: tc.textTertiary, fontSize: 9 } },
+          { yAxis: 30, lineStyle: { color: tc.downColor, type: 'dashed', width: 1 }, label: { show: true, position: 'insideEndTop', formatter: '超卖', color: tc.downColor, fontSize: 9 } },
         ]
       }
     })
@@ -847,15 +869,15 @@ const initSingleIndicatorChart = (name: string) => {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e5e7eb',
+        borderColor: tc.borderColor,
         borderWidth: 1,
-        textStyle: { color: '#1f2937', fontSize: 12 },
+        textStyle: { color: tc.textColor, fontSize: 12 },
         formatter: (params: any) => {
           const idx = params[0].dataIndex
-          return `<div style="padding:8px;"><div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div><div style="color:#3b82f6;">K: ${kdjData.k[idx]?.toFixed(2) || '--'}</div><div style="color:#f59e0b;">D: ${kdjData.d[idx]?.toFixed(2) || '--'}</div><div style="color:#22c55e;">J: ${kdjData.j[idx]?.toFixed(2) || '--'}</div></div>`
+          return `<div style="padding:8px;"><div style="font-weight:600;margin-bottom:6px;">${sortedData[idx].date}</div><div style="color:${tc.primaryColor};">K: ${kdjData.k[idx]?.toFixed(2) || '--'}</div><div style="color:${tc.warningColor};">D: ${kdjData.d[idx]?.toFixed(2) || '--'}</div><div style="color:${tc.downColor};">J: ${kdjData.j[idx]?.toFixed(2) || '--'}</div></div>`
         }
       },
-      legend: { data: ['K', 'D', 'J'], top: 5, textStyle: { color: '#6b7280', fontSize: 11 } },
+      legend: { data: ['K', 'D', 'J'], top: 5, textStyle: { color: tc.textSecondary, fontSize: 11 } },
       grid: { left: 50, right: 15, top: 35, bottom: 30 },
       dataZoom: dataZoomConfig,
       xAxis: xAxisConfig,
@@ -864,12 +886,12 @@ const initSingleIndicatorChart = (name: string) => {
         splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6', type: 'dashed' } },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#6b7280', fontSize: 10 }
+        axisLabel: { color: tc.textSecondary, fontSize: 10 }
       },
       series: [
-        { name: 'K', type: 'line', data: kdjData.k, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#3b82f6' } },
-        { name: 'D', type: 'line', data: kdjData.d, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#f59e0b' } },
-        { name: 'J', type: 'line', data: kdjData.j, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: '#22c55e' } },
+        { name: 'K', type: 'line', data: kdjData.k, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.primaryColor } },
+        { name: 'D', type: 'line', data: kdjData.d, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.warningColor } },
+        { name: 'J', type: 'line', data: kdjData.j, smooth: true, symbol: 'none', lineStyle: { width: 1.5, color: tc.downColor } },
       ]
     })
   }
@@ -1048,7 +1070,7 @@ watch(historyData, () => {
   text-align: center;
   padding: 16px;
   background: var(--bg-color);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .stat-label {
@@ -1063,7 +1085,7 @@ watch(historyData, () => {
 }
 
 .stat-value.primary {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .market-detail-info {
@@ -1132,7 +1154,7 @@ watch(historyData, () => {
 .btn-segment {
   display: flex;
   background: var(--bg-color);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 3px;
   gap: 1px;
 }
@@ -1145,7 +1167,7 @@ watch(historyData, () => {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
 }
@@ -1155,10 +1177,10 @@ watch(historyData, () => {
 }
 
 .segment-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.15);
 }
 
 .toolbar-divider {
@@ -1198,10 +1220,10 @@ watch(historyData, () => {
 }
 
 .growth-positive {
-  color: #ef4444;
+  color: var(--up-color);
 }
 
 .growth-negative {
-  color: #22c55e;
+  color: var(--down-color);
 }
 </style>

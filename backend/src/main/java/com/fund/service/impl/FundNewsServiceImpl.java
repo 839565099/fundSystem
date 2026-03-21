@@ -205,7 +205,7 @@ public class FundNewsServiceImpl implements FundNewsService {
         }
         
         wrapper.orderByDesc(FundNews::getPublishTime);
-        wrapper.last("LIMIT " + (limit != null ? limit : 5));
+        wrapper.last("LIMIT " + Math.min(limit != null ? limit : 5, 50));
         
         return fundNewsMapper.selectList(wrapper);
     }
@@ -215,7 +215,7 @@ public class FundNewsServiceImpl implements FundNewsService {
         LambdaQueryWrapper<FundNews> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FundNews::getStatus, 1)
                 .orderByDesc(FundNews::getViewCount)
-                .last("LIMIT " + (limit != null ? limit : 10));
+                .last("LIMIT " + Math.min(limit != null ? limit : 10, 50));
 
         return fundNewsMapper.selectList(wrapper);
     }
