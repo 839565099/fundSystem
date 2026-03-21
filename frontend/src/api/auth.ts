@@ -1,5 +1,5 @@
 import api from './index'
-import type { LoginDTO, RegisterDTO, UserVO, Result } from '../types'
+import type { LoginDTO, RegisterDTO, UserVO, UserStats, Result } from '../types'
 
 const handleResponse = <T>(response: { data: Result<T> }): T => {
   const res = response.data
@@ -32,6 +32,11 @@ export const authApi = {
 
   changePassword: async (oldPassword: string, newPassword: string) => {
     const response = await api.put<Result<null>>('/auth/password', { oldPassword, newPassword })
+    return handleResponse(response)
+  },
+
+  getUserStats: async () => {
+    const response = await api.get<Result<UserStats>>('/auth/stats')
     return handleResponse(response)
   },
 }

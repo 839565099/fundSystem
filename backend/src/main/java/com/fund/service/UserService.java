@@ -5,6 +5,7 @@ import com.fund.dto.LoginDTO;
 import com.fund.dto.RegisterDTO;
 import com.fund.entity.User;
 import com.fund.vo.UserVO;
+import java.util.Map;
 
 public interface UserService {
     
@@ -19,4 +20,6 @@ public interface UserService {
     void updatePassword(Long userId, String oldPassword, String newPassword);
     
     User getByUsername(String username);
+
+    Map<String, Object> getUserStats(Long userId);
 }

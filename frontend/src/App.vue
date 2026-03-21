@@ -213,6 +213,7 @@ const menuKeyToPath: Record<string, string> = {
   AIAssistant: '/ai-assistant',
   Analytics: '/analytics',
   News: '/news',
+  Profile: '/profile',
 }
 
 const menuOptions: MenuOption[] = [
@@ -230,6 +231,8 @@ const menuOptions: MenuOption[] = [
   { label: 'AI 助手', key: 'AIAssistant', icon: renderIcon(SparklesOutline) },
   { label: '高级分析', key: 'Analytics', icon: renderIcon(AnalyticsOutline) },
   { label: '资讯中心', key: 'News', icon: renderIcon(NewspaperOutline) },
+  { type: 'divider', key: 'd3' },
+  { label: '个人中心', key: 'Profile', icon: renderIcon(PersonOutline) },
 ]
 
 const userOptions = [

@@ -2,13 +2,18 @@ package com.fund.service.impl;
 
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fund.common.ErrorCode;
 import com.fund.dto.LoginDTO;
 import com.fund.dto.RegisterDTO;
 import com.fund.entity.User;
 import com.fund.exception.BusinessException;
 import com.fund.mapper.UserMapper;
+import com.fund.mapper.UserFavoriteMapper;
+import com.fund.mapper.PortfolioMapper;
+import com.fund.mapper.UserAlertRuleMapper;
+import com.fund.entity.UserFavorite;
+import com.fund.entity.Portfolio;
+import com.fund.entity.UserAlertRule;
 import com.fund.service.UserService;
 import com.fund.util.JwtUtil;
 import com.fund.vo.UserVO;
@@ -17,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -24,6 +32,9 @@ import java.time.LocalDateTime;
 public class UserServiceImpl implements UserService {
     
     private final UserMapper userMapper;
+    private final UserFavoriteMapper userFavoriteMapper;
+    private final PortfolioMapper portfolioMapper;
+    private final UserAlertRuleMapper userAlertRuleMapper;
     private final JwtUtil jwtUtil;
     
     @Override
@@ -137,6 +148,38 @@ public class UserServiceImpl implements UserService {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, username);
         return userMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public Map<String, Object> getUserStats(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        LambdaQueryWrapper<UserFavorite> favWrapper = new LambdaQueryWrapper<>();
+        favWrapper.eq(UserFavorite::getUserId, userId);
+        long favoriteCount = userFavoriteMapper.selectCount(favWrapper);
+
+        LambdaQueryWrapper<Portfolio> portWrapper = new LambdaQueryWrapper<>();
+        portWrapper.eq(Portfolio::getUserId, userId);
+        long portfolioCount = portfolioMapper.selectCount(portWrapper);
+
+        LambdaQueryWrapper<UserAlertRule> alertWrapper = new LambdaQueryWrapper<>();
+        alertWrapper.eq(UserAlertRule::getUserId, userId);
+        long alertCount = userAlertRuleMapper.selectCount(alertWrapper);
+
+        long registerDays = 0;
+        if (user.getCreateTime() != null) {
+            registerDays = ChronoUnit.DAYS.between(user.getCreateTime().toLocalDate(), LocalDateTime.now().toLocalDate());
+        }
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("favoriteCount", favoriteCount);
+        stats.put("portfolioCount", portfolioCount);
+        stats.put("alertCount", alertCount);
+        stats.put("registerDays", registerDays);
+        return stats;
     }
     
     private UserVO convertToVO(User user) {

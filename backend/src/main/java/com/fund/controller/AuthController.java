@@ -11,6 +11,7 @@ import com.fund.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -52,5 +53,11 @@ public class AuthController {
     public Result<?> changePassword(@RequestAttribute Long userId, @Valid @RequestBody ChangePasswordDTO dto) {
         userService.updatePassword(userId, dto.getOldPassword(), dto.getNewPassword());
         return Result.success("密码修改成功", null);
+    }
+
+    @GetMapping("/stats")
+    public Result<Map<String, Object>> getUserStats(@RequestAttribute Long userId) {
+        Map<String, Object> stats = userService.getUserStats(userId);
+        return Result.success(stats);
     }
 }

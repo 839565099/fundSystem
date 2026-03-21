@@ -207,6 +207,13 @@ export interface FundCompareVO {
   navHistory?: FundNavHistoryVO[]
 }
 
+export interface UserStats {
+  favoriteCount: number
+  portfolioCount: number
+  alertCount: number
+  registerDays: number
+}
+
 export interface Result<T> {
   code: number
   message: string
