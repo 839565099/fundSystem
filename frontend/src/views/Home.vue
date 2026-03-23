@@ -414,10 +414,22 @@ const loadFavorites = async () => {
 const loadHotFunds = async () => {
   hotFundsLoading.value = true
   try {
-    const result = await fundApi.getRanking('dayGrowth', 'day', 1, 10)
+    const recommendHot = await fundApi.getHotFunds(10)
+    if (recommendHot?.length) {
+      hotFunds.value = recommendHot as Fund[]
+      return
+    }
+
+    const classicHot = await fundApi.getClassicHotFunds(10)
+    if (classicHot?.length) {
+      hotFunds.value = classicHot as Fund[]
+      return
+    }
+
+    const result = await fundApi.getRanking('growth', 'day', 1, 10)
     hotFunds.value = result.records || []
   } catch {
-    // ignore
+    hotFunds.value = []
   } finally {
     hotFundsLoading.value = false
   }
@@ -447,14 +459,22 @@ onMounted(() => {
 .home-container {
   max-width: 1400px;
   margin: 0 auto;
+  background:
+    radial-gradient(circle at 100% 0, rgba(0, 183, 201, 0.08), transparent 40%),
+    radial-gradient(circle at 0 5%, rgba(6, 58, 102, 0.08), transparent 45%);
+  border-radius: var(--radius-xl);
 }
 
 .hero-section {
-  background: var(--gradient-brand);
+  background:
+    linear-gradient(130deg, rgba(6, 58, 102, 0.96), rgba(14, 94, 140, 0.88)),
+    var(--gradient-brand);
   border-radius: var(--radius-xl);
   padding: 48px 32px;
   margin-bottom: 24px;
   color: white;
+  border: 1px solid rgba(52, 204, 219, 0.25);
+  box-shadow: var(--shadow-xl);
 }
 
 .hero-content {
@@ -470,15 +490,18 @@ onMounted(() => {
 }
 
 .hero-subtitle {
-  font-size: 16px;
-  opacity: 0.9;
+  font-size: 15px;
+  opacity: 0.86;
   margin-bottom: 32px;
+  letter-spacing: 0.04em;
 }
 
 .search-box {
   padding: 8px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(10px);
 }
 
 .stats-section {
@@ -508,6 +531,8 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--gradient-card);
 }
 
 .stat-icon {
@@ -533,12 +558,14 @@ onMounted(() => {
 }
 
 .stat-icon--purple {
-  background: #7c3aed;
+  background: var(--info-color);
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
+  font-family: var(--font-number);
+  letter-spacing: 0.02em;
 }
 
 .stat-label {
@@ -586,6 +613,8 @@ onMounted(() => {
 .market-card {
   padding: 20px;
   cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--gradient-card);
 }
 
 .market-header {
@@ -606,6 +635,7 @@ onMounted(() => {
   background: var(--bg-secondary);
   padding: 2px 8px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
 }
 
 .market-body {
@@ -616,6 +646,8 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 8px;
+  font-family: var(--font-number);
+  letter-spacing: 0.02em;
 }
 
 .market-change {

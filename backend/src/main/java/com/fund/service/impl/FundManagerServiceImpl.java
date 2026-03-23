@@ -11,6 +11,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -69,6 +71,16 @@ public class FundManagerServiceImpl implements FundManagerService {
     private FundManagerVO convertToVO(FundManager manager) {
         FundManagerVO vo = new FundManagerVO();
         BeanUtils.copyProperties(manager, vo);
+        // 当结构化接口字段缺失时，从简历文本中提取基础从业年限，避免前端关键信息为空
+        if (vo.getWorkYears() == null && vo.getResume() != null) {
+            Matcher matcher = Pattern.compile("(\\d+)年").matcher(vo.getResume());
+            if (matcher.find()) {
+                try {
+                    vo.setWorkYears(Integer.parseInt(matcher.group(1)));
+                } catch (Exception ignored) {
+                }
+            }
+        }
         return vo;
     }
 }

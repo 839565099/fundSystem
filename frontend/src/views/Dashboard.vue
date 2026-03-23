@@ -24,7 +24,7 @@
         label="总资产"
         :value="portfolio?.currentValue || 0"
         prefix="¥"
-        icon="💰"
+        icon="AUM"
         :change="portfolio?.totalReturn"
         trend-label="总收益率"
         variant="primary"
@@ -34,7 +34,7 @@
         label="今日收益"
         :value="portfolio?.dayProfit || 0"
         prefix="¥"
-        icon="📈"
+        icon="DPNL"
         :change="portfolio?.dayReturn"
         :change-type="portfolio?.dayReturn >= 0 ? 'up' : 'down'"
         show-sign
@@ -44,7 +44,7 @@
         label="昨日收益"
         :value="portfolio?.yesterdayProfit || 0"
         prefix="¥"
-        icon="📊"
+        icon="YPNL"
         :change="portfolio?.yesterdayReturn"
         :change-type="portfolio?.yesterdayReturn >= 0 ? 'up' : 'down'"
         show-sign
@@ -53,7 +53,7 @@
       <StatCard
         label="持仓基金"
         :value="portfolio?.fundCount || 0"
-        icon="🏦"
+        icon="POS"
         clickable
         @click="router.push('/portfolio')"
       />
@@ -61,7 +61,7 @@
       <StatCard
         label="预警通知"
         :value="unreadAlertCount"
-        icon="🔔"
+        icon="ALT"
         clickable
         variant="danger"
         @click="router.push('/alerts')"
@@ -492,6 +492,8 @@ onMounted(() => {
 <style scoped>
 .dashboard-page {
   padding: 24px;
+  background: linear-gradient(180deg, rgba(6, 58, 102, 0.06), transparent 240px);
+  border-radius: var(--radius-xl);
 }
 
 .header-actions {
@@ -522,6 +524,7 @@ onMounted(() => {
 
 .chart-card {
   min-height: 380px;
+  border: 1px solid var(--border-color);
 }
 
 .chart-container {
@@ -574,7 +577,7 @@ onMounted(() => {
 }
 
 .alert-item.unread {
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(23, 99, 146, 0.12);
   border-left: 3px solid var(--primary-color);
 }
 
@@ -600,7 +603,7 @@ onMounted(() => {
 }
 
 .alert-icon.info {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(0, 183, 201, 0.14);
   color: var(--info-color);
 }
 

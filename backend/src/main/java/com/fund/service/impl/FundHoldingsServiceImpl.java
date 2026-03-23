@@ -33,6 +33,10 @@ public class FundHoldingsServiceImpl implements FundHoldingsService {
             needRefresh = true;
             log.info("持仓数据不完整(缺少持股数和市值)，触发刷新: {}", fundCode);
         }
+        if (!needRefresh && holdings.stream().anyMatch(h -> !isValidHolding(h))) {
+            needRefresh = true;
+            log.info("持仓数据疑似错位(代码/名称异常)，触发刷新: {}", fundCode);
+        }
         if (needRefresh) {
             log.info("数据库中无持仓数据，从东方财富获取: {}", fundCode);
             holdings = fundDataApiService.fetchFundHoldings(fundCode, limit);
@@ -48,7 +52,10 @@ public class FundHoldingsServiceImpl implements FundHoldingsService {
             }
         }
 
-        return holdings != null ? holdings : new ArrayList<>();
+        if (holdings == null) {
+            return new ArrayList<>();
+        }
+        return holdings.stream().filter(this::isValidHolding).collect(Collectors.toList());
     }
 
     @Override
@@ -91,5 +98,13 @@ public class FundHoldingsServiceImpl implements FundHoldingsService {
         }
 
         return result;
+    }
+
+    private boolean isValidHolding(FundHoldings holding) {
+        if (holding == null) return false;
+        String code = holding.getStockCode();
+        if (code == null || !code.matches("\\d{6}")) return false;
+        String name = holding.getStockName();
+        return name == null || !name.matches("\\d{6}");
     }
 }

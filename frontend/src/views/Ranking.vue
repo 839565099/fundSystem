@@ -3,16 +3,15 @@
     <div class="ranking-header card">
       <div class="filter-group">
         <span class="filter-label">排行类型:</span>
-        <n-radio-group v-model:value="rankingType" @update:value="loadRanking">
-          <n-radio-button value="dayGrowth">日涨幅</n-radio-button>
-          <n-radio-button value="weekGrowth">周涨幅</n-radio-button>
-          <n-radio-button value="monthGrowth">月涨幅</n-radio-button>
-          <n-radio-button value="yearGrowth">年涨幅</n-radio-button>
+        <n-radio-group v-model:value="rankingType" @update:value="handleFilterChange">
+          <n-radio-button value="growth">涨幅榜</n-radio-button>
+          <n-radio-button value="decline">跌幅榜</n-radio-button>
+          <n-radio-button value="scale">规模榜</n-radio-button>
         </n-radio-group>
       </div>
       <div class="filter-group">
         <span class="filter-label">时间周期:</span>
-        <n-radio-group v-model:value="period" @update:value="loadRanking">
+        <n-radio-group v-model:value="period" @update:value="handleFilterChange">
           <n-radio-button value="day">今日</n-radio-button>
           <n-radio-button value="week">近一周</n-radio-button>
           <n-radio-button value="month">近一月</n-radio-button>
@@ -46,7 +45,7 @@
             </div>
             <div class="stat">
               <span class="label">涨跌幅</span>
-              <GrowthText :value="fund.dayGrowth" />
+              <GrowthText :value="getDisplayGrowth(fund)" />
             </div>
           </div>
         </div>
@@ -76,8 +75,8 @@ const { message } = createDiscreteApi(['message'])
 const router = useRouter()
 
 const loading = ref(false)
-const rankingType = ref('dayGrowth')
-const period = ref('day')
+const rankingType = ref('growth')
+const period = ref('week')
 const funds = ref<Fund[]>([])
 const pageNum = ref(1)
 const pageSize = 20
@@ -90,14 +89,54 @@ const getRankClass = (index: number) => {
   return ''
 }
 
+const getDisplayGrowth = (fund: Fund) => {
+  if (period.value === 'year') return fund.yearGrowth
+  if (period.value === 'month') return fund.monthGrowth
+  if (period.value === 'week') return fund.weekGrowth
+  return fund.dayGrowth
+}
+
+const handleFilterChange = async () => {
+  pageNum.value = 1
+  await loadRanking()
+}
+
 const loadRanking = async () => {
   loading.value = true
   try {
     const data = await fundApi.getRanking(rankingType.value, period.value, pageNum.value, pageSize)
-    funds.value = data.records || []
-    pageCount.value = data.pages || 1
+    let records: Fund[] = data.records || []
+    let pages = data.pages || 1
+
+    // 外部排行榜在非交易时段可能为空，退回本地热门/涨幅数据，避免页面空白
+    if (!records.length) {
+      if (rankingType.value === 'growth') {
+        records = await fundApi.getTopGrowthFunds(pageSize)
+      }
+      if (!records.length) {
+        records = await fundApi.getClassicHotFunds(pageSize)
+      }
+      pages = 1
+      if (records.length) {
+        message.warning('实时排行暂无数据，已展示热门基金')
+      }
+    }
+
+    funds.value = records
+    pageCount.value = pages
   } catch {
-    message.error('加载排行榜失败')
+    try {
+      const fallback = await fundApi.getClassicHotFunds(pageSize)
+      funds.value = fallback || []
+      pageCount.value = 1
+      if (funds.value.length) {
+        message.warning('排行榜加载失败，已展示热门基金')
+      } else {
+        message.error('加载排行榜失败')
+      }
+    } catch {
+      message.error('加载排行榜失败')
+    }
   } finally {
     loading.value = false
   }

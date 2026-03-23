@@ -17,7 +17,11 @@
                 class="layout-sider hide-mobile"
               >
                 <div class="logo">
-                  <div class="logo__icon">📈</div>
+                  <div class="logo__icon">
+                    <span class="logo__mark logo__mark--a"></span>
+                    <span class="logo__mark logo__mark--b"></span>
+                    <span class="logo__mark logo__mark--c"></span>
+                  </div>
                   <transition name="logo-text">
                     <span v-if="!collapsed" class="logo__text">FundSystem</span>
                   </transition>
@@ -54,6 +58,13 @@
                       <span class="mobile-title hide-desktop">{{ currentTitle }}</span>
                     </div>
                     <div class="header-actions">
+                      <div
+                        class="market-status hide-mobile"
+                        :class="{ 'market-status--open': marketIsOpen }"
+                      >
+                        <span class="market-status__dot"></span>
+                        {{ marketStatusLabel }} · {{ marketClock }}
+                      </div>
                       <n-tooltip trigger="hover">
                         <template #trigger>
                           <n-switch v-model:value="isDark" @update:value="toggleTheme" size="small">
@@ -172,6 +183,8 @@ const isDark = ref(themeStore.theme === 'dark')
 const showMobileMenu = ref(false)
 const isMobile = ref(false)
 const unreadAlertCount = ref(0)
+const nowTime = ref(new Date())
+let timeTicker: number | undefined
 
 const cachedViews = ['Home', 'Search', 'Ranking']
 
@@ -182,6 +195,26 @@ const currentThemeOverrides = computed(() => isDark.value ? darkThemeOverrides :
 
 const currentKey = computed(() => route.name as string)
 const currentTitle = computed(() => (route.meta.title as string) || '首页')
+const marketClock = computed(() => nowTime.value.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }))
+
+const marketIsOpen = computed(() => {
+  const now = nowTime.value
+  const day = now.getDay()
+  if (day === 0 || day === 6) return false
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  const am = minutes >= 570 && minutes < 690
+  const pm = minutes >= 780 && minutes < 900
+  return am || pm
+})
+
+const marketStatusLabel = computed(() => {
+  const now = nowTime.value
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  if (marketIsOpen.value) return '交易中'
+  if (minutes >= 900 && minutes < 930) return '收盘整理'
+  if (minutes >= 540 && minutes < 570) return '开盘前'
+  return '非交易时段'
+})
 
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 769
@@ -190,10 +223,16 @@ const checkMobile = () => {
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  timeTicker = window.setInterval(() => {
+    nowTime.value = new Date()
+  }, 30000)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  if (timeTicker) {
+    clearInterval(timeTicker)
+  }
 })
 
 const renderIcon = (icon: any) => {
@@ -296,8 +335,35 @@ const toggleTheme = (value: boolean) => {
 }
 
 .logo__icon {
-  font-size: 24px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(150deg, rgba(0, 183, 201, 0.18), rgba(23, 99, 146, 0.18));
+  border: 1px solid rgba(0, 183, 201, 0.22);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 3px;
   flex-shrink: 0;
+}
+
+.logo__mark {
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #57d7e4, #1d8ead);
+}
+
+.logo__mark--a {
+  height: 9px;
+}
+
+.logo__mark--b {
+  height: 13px;
+}
+
+.logo__mark--c {
+  height: 17px;
 }
 
 .logo__text {
@@ -364,6 +430,47 @@ const toggleTheme = (value: boolean) => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.market-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.market-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger-color);
+  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.5);
+  animation: market-pulse 1.8s infinite;
+}
+
+.market-status--open .market-status__dot {
+  background: var(--success-color);
+  box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.5);
+}
+
+@keyframes market-pulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
 }
 
 .user-btn {

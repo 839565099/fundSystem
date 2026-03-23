@@ -202,6 +202,7 @@ const handleClick = () => {
   min-height: 120px;
   display: flex;
   flex-direction: column;
+  background-image: linear-gradient(155deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0));
 }
 
 .stat-card--clickable {
@@ -256,22 +257,26 @@ const handleClick = () => {
 }
 
 .stat-card__icon-wrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-lg);
-  display: flex;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
 }
 
 .stat-card__icon {
-  font-size: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .stat-card__label {
-  font-size: 14px;
   color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 500;
   flex: 1;
 }
@@ -298,6 +303,8 @@ const handleClick = () => {
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
+  font-family: var(--font-number);
+  letter-spacing: 0.02em;
 }
 
 .stat-card__value--up {
@@ -327,9 +334,9 @@ const handleClick = () => {
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-full);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  margin-top: 12px;
+  margin-top: 8px;
   width: fit-content;
 }
 
@@ -355,8 +362,18 @@ const handleClick = () => {
 
 .stat-card__trend-label {
   font-size: 12px;
-  opacity: 0.8;
-  margin-left: 4px;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+}
+
+.stat-card--primary .stat-card__icon-wrapper {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stat-card--primary .stat-card__label,
+.stat-card--primary .stat-card__trend-label {
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .stat-card__footer {
@@ -416,12 +433,12 @@ const handleClick = () => {
   }
   
   .stat-card__icon-wrapper {
-    width: 38px;
+    min-width: 34px;
     height: 38px;
   }
   
   .stat-card__icon {
-    font-size: 18px;
+    font-size: 11px;
   }
 }
 </style>

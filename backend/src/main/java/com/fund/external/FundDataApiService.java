@@ -9,6 +9,10 @@ import com.fund.entity.FundNavHistory;
 import com.fund.entity.FundHoldings;
 import com.fund.entity.MarketData;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1103,9 +1107,10 @@ public class FundDataApiService {
             manager.setManagerId(managerId != null ? managerId : fundCode + "_" + Math.abs(managerName.hashCode()));
             manager.setManagerName(managerName);
             manager.setPhoto(item.getStr("NEWPHOTOURL"));
+            manager.setCompany(firstNonBlank(item, "JJGS", "COMPANY"));
 
             // 任职开始日期
-            String fempDate = item.getStr("FEMPDATE");
+            String fempDate = firstNonBlank(item, "FEMPDATE", "STARTDATE");
             if (fempDate != null && fempDate.length() >= 10) {
                 try {
                     manager.setStartDate(LocalDate.parse(fempDate.substring(0, 10)));
@@ -1121,6 +1126,10 @@ public class FundDataApiService {
                 } catch (Exception ignored) {
                 }
             }
+            if (manager.getBestReturn() == null) {
+                BigDecimal fallbackReturn = parseBigDecimal(firstNonBlank(item, "YIELDSE", "YIELD", "RETRN"));
+                manager.setBestReturn(fallbackReturn);
+            }
 
             // 第二步：获取经理详细信息
             if (managerId != null && !managerId.isEmpty()) {
@@ -1133,36 +1142,41 @@ public class FundDataApiService {
                         JSONObject detailJson = JSONUtil.parseObj(detailResponse);
                         JSONObject detailData = detailJson.getJSONObject("Datas");
                         if (detailData != null) {
-                            String company = detailData.getStr("JJGS");
+                            String company = firstNonBlank(detailData, "JJGS", "COMPANY");
                             if (company != null && !company.isEmpty()) {
                                 manager.setCompany(company);
                             }
 
                             // 从业年限
-                            if (detailData.get("TOTALDAYS") != null) {
-                                try {
-                                    int totalDays = detailData.getInt("TOTALDAYS");
-                                    manager.setWorkYears(totalDays / 365);
-                                } catch (Exception ignored) {
+                            Integer totalDays = parseInteger(firstNonBlank(detailData, "TOTALDAYS", "WORKDAYS"));
+                            if (totalDays != null && totalDays > 0) {
+                                manager.setWorkYears(totalDays / 365);
+                            }
+                            if (manager.getWorkYears() == null) {
+                                Integer years = parseInteger(firstNonBlank(detailData, "WORKYEAR", "WORKYEARS"));
+                                if (years != null && years >= 0) {
+                                    manager.setWorkYears(years);
                                 }
                             }
 
                             // 管理规模（转亿元）
-                            if (detailData.get("NETNAV") != null) {
-                                try {
-                                    BigDecimal netNav = new BigDecimal(detailData.getStr("NETNAV"));
-                                    manager.setTotalAsset(netNav.divide(new BigDecimal("100000000"), 2, RoundingMode.HALF_UP));
-                                } catch (Exception ignored) {
+                            BigDecimal netNav = parseBigDecimal(firstNonBlank(detailData, "NETNAV"));
+                            if (netNav != null) {
+                                manager.setTotalAsset(netNav.divide(new BigDecimal("100000000"), 2, RoundingMode.HALF_UP));
+                            } else {
+                                BigDecimal totalAsset = parseBigDecimal(firstNonBlank(detailData, "TOTALSCALE", "ASSETS"));
+                                if (totalAsset != null) {
+                                    manager.setTotalAsset(totalAsset);
                                 }
                             }
 
-                            String resume = detailData.getStr("RESUME");
+                            String resume = firstNonBlank(detailData, "RESUME", "DESC", "INTRO");
                             if (resume != null && !resume.isEmpty()) {
                                 manager.setResume(resume);
                             }
 
                             // 投资理念
-                            String investIdea = detailData.getStr("INVESTMENTIDEAR");
+                            String investIdea = firstNonBlank(detailData, "INVESTMENTIDEAR", "INVESTMENTIDEA");
                             if (investIdea == null || investIdea.isEmpty()) {
                                 investIdea = detailData.getStr("INVESTMENTMETHOD");
                             }
@@ -1307,97 +1321,175 @@ public class FundDataApiService {
         if (response == null || response.length() < 100) {
             return holdings;
         }
-
-        // 提取报告日期（从表头解析）
-        LocalDate reportDate = LocalDate.now();
-        Matcher dateMatcher = Pattern.compile("(\\d{4})年(\\d{1,2})月(\\d{1,2})日").matcher(response);
-        if (dateMatcher.find()) {
-            try {
-                reportDate = LocalDate.of(
-                    Integer.parseInt(dateMatcher.group(1)),
-                    Integer.parseInt(dateMatcher.group(2)),
-                    Integer.parseInt(dateMatcher.group(3))
-                );
-                log.info("解析到持仓报告日期: {}", reportDate);
-            } catch (Exception e) {
-                log.debug("解析报告日期失败", e);
-            }
-        }
-
-        // 提取第一个 tbody 中的数据行
-        Matcher tbodyMatcher = Pattern.compile("<tbody[^>]*>(.*?)</tbody>", Pattern.DOTALL).matcher(response);
-        if (!tbodyMatcher.find()) {
+        String htmlContent = extractArchivesHtmlContent(response);
+        if (htmlContent == null || htmlContent.isEmpty()) {
             return holdings;
         }
-        String tbodyContent = tbodyMatcher.group(1);
 
-        // 逐行提取 <tr> 中的 <td>
-        Matcher trMatcher = Pattern.compile("<tr>(.*?)</tr>", Pattern.DOTALL).matcher(tbodyContent);
-        while (trMatcher.find() && holdings.size() < limit) {
-            String trContent = trMatcher.group(1);
-            // 提取所有 td 内容
-            List<String> cells = new ArrayList<>();
-            Matcher tdMatcher = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(trContent);
-            while (tdMatcher.find()) {
-                // 去掉 HTML 标签，只保留文本
-                String cellText = tdMatcher.group(1).replaceAll("<[^>]+>", "").trim();
-                cells.add(cellText);
+        Document doc = Jsoup.parse(htmlContent);
+        Element firstBox = doc.selectFirst("div.box div.boxitem");
+        if (firstBox == null) {
+            firstBox = doc.body();
+        }
+
+        LocalDate reportDate = LocalDate.now();
+        Element reportDateEl = firstBox.selectFirst("label.right font.px12");
+        if (reportDateEl != null) {
+            try {
+                reportDate = LocalDate.parse(reportDateEl.text().trim());
+            } catch (Exception ignored) {
+            }
+        }
+
+        Elements rows = firstBox.select("tbody tr");
+        for (Element row : rows) {
+            if (holdings.size() >= limit) {
+                break;
             }
 
-            // 期望格式：序号(0)、股票代码(1)、股票名称(2)、最新价(3)、涨跌幅(4)、相关资讯(5)、占净值比例(6)、持股数(7)、持仓市值(8)
-            if (cells.size() >= 7) {
-                try {
-                    FundHoldings holding = new FundHoldings();
-                    holding.setFundCode(fundCode);
-                    holding.setReportDate(reportDate);
-                    holding.setHoldingType("股票");
-
-                    holding.setStockCode(cells.get(1));
-                    holding.setStockName(cells.get(2));
-
-                    // 持仓占比（第7列，百分比格式）
-                    String ratioStr = cells.get(6).replace("%", "").trim();
-                    if (!ratioStr.isEmpty() && !"---".equals(ratioStr)) {
-                        try {
-                            holding.setHoldingRatio(new BigDecimal(ratioStr));
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                    // 持股数（万股，第8列）
-                    if (cells.size() >= 8) {
-                        String sharesStr = cells.get(7).replace(",", "").trim();
-                        if (!sharesStr.isEmpty() && !"---".equals(sharesStr)) {
-                            try {
-                                holding.setHoldingShares(new BigDecimal(sharesStr));
-                            } catch (Exception ignored) {
-                            }
-                        }
-                    }
-
-                    // 持仓市值（万元，第9列）
-                    if (cells.size() >= 9) {
-                        String valueStr = cells.get(8).replace(",", "").trim();
-                        if (!valueStr.isEmpty() && !"---".equals(valueStr)) {
-                            try {
-                                holding.setHoldingValue(new BigDecimal(valueStr));
-                            } catch (Exception ignored) {
-                            }
-                        }
-                    }
-
-                    if (holding.getStockCode() != null && !holding.getStockCode().isEmpty()) {
-                        holdings.add(holding);
-                        log.debug("从Archives获取持仓: {} - {} 占比{}%", holding.getStockCode(), holding.getStockName(), holding.getHoldingRatio());
-                    }
-                } catch (Exception e) {
-                    log.debug("解析持仓行失败", e);
-                }
+            Elements tds = row.select("td");
+            if (tds.size() < 5) {
+                continue;
             }
+
+            FundHoldings holding = new FundHoldings();
+            holding.setFundCode(fundCode);
+            holding.setReportDate(reportDate);
+            holding.setHoldingType("股票");
+
+            String codeText = tds.size() > 1 ? tds.get(1).text() : "";
+            String nameText = tds.size() > 2 ? tds.get(2).text() : "";
+            String stockCode = extractStockCode(codeText);
+            String stockName = cleanCellText(nameText);
+
+            // 兼容字段错位场景
+            if (!isStockCode(stockCode) && isStockCode(nameText)) {
+                stockCode = extractStockCode(nameText);
+                stockName = cleanCellText(codeText);
+            }
+
+            if (!isStockCode(stockCode)) {
+                continue;
+            }
+            holding.setStockCode(stockCode);
+            holding.setStockName(stockName);
+
+            String ratioRaw = extractRatioTextFromCells(tds);
+            BigDecimal ratio = parseBigDecimal(cleanNumber(ratioRaw));
+            if (ratio != null) {
+                holding.setHoldingRatio(ratio);
+            }
+
+            String sharesRaw = tds.get(tds.size() - 2).text();
+            BigDecimal shares = parseBigDecimal(cleanNumber(sharesRaw));
+            if (shares != null) {
+                holding.setHoldingShares(shares);
+            }
+
+            String valueRaw = tds.get(tds.size() - 1).text();
+            BigDecimal value = parseBigDecimal(cleanNumber(valueRaw));
+            if (value != null) {
+                holding.setHoldingValue(value);
+            }
+
+            holdings.add(holding);
+            log.debug("从Archives获取持仓: {} - {} 占比{}%", holding.getStockCode(), holding.getStockName(), holding.getHoldingRatio());
         }
 
         log.info("从FundArchivesDatas获取持仓: {}条", holdings.size());
         return holdings;
+    }
+
+    private String extractArchivesHtmlContent(String response) {
+        Matcher matcher = Pattern.compile("content:\"(.*)\",arryear:", Pattern.DOTALL).matcher(response);
+        if (!matcher.find()) {
+            return null;
+        }
+        String content = matcher.group(1);
+        return content
+                .replace("\\\"", "\"")
+                .replace("\\/", "/")
+                .replace("\\n", "")
+                .replace("\\r", "");
+    }
+
+    private String extractRatioTextFromCells(Elements tds) {
+        int ratioIndex = tds.size() - 3;
+        if (ratioIndex >= 0) {
+            String candidate = tds.get(ratioIndex).text();
+            if (candidate.contains("%")) {
+                return candidate;
+            }
+        }
+        for (Element td : tds) {
+            String text = td.text();
+            if (text.contains("%")) {
+                return text;
+            }
+        }
+        return "";
+    }
+
+    private String extractStockCode(String text) {
+        if (text == null) return "";
+        Matcher matcher = Pattern.compile("(\\d{6})").matcher(text);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    private boolean isStockCode(String text) {
+        return text != null && text.matches("\\d{6}");
+    }
+
+    private String cleanCellText(String text) {
+        if (text == null) return "";
+        return text.replaceAll("\\s+", "").trim();
+    }
+
+    private String cleanNumber(String raw) {
+        if (raw == null) return "";
+        return raw.replace("%", "").replace(",", "").replace("，", "").trim();
+    }
+
+    private BigDecimal parseBigDecimal(String text) {
+        if (text == null || text.isEmpty() || "---".equals(text) || "--".equals(text)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(text);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Integer parseInteger(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("(-?\\d+)").matcher(text);
+        if (!matcher.find()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String firstNonBlank(JSONObject json, String... keys) {
+        if (json == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            String value = json.getStr(key);
+            if (value != null && !value.trim().isEmpty() && !"null".equalsIgnoreCase(value.trim())) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     /**

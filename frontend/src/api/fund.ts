@@ -368,6 +368,14 @@ export const fundApi = {
     const response = await api.get<Result<any[]>>('/recommend/hot', { params: { limit } })
     return handleResponse(response)
   },
+  getClassicHotFunds: async (limit: number = 10) => {
+    const response = await api.get<Result<any[]>>('/fund/hot', { params: { limit } })
+    return handleResponse(response)
+  },
+  getTopGrowthFunds: async (limit: number = 10) => {
+    const response = await api.get<Result<any[]>>('/fund/top', { params: { limit } })
+    return handleResponse(response)
+  },
   getHotRecommend: async (limit: number = 10) => {
     const response = await api.get<Result<any[]>>('/recommend/hot', { params: { limit } })
     return handleResponse(response)
