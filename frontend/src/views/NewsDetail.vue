@@ -25,9 +25,20 @@
 
           <div class="news-meta">
             <div class="meta-left">
-              <span v-if="news.source" class="meta-item source">
-                <n-icon size="14"><LocationOutline /></n-icon>
-                {{ news.source }}
+              <span v-if="news.source" class="meta-item source-item">
+                <span v-if="getSourceIcon(news.source) === 'sina'" class="source-icon sina">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M9.197 15.566c1.73 1.09 3.743 1.362 5.314.705 1.569-.657 2.512-2.057 2.512-3.742 0-1.684-.943-3.084-2.512-3.741-1.571-.657-3.584-.386-5.314.705-1.73 1.09-2.782 2.71-2.782 4.446 0 1.735 1.052 3.355 2.782 4.446l-.5.785zm-1.5-7.498c2.443-1.542 5.437-1.912 7.8-.924 2.362.988 3.816 3.127 3.816 5.578 0 2.45-1.454 4.59-3.816 5.578-2.363.988-5.357.618-7.8-.924-2.442-1.541-3.935-3.893-3.935-6.437 0-2.544 1.493-4.896 3.935-6.437l.5.786z"/>
+                  </svg>
+                </span>
+                <span v-else-if="getSourceIcon(news.source) === 'eastmoney'" class="source-icon eastmoney">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">东</text>
+                  </svg>
+                </span>
+                <n-icon v-else size="16"><LocationOutline /></n-icon>
+                <span class="source-name">{{ news.source }}</span>
               </span>
               <span v-if="news.author" class="meta-item">
                 <n-icon size="14"><PersonOutline /></n-icon>
@@ -75,17 +86,26 @@
 
         <!-- 文章内容 -->
         <div class="news-content card">
-          <div v-if="news.content" class="content-text" v-html="news.content"></div>
-          <div v-else-if="news.summary" class="content-text">{{ news.summary }}</div>
+          <div v-if="news.content && news.content.length >= 100" class="content-text" v-html="news.content"></div>
+          <div v-else-if="news.summary" class="content-text">
+            {{ news.summary }}
+            <div v-if="news.originalUrl" class="content-note">
+              <n-icon size="16"><InformationCircleOutline /></n-icon>
+              正文内容较少，建议查看原文获取完整内容
+            </div>
+          </div>
           <n-empty v-else description="暂无详细内容">
             <template #extra>
-              <p class="no-content-tip">该资讯仅提供标题信息，暂无正文内容</p>
+              <p class="no-content-tip">该资讯仅提供标题信息，请查看原文获取完整内容</p>
+              <n-button v-if="news.originalUrl" type="primary" @click="openOriginal(news.originalUrl)">
+                查看原文
+              </n-button>
             </template>
           </n-empty>
 
           <!-- 原文链接 -->
-          <div v-if="news.originalUrl" class="original-link">
-            <n-button text type="primary" @click="openOriginal(news.originalUrl)">
+          <div v-if="news.originalUrl && news.content && news.content.length >= 100" class="original-link">
+            <n-button type="primary" @click="openOriginal(news.originalUrl)">
               <template #icon><n-icon><OpenOutline /></n-icon></template>
               查看原文
             </n-button>
@@ -145,7 +165,7 @@ import { NButton, NIcon, NSpin, NEmpty, NTag, createDiscreteApi } from 'naive-ui
 import {
   ArrowBackOutline, LocationOutline, PersonOutline, TimeOutline,
   EyeOutline, StarOutline, ShareSocialOutline, OpenOutline,
-  DocumentsOutline, ListOutline
+  DocumentsOutline, ListOutline, InformationCircleOutline
 } from '@vicons/ionicons5'
 import { newsApi } from '../api/fund'
 import type { FundNews } from '../types'
@@ -179,6 +199,16 @@ const getSentimentLabel = (sentiment: string) => {
     case 'BEARISH': return '利空'
     default: return '中性'
   }
+}
+
+// 来源图标映射
+const getSourceIcon = (source?: string) => {
+  if (source?.includes('新浪')) {
+    return 'sina'
+  } else if (source?.includes('东方财富') || source?.includes('东财')) {
+    return 'eastmoney'
+  }
+  return 'default'
 }
 
 const loadNews = async () => {
@@ -297,6 +327,35 @@ onMounted(loadNews)
   color: var(--primary-color);
 }
 
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-item .source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.source-item .source-icon.sina {
+  color: #ff6600;
+}
+
+.source-item .source-icon.eastmoney {
+  color: #c00;
+}
+
+.source-item .source-name {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .impact-section {
   display: flex;
   align-items: center;
@@ -341,6 +400,18 @@ onMounted(loadNews)
   font-size: 14px;
   color: var(--text-secondary);
   margin-top: 8px;
+}
+
+.content-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--bg-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .original-link {
