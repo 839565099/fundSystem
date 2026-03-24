@@ -20,7 +20,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -36,6 +38,35 @@ public class NewsCrawlerService {
     private final Set<String> existedTitles = new HashSet<>();
     private static final int MAX_CACHE_SIZE = 1000;
     private static final int NEWS_EXPIRE_DAYS = 30;
+
+    // 分类关键词映射
+    private static final Map<String, String[]> CATEGORY_KEYWORDS = new LinkedHashMap<>();
+
+    static {
+        CATEGORY_KEYWORDS.put("基金动态", new String[]{"基金", "净值", "申购", "赎回", "基金经理", "ETF", "LOF", "QDII"});
+        CATEGORY_KEYWORDS.put("政策法规", new String[]{"政策", "监管", "证监会", "央行", "银保监", "国务院", "法规", "新规"});
+        CATEGORY_KEYWORDS.put("市场分析", new String[]{"市场", "行情", "大盘", "指数", "A股", "沪指", "深成指", "创业板"});
+        CATEGORY_KEYWORDS.put("行业动态", new String[]{"行业", "板块", "概念", "龙头", "产业链", "新能源", "半导体", "医药"});
+        CATEGORY_KEYWORDS.put("资金流向", new String[]{"资金", "流入", "流出", "主力", "北向", "南向", "外资", "机构"});
+    }
+
+    /**
+     * 智能分类新闻
+     */
+    private String classifyNews(String title, String content) {
+        String text = (title != null ? title : "") + " " + (content != null ? content : "");
+
+        for (Map.Entry<String, String[]> entry : CATEGORY_KEYWORDS.entrySet()) {
+            String category = entry.getKey();
+            String[] keywords = entry.getValue();
+            for (String keyword : keywords) {
+                if (text.contains(keyword)) {
+                    return category;
+                }
+            }
+        }
+        return "财经要闻";
+    }
 
     @PostConstruct
     public void init() {
@@ -151,7 +182,7 @@ public class NewsCrawlerService {
                                 news.setTitle(item.getStr("title"));
                                 news.setSource("新浪财经");
                                 news.setAuthor(item.getStr("media_name"));
-                                news.setNewsType("财经要闻");
+                                news.setNewsType(classifyNews(news.getTitle(), news.getSummary()));
                                 // 获取原文链接
                                 String newsUrl = item.getStr("url");
                                 if (newsUrl != null && !newsUrl.isEmpty()) {
@@ -223,7 +254,7 @@ public class NewsCrawlerService {
                                 news.setTitle(item.getStr("title"));
                                 news.setSource("东方财富");
                                 news.setAuthor(item.getStr("editor_name"));
-                                news.setNewsType("市场分析");
+                                news.setNewsType(classifyNews(news.getTitle(), news.getSummary()));
 
                                 // 原文链接是 url_w 或 url_unique
                                 String artUrl = item.getStr("url_w");
