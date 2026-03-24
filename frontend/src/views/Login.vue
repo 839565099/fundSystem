@@ -19,6 +19,8 @@
         </n-button>
       </n-form>
       <div class="login-footer">
+        <n-button text type="primary" @click="router.push('/forgot-password')">忘记密码？</n-button>
+        <span class="footer-divider">|</span>
         还没有账号？
         <n-button text type="primary" @click="router.push('/register')">立即注册</n-button>
       </div>
@@ -102,5 +104,13 @@ const handleLogin = async () => {
   text-align: center;
   margin-top: 24px;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.footer-divider {
+  color: var(--border-color);
 }
 </style>

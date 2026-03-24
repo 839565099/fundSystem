@@ -65,6 +65,7 @@
                         <span class="market-status__dot"></span>
                         {{ marketStatusLabel }} · {{ marketClock }}
                       </div>
+                      <NotificationBell v-if="authStore.isLoggedIn" />
                       <n-tooltip trigger="hover">
                         <template #trigger>
                           <n-switch v-model:value="isDark" @update:value="toggleTheme" size="small">
@@ -167,11 +168,13 @@ import {
   AnalyticsOutline,
   SparklesOutline,
   MenuOutline,
+  MailOutline,
 } from '@vicons/ionicons5'
 import { useAuthStore } from './stores/auth'
 import { useThemeStore } from './stores/theme'
 import { lightThemeOverrides, darkThemeOverrides } from './styles/naive-theme'
 import MobileNav from './components/MobileNav.vue'
+import NotificationBell from './components/NotificationBell.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -249,6 +252,7 @@ const menuKeyToPath: Record<string, string> = {
   Compare: '/compare',
   Portfolio: '/portfolio',
   Alerts: '/alerts',
+  Notifications: '/notifications',
   AIAssistant: '/ai-assistant',
   Analytics: '/analytics',
   News: '/news',
@@ -265,6 +269,7 @@ const menuOptions: MenuOption[] = [
   { label: '我的收藏', key: 'Favorites', icon: renderIcon(StarOutline) },
   { label: '投资组合', key: 'Portfolio', icon: renderIcon(WalletOutline) },
   { label: '预警管理', key: 'Alerts', icon: renderIcon(NotificationsOutline) },
+  { label: '消息中心', key: 'Notifications', icon: renderIcon(MailOutline) },
   { label: '基金对比', key: 'Compare', icon: renderIcon(GitCompareOutline) },
   { type: 'divider', key: 'd2' },
   { label: 'AI 助手', key: 'AIAssistant', icon: renderIcon(SparklesOutline) },

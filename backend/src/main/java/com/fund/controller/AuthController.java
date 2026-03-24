@@ -1,11 +1,9 @@
 package com.fund.controller;
 
 import com.fund.common.Result;
-import com.fund.dto.ChangePasswordDTO;
-import com.fund.dto.LoginDTO;
-import com.fund.dto.RegisterDTO;
-import com.fund.dto.UpdateProfileDTO;
+import com.fund.dto.*;
 import com.fund.entity.User;
+import com.fund.service.PasswordResetService;
 import com.fund.service.UserService;
 import com.fund.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +15,9 @@ import java.util.Map;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    
+
     private final UserService userService;
+    private final PasswordResetService passwordResetService;
     
     @PostMapping("/register")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO registerDTO) {
@@ -59,5 +58,62 @@ public class AuthController {
     public Result<Map<String, Object>> getUserStats(@RequestAttribute Long userId) {
         Map<String, Object> stats = userService.getUserStats(userId);
         return Result.success(stats);
+    }
+
+    /**
+     * 忘记密码 - 发送重置邮件
+     */
+    @PostMapping("/forgot-password")
+    public Result<?> forgotPassword(@Valid @RequestBody ForgotPasswordDTO dto) {
+        boolean success;
+        if ("code".equals(dto.getType())) {
+            success = passwordResetService.sendVerificationCode(dto.getEmail());
+        } else {
+            success = passwordResetService.sendResetEmail(dto.getEmail());
+        }
+        if (success) {
+            return Result.success("重置邮件已发送，请查收邮箱");
+        }
+        return Result.error("发送失败，请稍后重试");
+    }
+
+    /**
+     * 验证重置令牌
+     */
+    @GetMapping("/validate-reset-token")
+    public Result<Boolean> validateResetToken(@RequestParam String token) {
+        boolean valid = passwordResetService.validateToken(token);
+        return Result.success(valid);
+    }
+
+    /**
+     * 验证验证码
+     */
+    @PostMapping("/validate-reset-code")
+    public Result<Boolean> validateResetCode(@RequestParam String email, @RequestParam String code) {
+        boolean valid = passwordResetService.validateCode(email, code);
+        return Result.success(valid);
+    }
+
+    /**
+     * 重置密码
+     */
+    @PostMapping("/reset-password")
+    public Result<?> resetPassword(@Valid @RequestBody ResetPasswordDTO dto) {
+        boolean success;
+        if (dto.getToken() != null && !dto.getToken().isEmpty()) {
+            // 通过令牌重置
+            success = passwordResetService.resetPassword(dto.getToken(), dto.getNewPassword());
+        } else if (dto.getEmail() != null && dto.getCode() != null) {
+            // 通过验证码重置
+            success = passwordResetService.resetPasswordWithCode(dto.getEmail(), dto.getCode(), dto.getNewPassword());
+        } else {
+            return Result.error("参数不完整");
+        }
+
+        if (success) {
+            return Result.success("密码重置成功，请使用新密码登录");
+        }
+        return Result.error("密码重置失败，请检查链接或验证码是否有效");
     }
 }

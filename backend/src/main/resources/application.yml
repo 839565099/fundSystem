@@ -114,12 +114,16 @@ ai:
     max-tokens: 4096
     temperature: 0.7
 
-# Actuator 健康检查
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: when-authorized
+  # 邮件配置
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+
+# 密码重置配置
+password:
+  reset:
+    url: ${RESET_URL:http://localhost:3000/reset-password}
+    expire-minutes: 30

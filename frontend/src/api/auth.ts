@@ -39,4 +39,25 @@ export const authApi = {
     const response = await api.get<Result<UserStats>>('/auth/stats')
     return handleResponse(response)
   },
+
+  // 密码重置相关
+  forgotPassword: async (email: string, type: 'link' | 'code' = 'link') => {
+    const response = await api.post<Result<string>>('/auth/forgot-password', { email, type })
+    return handleResponse(response)
+  },
+
+  validateResetToken: async (token: string) => {
+    const response = await api.get<Result<boolean>>('/auth/validate-reset-token', { params: { token } })
+    return handleResponse(response)
+  },
+
+  validateResetCode: async (email: string, code: string) => {
+    const response = await api.post<Result<boolean>>('/auth/validate-reset-code', null, { params: { email, code } })
+    return handleResponse(response)
+  },
+
+  resetPassword: async (data: { token?: string; email?: string; code?: string; newPassword: string }) => {
+    const response = await api.post<Result<string>>('/auth/reset-password', data)
+    return handleResponse(response)
+  },
 }
