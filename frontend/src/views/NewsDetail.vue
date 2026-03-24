@@ -93,6 +93,12 @@
               <n-icon size="16"><InformationCircleOutline /></n-icon>
               正文内容较少，建议查看原文获取完整内容
             </div>
+            <div v-if="news.originalUrl" class="original-link">
+              <n-button type="primary" @click="openOriginal(news.originalUrl)">
+                <template #icon><n-icon><OpenOutline /></n-icon></template>
+                查看原文
+              </n-button>
+            </div>
           </div>
           <n-empty v-else description="暂无详细内容">
             <template #extra>

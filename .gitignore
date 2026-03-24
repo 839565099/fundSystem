@@ -19,6 +19,7 @@ buildNumber.properties
 .claude/
 *.swp
 *.swo
+*.pid
 *~
 nohup.out
 
