@@ -23,10 +23,17 @@
 
     <!-- 分类标签 -->
     <div class="category-tabs card">
-      <n-radio-group v-model:value="selectedType" @update:value="handleTypeChange">
-        <n-radio-button value="">全部</n-radio-button>
-        <n-radio-button v-for="type in newsTypes" :key="type" :value="type">{{ type }}</n-radio-button>
-      </n-radio-group>
+      <div class="tabs-wrapper">
+        <n-radio-group v-model:value="selectedType" @update:value="handleTypeChange">
+          <n-radio-button value="">全部</n-radio-button>
+          <n-radio-button value="财经要闻">财经要闻</n-radio-button>
+          <n-radio-button value="基金动态">基金动态</n-radio-button>
+          <n-radio-button value="市场分析">市场分析</n-radio-button>
+          <n-radio-button value="政策法规">政策法规</n-radio-button>
+          <n-radio-button value="行业动态">行业动态</n-radio-button>
+          <n-radio-button value="资金流向">资金流向</n-radio-button>
+        </n-radio-group>
+      </div>
       <div class="sentiment-filter">
         <span class="filter-label">情感筛选:</span>
         <n-button
@@ -64,8 +71,19 @@
                 <p v-if="item.summary" class="card-summary">{{ item.summary }}</p>
                 <div class="card-meta">
                   <span class="source">
-                    <n-icon size="14"><LocationOutline /></n-icon>
-                    {{ item.source || '未知来源' }}
+                    <span v-if="getSourceIcon(item.source) === 'sina'" class="source-icon sina">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M9.197 15.566c1.73 1.09 3.743 1.362 5.314.705 1.569-.657 2.512-2.057 2.512-3.742 0-1.684-.943-3.084-2.512-3.741-1.571-.657-3.584-.386-5.314.705-1.73 1.09-2.782 2.71-2.782 4.446 0 1.735 1.052 3.355 2.782 4.446l-.5.785zm-1.5-7.498c2.443-1.542 5.437-1.912 7.8-.924 2.362.988 3.816 3.127 3.816 5.578 0 2.45-1.454 4.59-3.816 5.578-2.363.988-5.357.618-7.8-.924-2.442-1.541-3.935-3.893-3.935-6.437 0-2.544 1.493-4.896 3.935-6.437l.5.786z"/>
+                      </svg>
+                    </span>
+                    <span v-else-if="getSourceIcon(item.source) === 'eastmoney'" class="source-icon eastmoney">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">东</text>
+                      </svg>
+                    </span>
+                    <n-icon v-else size="14"><LocationOutline /></n-icon>
+                    <span class="source-name">{{ item.source || '未知来源' }}</span>
                   </span>
                   <span class="time">
                     <n-icon size="14"><TimeOutline /></n-icon>
@@ -175,7 +193,6 @@ const searchKeyword = ref('')
 const selectedType = ref('')
 const selectedSentiment = ref('')
 const newsList = ref<FundNews[]>([])
-const newsTypes = ref<string[]>([])
 const hotNews = ref<FundNews[]>([])
 const sentimentOverview = ref<NewsSentimentOverview>()
 
@@ -227,6 +244,16 @@ const getHotRankClass = (index: number) => {
   return ''
 }
 
+// 来源图标映射
+const getSourceIcon = (source?: string) => {
+  if (source?.includes('新浪')) {
+    return 'sina'
+  } else if (source?.includes('东方财富') || source?.includes('东财')) {
+    return 'eastmoney'
+  }
+  return 'default'
+}
+
 // 加载新闻列表
 const loadNews = async () => {
   loading.value = true
@@ -253,15 +280,6 @@ const loadNews = async () => {
     message.error('加载失败')
   } finally {
     loading.value = false
-  }
-}
-
-// 加载分类
-const loadTypes = async () => {
-  try {
-    newsTypes.value = await newsApi.getTypes() || []
-  } catch {
-    // 忽略错误
   }
 }
 
@@ -331,7 +349,6 @@ const showNewsNotification = (news: FundNews) => {
 
 onMounted(() => {
   loadNews()
-  loadTypes()
   loadHotNews()
   loadSentiment()
   connectSSE()
@@ -457,6 +474,43 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.source-icon.sina {
+  color: #ff6600;
+}
+
+.source-icon.eastmoney {
+  color: #c00;
+}
+
+.source-name {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.tabs-wrapper {
+  flex: 1;
+  overflow-x: auto;
+}
+
+.tabs-wrapper :deep(.n-radio-group) {
+  flex-wrap: nowrap;
 }
 
 .pagination {
