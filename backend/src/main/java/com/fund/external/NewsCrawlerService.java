@@ -15,6 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -145,6 +149,17 @@ public class NewsCrawlerService {
         }
 
         try {
+            // 尝试抓取全文
+            if ((news.getContent() == null || news.getContent().length() < 100) && news.getOriginalUrl() != null) {
+                String fullContent = fetchFullContent(news.getOriginalUrl(), news.getSource());
+                if (fullContent != null && fullContent.length() > 100) {
+                    news.setContent(fullContent);
+                    if (news.getSummary() == null || news.getSummary().isEmpty()) {
+                        news.setSummary(fullContent.length() > 200 ? fullContent.substring(0, 200) + "..." : fullContent);
+                    }
+                }
+            }
+
             newsSentimentAnalyzeService.analyzeAndFill(news);
             FundNews saved = fundNewsService.publishRealtimeNews(news);
             newsStreamService.publish(saved);
@@ -300,5 +315,75 @@ public class NewsCrawlerService {
             log.error("抓取东方财富新闻失败", e);
         }
         return newsList;
+    }
+
+    /**
+     * 尝试抓取新闻全文
+     */
+    private String fetchFullContent(String url, String source) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+
+        try {
+            org.jsoup.Connection connection = Jsoup.connect(url)
+                    .timeout(8000)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+            Document doc = connection.get();
+
+            String content = null;
+            if ("新浪财经".equals(source)) {
+                content = extractSinaContent(doc);
+            } else if ("东方财富".equals(source)) {
+                content = extractEastmoneyContent(doc);
+            }
+
+            if (content == null || content.length() < 100) {
+                content = extractGenericContent(doc);
+            }
+
+            return content;
+
+        } catch (Exception e) {
+            log.debug("抓取全文失败: {} - {}", url, e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractSinaContent(Document doc) {
+        Element article = doc.selectFirst("#artibody");
+        if (article != null) {
+            return article.text();
+        }
+        return null;
+    }
+
+    private String extractEastmoneyContent(Document doc) {
+        Element article = doc.selectFirst(".Body");
+        if (article == null) {
+            article = doc.selectFirst("#ContentBody");
+        }
+        if (article != null) {
+            return article.text();
+        }
+        return null;
+    }
+
+    private String extractGenericContent(Document doc) {
+        Element article = doc.selectFirst("article");
+        if (article != null && article.text().length() > 100) {
+            return article.text();
+        }
+
+        String[] selectors = {".content", ".article-content", ".post-content", ".entry-content"};
+        for (String selector : selectors) {
+            Element el = doc.selectFirst(selector);
+            if (el != null && el.text().length() > 100) {
+                return el.text();
+            }
+        }
+
+        return null;
     }
 }
