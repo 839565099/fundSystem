@@ -9,7 +9,7 @@
       </template>
       <template v-else-if="!validToken && !usingCode">
         <div class="error-state">
-          <n-icon size="64" color="#d03050"><CloseCircleOutline /></n-icon>
+          <n-icon size="64" color="#d03050"><IconCircleX /></n-icon>
           <h2>链接无效或已过期</h2>
           <p>请重新获取密码重置链接</p>
           <n-button type="primary" @click="router.push('/forgot-password')">重新获取</n-button>
@@ -50,7 +50,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NForm, NFormItem, NInput, NButton, NSpin, NIcon, type FormInst, type FormRules, createDiscreteApi } from 'naive-ui'
-import { CloseCircleOutline } from '@vicons/ionicons5'
+import { IconCircleX } from '@tabler/icons-vue'
 import { authApi } from '../api/auth'
 
 const { message } = createDiscreteApi(['message'])

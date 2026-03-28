@@ -9,7 +9,7 @@
           </div>
           <n-button @click="refreshData" :loading="refreshing">
             <template #icon>
-              <n-icon><RefreshOutline /></n-icon>
+              <n-icon><IconRefresh /></n-icon>
             </template>
             刷新
           </n-button>
@@ -128,7 +128,7 @@
           <div style="margin-top: 12px; text-align: right;">
             <n-button type="primary" @click="askAI()" :loading="aiLoading">
               <template #icon>
-                <n-icon><ChatbubbleOutline /></n-icon>
+                <n-icon><IconMessage /></n-icon>
               </template>
               提问
             </n-button>
@@ -151,9 +151,9 @@
             >
               <div class="alert-icon" :class="getAlertIconClass(alert.alertType)">
                 <n-icon>
-                  <AlertCircleOutline v-if="alert.alertType === 'GROWTH'" />
-                  <NewspaperOutline v-else-if="alert.alertType === 'NEWS'" />
-                  <NotificationsOutline v-else />
+                  <IconAlertCircle v-if="alert.alertType === 'GROWTH'" />
+                  <IconNews v-else-if="alert.alertType === 'NEWS'" />
+                  <IconBell v-else />
                 </n-icon>
               </div>
               <div class="alert-content">
@@ -264,10 +264,10 @@ import {
   useMessage
 } from 'naive-ui'
 import {
-  RefreshOutline,
-  NotificationsOutline, ChatbubbleOutline,
-  AlertCircleOutline, NewspaperOutline
-} from '@vicons/ionicons5'
+  IconRefresh,
+  IconBell, IconMessage,
+  IconAlertCircle, IconNews
+} from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import GrowthText from '../components/GrowthText.vue'
@@ -699,6 +699,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 400px;
+  overflow: hidden;
 }
 
 .news-item {

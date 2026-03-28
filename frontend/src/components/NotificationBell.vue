@@ -5,7 +5,7 @@
         <n-button quaternary circle>
           <template #icon>
             <n-icon size="20">
-              <NotificationsOutline />
+              <IconBell />
             </n-icon>
           </template>
         </n-button>
@@ -58,7 +58,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NBadge, NButton, NIcon, NSpin, NEmpty, NPopover, createDiscreteApi } from 'naive-ui'
-import { NotificationsOutline, AlertCircleOutline, InformationCircleOutline, StarOutline } from '@vicons/ionicons5'
+import { IconBell, IconAlertCircle, IconInfoCircle, IconStar } from '@tabler/icons-vue'
 import { notificationApi, type Notification } from '../api/notification'
 
 const { message } = createDiscreteApi(['message'])
@@ -72,10 +72,10 @@ const notifications = ref<Notification[]>([])
 
 const getIcon = (type: string) => {
   switch (type) {
-    case 'ALERT': return AlertCircleOutline
-    case 'SYSTEM': return InformationCircleOutline
-    case 'ACTIVITY': return StarOutline
-    default: return NotificationsOutline
+    case 'ALERT': return IconAlertCircle
+    case 'SYSTEM': return IconInfoCircle
+    case 'ACTIVITY': return IconStar
+    default: return IconBell
   }
 }
 

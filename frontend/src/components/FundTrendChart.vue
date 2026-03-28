@@ -29,9 +29,9 @@
             @click="chartType = t.value as 'line' | 'area' | 'column'"
           >
             <n-icon size="14" style="margin-right: 4px;">
-              <TrendingUpOutline v-if="t.value === 'line'" />
-              <CashOutline v-else-if="t.value === 'area'" />
-              <BarChartOutline v-else />
+              <IconTrendingUp v-if="t.value === 'line'" />
+              <IconCoin v-else-if="t.value === 'area'" />
+              <IconChartBar v-else />
             </n-icon>
             {{ t.label }}
           </button>
@@ -48,15 +48,15 @@
             :class="{ active: displayMode === 'nav' }"
             @click="displayMode = 'nav'"
           >
-            <n-icon size="14" style="margin-right: 4px;"><CashOutline /></n-icon>
+            <n-icon size="14" style="margin-right: 4px;"><IconCoin /></n-icon>
             净值
           </button>
-          <button 
+          <button
             class="segment-btn"
             :class="{ active: displayMode === 'growth' }"
             @click="displayMode = 'growth'"
           >
-            <n-icon size="14" style="margin-right: 4px;"><TrendingUpOutline /></n-icon>
+            <n-icon size="14" style="margin-right: 4px;"><IconTrendingUp /></n-icon>
             涨跌幅
           </button>
         </div>
@@ -67,7 +67,7 @@
           <template #trigger>
             <n-button quaternary size="small" @click="toggleFullscreen">
               <template #icon>
-                <n-icon><ExpandOutline /></n-icon>
+                <n-icon><IconArrowsMaximize /></n-icon>
               </template>
             </n-button>
           </template>
@@ -77,7 +77,7 @@
           <template #trigger>
             <n-button quaternary size="small" @click="downloadChart">
               <template #icon>
-                <n-icon><DownloadOutline /></n-icon>
+                <n-icon><IconDownload /></n-icon>
               </template>
             </n-button>
           </template>
@@ -126,7 +126,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { NIcon, NButton, NTooltip, useMessage } from 'naive-ui'
-import { TrendingUpOutline, CashOutline, BarChartOutline, ExpandOutline, DownloadOutline } from '@vicons/ionicons5'
+import { IconTrendingUp, IconCoin, IconChartBar, IconArrowsMaximize, IconDownload } from '@tabler/icons-vue'
 import * as echarts from 'echarts'
 import type { FundNavHistoryVO } from '../types'
 import { useThemeStore } from '../stores/theme'

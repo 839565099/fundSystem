@@ -56,7 +56,7 @@
     <div class="chart-section card">
       <div class="chart-header">
         <h2 class="section-title">
-          <n-icon size="24"><TrendingUpOutline /></n-icon>
+          <n-icon size="24"><IconTrendingUp /></n-icon>
           走势图
         </h2>
         <div class="chart-controls">
@@ -78,7 +78,7 @@
 
     <div class="indicator-section card" v-if="chartMode !== 'minute'">
       <h3 class="section-title">
-        <n-icon size="20"><AnalyticsOutline /></n-icon>
+        <n-icon size="20"><IconChartDots3 /></n-icon>
         技术指标
       </h3>
       <n-tabs type="line" animated @update:value="handleIndicatorTabChange">
@@ -96,7 +96,7 @@
 
     <div class="history-section card">
       <h3 class="section-title">
-        <n-icon size="20"><ListOutline /></n-icon>
+        <n-icon size="20"><IconList /></n-icon>
         历史数据
       </h3>
       <n-data-table
@@ -115,7 +115,7 @@
 import { ref, onMounted, onUnmounted, watch, h, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NIcon, NTag, NSpin, NTabs, NTabPane, NDataTable, createDiscreteApi } from 'naive-ui'
-import { TrendingUpOutline, AnalyticsOutline, ListOutline } from '@vicons/ionicons5'
+import { IconTrendingUp, IconChartDots3, IconList } from '@tabler/icons-vue'
 import { marketApi } from '../api/fund'
 import type { MarketDataVO } from '../types'
 import * as echarts from 'echarts'

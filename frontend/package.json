@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vicons/ionicons5": "^0.13.0",
+    "@tabler/icons-vue": "^3.41.0",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "dayjs": "^1.11.19",

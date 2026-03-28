@@ -131,7 +131,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon, NButton, NSpin, NEmpty, NButtonGroup, NPopover, NCheckboxGroup, NCheckbox, NSpace, createDiscreteApi } from 'naive-ui'
-import { StarOutline, DownloadOutline, TrendingUpOutline } from '@vicons/ionicons5'
+import { IconStar as StarOutline, IconDownload as DownloadOutline, IconTrendingUp as TrendingUpOutline } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import GrowthText from '../components/GrowthText.vue'
 import { favoriteApi, exportApi, fundApi } from '../api/fund'

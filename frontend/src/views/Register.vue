@@ -13,7 +13,7 @@
             </defs>
             <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" fill="url(#logoGradient)" opacity="0.9"/>
             <path d="M24 14L34 20V32L24 38L14 32V20L24 14Z" fill="#ffffff"/>
-            <circle cx="24" cy="24" r="4" fill="#3b82f6"/>
+            <circle cx="24" cy="24" r="4" fill="#D4A843"/>
           </svg>
         </div>
 
@@ -70,7 +70,7 @@
             <n-input
               v-model:value="form.username"
               placeholder="请输入用户名"
-              :input-props="{ autocomplete: 'username', style: 'color: #1e293b' }"
+              :input-props="{ autocomplete: 'username', style: 'color: var(--text-primary)' }"
             />
           </n-form-item>
 
@@ -80,7 +80,7 @@
               type="password"
               placeholder="请输入密码"
               show-password-on="click"
-              :input-props="{ autocomplete: 'new-password', style: 'color: #1e293b' }"
+              :input-props="{ autocomplete: 'new-password', style: 'color: var(--text-primary)' }"
             />
           </n-form-item>
 
@@ -90,7 +90,7 @@
               type="password"
               placeholder="请再次输入密码"
               show-password-on="click"
-              :input-props="{ autocomplete: 'new-password', style: 'color: #1e293b' }"
+              :input-props="{ autocomplete: 'new-password', style: 'color: var(--text-primary)' }"
             />
           </n-form-item>
 
@@ -98,7 +98,7 @@
             <n-input
               v-model:value="form.nickname"
               placeholder="请输入昵称（可选）"
-              :input-props="{ style: 'color: #1e293b' }"
+              :input-props="{ style: 'color: var(--text-primary)' }"
             />
           </n-form-item>
 
@@ -106,7 +106,7 @@
             <n-input
               v-model:value="form.email"
               placeholder="请输入邮箱（可选）"
-              :input-props="{ autocomplete: 'email', style: 'color: #1e293b' }"
+              :input-props="{ autocomplete: 'email', style: 'color: var(--text-primary)' }"
             />
           </n-form-item>
 
@@ -214,13 +214,13 @@ const handleRegister = async () => {
 .register-page {
   min-height: 100vh;
   display: flex;
-  background: #f1f5f9;
+  background: var(--bg-secondary);
 }
 
 /* 左侧品牌区域 */
 .brand-section {
   flex: 1;
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+  background: var(--gradient-brand);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,7 +334,7 @@ const handleRegister = async () => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: #ffffff;
+  background: var(--card-bg);
   overflow-y: auto;
 }
 
@@ -352,13 +352,13 @@ const handleRegister = async () => {
 .register-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 8px;
 }
 
 .register-desc {
   font-size: 15px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -367,21 +367,21 @@ const handleRegister = async () => {
   font-size: 16px;
   font-weight: 600;
   border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: var(--gradient-accent) !important;
+  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
   margin-top: 8px;
 }
 
 .register-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.4);
 }
 
 .divider {
   display: flex;
   align-items: center;
   margin: 24px 0;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 14px;
 }
 
@@ -390,7 +390,7 @@ const handleRegister = async () => {
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 
 .divider span {
@@ -401,25 +401,25 @@ const handleRegister = async () => {
   height: 48px;
   font-size: 15px;
   font-weight: 500;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .login-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .register-footer {
   text-align: center;
   margin-top: 24px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .register-footer a {
-  color: #3b82f6;
+  color: var(--accent-color);
   text-decoration: none;
 }
 
@@ -458,8 +458,8 @@ const handleRegister = async () => {
 }
 
 .register-card :deep(.n-input) {
-  background-color: #f8fafc !important;
-  border: 1.5px solid #e2e8f0 !important;
+  background-color: var(--bg-secondary) !important;
+  border: 1.5px solid var(--border-color) !important;
   border-radius: 8px !important;
 }
 
@@ -468,29 +468,29 @@ const handleRegister = async () => {
 }
 
 .register-card :deep(.n-input:hover) {
-  border-color: #cbd5e1 !important;
-  background-color: #ffffff !important;
+  border-color: var(--border-primary) !important;
+  background-color: var(--card-bg) !important;
 }
 
 .register-card :deep(.n-input:focus-within) {
-  background-color: #ffffff !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  background-color: var(--card-bg) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1) !important;
 }
 
 /* 输入框文字颜色 */
 .register-card :deep(.n-input .n-input__input-el),
 .register-card :deep(.n-input .n-input__textarea-el) {
-  color: #0f172a !important;
+  color: var(--text-primary) !important;
   background: transparent !important;
-  -webkit-text-fill-color: #0f172a !important;
-  caret-color: #3b82f6 !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--accent-color) !important;
 }
 
 /* Placeholder 颜色 */
 .register-card :deep(.n-input .n-input__input-el::placeholder),
 .register-card :deep(.n-input .n-input__textarea-el::placeholder) {
-  color: #94a3b8 !important;
+  color: var(--text-tertiary) !important;
   opacity: 1 !important;
 }
 
@@ -499,14 +499,14 @@ const handleRegister = async () => {
 .register-card :deep(.n-input input:-webkit-autofill:hover),
 .register-card :deep(.n-input input:-webkit-autofill:focus),
 .register-card :deep(.n-input input:-webkit-autofill:active) {
-  -webkit-box-shadow: 0 0 0 100px #f8fafc inset !important;
-  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0 100px var(--bg-secondary) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
   transition: background-color 5000s ease-in-out 0s !important;
 }
 
 /* 密码框特殊处理 */
 .register-card :deep(.n-input--password .n-input__input-el) {
-  color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
 }
 </style>

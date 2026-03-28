@@ -76,7 +76,7 @@
 import { ref, reactive, h, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { NInput, NButton, NIcon, NSelect, NSpin, NEmpty, NDataTable, NPagination, type DataTableColumns, createDiscreteApi } from 'naive-ui'
-import { SearchOutline } from '@vicons/ionicons5'
+import { IconSearch as SearchOutline } from '@tabler/icons-vue'
 import { fundApi } from '../api/fund'
 import type { Fund } from '../types'
 

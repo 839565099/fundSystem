@@ -6,7 +6,7 @@
         <div class="page-header">
           <div class="header-left">
             <n-button text @click="router.back()">
-              <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
+              <template #icon><n-icon><IconArrowLeft /></n-icon></template>
             </n-button>
             <PageHeader :title="portfolio.name" style="margin-bottom: 0;">
               <template #actions>
@@ -16,11 +16,11 @@
           </div>
           <div class="header-actions">
             <n-button @click="showAddFundModal = true">
-              <template #icon><n-icon><AddOutline /></n-icon></template>
+              <template #icon><n-icon><IconPlus /></n-icon></template>
               添加基金
             </n-button>
             <n-button @click="refreshPortfolio" :loading="refreshing">
-              <template #icon><n-icon><RefreshOutline /></n-icon></template>
+              <template #icon><n-icon><IconRefresh /></n-icon></template>
               刷新
             </n-button>
           </div>
@@ -182,7 +182,7 @@
 import { ref, h, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInputNumber, NDataTable, NSelect, useMessage, type DataTableColumns } from 'naive-ui'
-import { ArrowBackOutline, AddOutline, RefreshOutline, TrashOutline, CreateOutline } from '@vicons/ionicons5'
+import { IconArrowLeft, IconPlus, IconRefresh, IconTrash, IconPencil, IconWallet, IconCoin, IconChartLine, IconTrendingUp, IconCalendarStats, IconBasket } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { fundApi, favoriteApi } from '../api/fund'
 import type { UserFavorite, Fund } from '../types'
@@ -541,12 +541,12 @@ const columns: DataTableColumns<PortfolioItem> = [
         text: true,
         type: 'primary',
         onClick: () => openEditModal(row)
-      }, { icon: () => h(NIcon, null, { default: () => h(CreateOutline) }) }),
+      }, { icon: () => h(NIcon, null, { default: () => h(IconPencil) }) }),
       h(NButton, {
         text: true,
         type: 'error',
         onClick: () => deleteItem(row.id)
-      }, { icon: () => h(NIcon, null, { default: () => h(TrashOutline) }) })
+      }, { icon: () => h(NIcon, null, { default: () => h(IconTrash) }) })
     ])
   }
 ]
@@ -590,42 +590,47 @@ watch(() => route.params.id, () => {
 
 .overview-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .overview-card {
   text-align: center;
+  padding: 12px 8px !important;
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
 }
 
 .allocation-card {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .allocation-content {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 20px;
 }
 
 .pie-chart {
-  width: 200px;
-  height: 200px;
+  width: 500px;
+  height: 500px;
   flex-shrink: 0;
 }
 
@@ -637,7 +642,7 @@ watch(() => route.params.id, () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .legend-color {
@@ -647,11 +652,14 @@ watch(() => route.params.id, () => {
 }
 
 .legend-name {
-  flex: 1;
+  white-space: nowrap;
+  margin-right: auto;
 }
 
 .legend-value {
   font-weight: 500;
+  white-space: nowrap;
+  margin-left: 16px;
 }
 
 .holdings-card {

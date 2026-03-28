@@ -362,7 +362,7 @@ import {
   NSelect, NButton, NGrid, NGi, NStatistic, NDivider, NDescriptions, NDescriptionsItem,
   NDataTable, NAlert, NFormItem, NDatePicker, NIcon, NTag, useMessage
 } from 'naive-ui'
-import { GitCompareOutline } from '@vicons/ionicons5'
+import { IconGitCompare as GitCompareOutline } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { fundApi, favoriteApi } from '@/api/fund'
 

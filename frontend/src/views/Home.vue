@@ -1,6 +1,8 @@
 <template>
   <div class="home-container">
+    <!-- Hero 区域 + 搜索 -->
     <div class="hero-section">
+      <div class="hero-bg"></div>
       <div class="hero-content">
         <h1 class="hero-title">智能基金投资平台</h1>
         <p class="hero-subtitle">专业的基金数据分析与投资决策工具</p>
@@ -16,69 +18,51 @@
             @update:value="handleSearchInput"
           >
             <template #prefix>
-              <n-icon><SearchOutline /></n-icon>
+              <n-icon><IconSearch /></n-icon>
             </template>
           </n-auto-complete>
         </div>
-      </div>
-    </div>
-
-    <div class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card card">
-          <div class="stat-icon stat-icon--primary">
-            <n-icon size="28"><TrendingUpOutline /></n-icon>
+        <!-- 统计数字直接放在 hero 底部 -->
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-value">{{ hotFundsCount }}</span>
+            <span class="hero-stat-label">热门基金</span>
           </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ hotFundsCount }}</div>
-            <div class="stat-label">热门基金</div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-value positive">{{ upCount }}</span>
+            <span class="hero-stat-label">今日上涨</span>
           </div>
-        </div>
-        <div class="stat-card card">
-          <div class="stat-icon stat-icon--success">
-            <n-icon size="28"><StatsChartOutline /></n-icon>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-value negative">{{ downCount }}</span>
+            <span class="hero-stat-label">今日下跌</span>
           </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ upCount }}</div>
-            <div class="stat-label">今日上涨</div>
-          </div>
-        </div>
-        <div class="stat-card card">
-          <div class="stat-icon stat-icon--danger">
-            <n-icon size="28"><TrendingDownOutline /></n-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ downCount }}</div>
-            <div class="stat-label">今日下跌</div>
-          </div>
-        </div>
-        <div class="stat-card card">
-          <div class="stat-icon stat-icon--purple">
-            <n-icon size="28"><StarOutline /></n-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ favoritesCount }}</div>
-            <div class="stat-label">我的收藏</div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-value">{{ favoritesCount }}</span>
+            <span class="hero-stat-label">我的收藏</span>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 市场行情 - 横向滚动 -->
     <div class="market-section">
       <div class="section-header">
         <h2 class="section-title">
-          <n-icon size="24"><AnalyticsOutline /></n-icon>
+          <n-icon size="24"><IconChartDots3 /></n-icon>
           市场行情
         </h2>
         <n-button text type="primary" @click="router.push('/ranking')">
-          查看更多 <n-icon><ChevronForwardOutline /></n-icon>
+          查看更多 <n-icon><IconChevronRight /></n-icon>
         </n-button>
       </div>
       <n-spin :show="marketLoading">
-        <div class="market-grid">
-          <div 
-            v-for="market in marketData" 
-            :key="market.marketCode" 
+        <div class="market-scroll">
+          <div
+            v-for="market in marketData"
+            :key="market.marketCode"
             class="market-card card"
             @click="router.push(`/market/${market.marketCode}`)"
           >
@@ -90,8 +74,8 @@
               <div class="market-point">{{ market.currentPoint?.toFixed(2) }}</div>
               <div class="market-change" :class="market.changeRatio! >= 0 ? 'positive' : 'negative'">
                 <n-icon size="16">
-                  <TrendingUpOutline v-if="market.changeRatio! >= 0" />
-                  <TrendingDownOutline v-else />
+                  <IconTrendingUp v-if="market.changeRatio! >= 0" />
+                  <IconTrendingDown v-else />
                 </n-icon>
                 {{ market.changeRatio! >= 0 ? '+' : '' }}{{ market.changeRatio?.toFixed(2) }}%
                 <span class="change-value">({{ market.changePoint! >= 0 ? '+' : '' }}{{ market.changePoint?.toFixed(2) }})</span>
@@ -115,18 +99,18 @@
         <div class="hot-funds-section">
           <div class="section-header">
             <h2 class="section-title">
-              <n-icon size="24"><FlameOutline /></n-icon>
+              <n-icon size="24"><IconFlame /></n-icon>
               热门基金
             </h2>
             <n-button text type="primary" @click="router.push('/ranking')">
-              更多 <n-icon><ChevronForwardOutline /></n-icon>
+              更多 <n-icon><IconChevronRight /></n-icon>
             </n-button>
           </div>
           <n-spin :show="hotFundsLoading">
             <div class="hot-funds-list">
-              <div 
-                v-for="(fund, index) in hotFunds" 
-                :key="fund.fundCode" 
+              <div
+                v-for="(fund, index) in hotFunds"
+                :key="fund.fundCode"
                 class="hot-fund-item card"
                 @click="router.push(`/fund/${fund.fundCode}`)"
               >
@@ -147,18 +131,18 @@
         <div class="favorites-section" v-if="authStore.isLoggedIn">
           <div class="section-header">
             <h2 class="section-title">
-              <n-icon size="24"><StarOutline /></n-icon>
+              <n-icon size="24"><IconStar /></n-icon>
               我的收藏
             </h2>
             <n-button text type="primary" @click="router.push('/favorites')">
-              全部 <n-icon><ChevronForwardOutline /></n-icon>
+              全部 <n-icon><IconChevronRight /></n-icon>
             </n-button>
           </div>
           <n-spin :show="favoritesLoading">
             <div class="favorites-list">
-              <div 
-                v-for="fav in favorites.slice(0, 5)" 
-                :key="fav.fundCode" 
+              <div
+                v-for="fav in favorites.slice(0, 5)"
+                :key="fav.fundCode"
                 class="favorite-item card"
                 @click="router.push(`/fund/${fav.fundCode}`)"
               >
@@ -183,18 +167,18 @@
     <div class="news-section">
       <div class="section-header">
         <h2 class="section-title">
-          <n-icon size="24"><NewspaperOutline /></n-icon>
+          <n-icon size="24"><IconNews /></n-icon>
           资讯动态
         </h2>
         <n-button text type="primary" @click="router.push('/news')">
-          更多 <n-icon><ChevronForwardOutline /></n-icon>
+          更多 <n-icon><IconChevronRight /></n-icon>
         </n-button>
       </div>
       <n-spin :show="newsLoading">
         <div class="news-grid">
-          <div 
-            v-for="news in newsList.slice(0, 4)" 
-            :key="news.id" 
+          <div
+            v-for="news in newsList.slice(0, 4)"
+            :key="news.id"
             class="news-card card"
             @click="router.push(`/news/${news.id}`)"
           >
@@ -219,17 +203,17 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NAutoComplete, NIcon, NSpin, NEmpty, NButton, NTag, createDiscreteApi } from 'naive-ui'
-import { 
-  SearchOutline, 
-  TrendingUpOutline, 
-  TrendingDownOutline,
-  StarOutline,
-  AnalyticsOutline,
-  FlameOutline,
-  NewspaperOutline,
-  ChevronForwardOutline,
-  StatsChartOutline
-} from '@vicons/ionicons5'
+import {
+  IconSearch,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconStar,
+  IconChartDots3,
+  IconFlame,
+  IconNews,
+  IconChevronRight,
+  IconChartBar
+} from '@tabler/icons-vue'
 import { useAuthStore } from '../stores/auth'
 import { fundApi, favoriteApi, marketApi, newsApi } from '../api/fund'
 import type { Fund, UserFavorite, MarketDataVO, FundNews } from '../types'
@@ -459,118 +443,107 @@ onMounted(() => {
 .home-container {
   max-width: 1400px;
   margin: 0 auto;
-  background:
-    radial-gradient(circle at 100% 0, rgba(0, 183, 201, 0.08), transparent 40%),
-    radial-gradient(circle at 0 5%, rgba(6, 58, 102, 0.08), transparent 45%);
-  border-radius: var(--radius-xl);
 }
 
+/* Hero 区域 */
 .hero-section {
-  background:
-    linear-gradient(130deg, rgba(6, 58, 102, 0.96), rgba(14, 94, 140, 0.88)),
-    var(--gradient-brand);
+  position: relative;
   border-radius: var(--radius-xl);
-  padding: 48px 32px;
-  margin-bottom: 24px;
+  padding: 56px 40px 40px;
+  margin-bottom: 28px;
   color: white;
-  border: 1px solid rgba(52, 204, 219, 0.25);
-  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #18181B 0%, #27272A 40%, #3F3F46 100%);
+  z-index: 0;
+}
+
+.hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 70% 30%, rgba(212, 168, 67, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 10% 90%, rgba(212, 168, 67, 0.1) 0%, transparent 40%);
 }
 
 .hero-content {
-  max-width: 600px;
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
   margin: 0 auto;
   text-align: center;
 }
 
 .hero-title {
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 700;
   margin-bottom: 12px;
+  letter-spacing: 0.02em;
 }
 
 .hero-subtitle {
   font-size: 15px;
-  opacity: 0.86;
+  opacity: 0.8;
   margin-bottom: 32px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 .search-box {
   padding: 8px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  margin-bottom: 36px;
 }
 
-.stats-section {
-  margin-bottom: 24px;
+/* Hero 内嵌统计 */
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
-@media (max-width: 1000px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.hero-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: var(--font-number);
+  line-height: 1.2;
+}
+
+.hero-stat-value.positive { color: var(--up-color); }
+.hero-stat-value.negative { color: var(--down-color); }
+
+.hero-stat-label {
+  font-size: 12px;
+  opacity: 0.7;
+  letter-spacing: 0.04em;
+}
+
+.hero-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 @media (max-width: 600px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid var(--border-color);
-  background: var(--gradient-card);
-}
-
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.stat-icon--primary {
-  background: var(--primary-color);
-}
-
-.stat-icon--success {
-  background: var(--success-color);
-}
-
-.stat-icon--danger {
-  background: var(--danger-color);
-}
-
-.stat-icon--purple {
-  background: var(--info-color);
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  font-family: var(--font-number);
-  letter-spacing: 0.02em;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: var(--text-secondary);
+  .hero-section { padding: 36px 20px 28px; }
+  .hero-title { font-size: 26px; }
+  .hero-stats { gap: 16px; }
+  .hero-stat-value { font-size: 20px; }
 }
 
 .section-header {
@@ -589,32 +562,40 @@ onMounted(() => {
 }
 
 .market-section {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
-.market-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.market-scroll {
+  display: flex;
   gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
 }
 
-@media (max-width: 1000px) {
-  .market-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.market-scroll::-webkit-scrollbar {
+  height: 4px;
 }
 
-@media (max-width: 600px) {
-  .market-grid {
-    grid-template-columns: 1fr;
-  }
+.market-scroll::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 4px;
 }
 
 .market-card {
+  min-width: 280px;
+  flex-shrink: 0;
   padding: 20px;
   cursor: pointer;
   border: 1px solid var(--border-color);
   background: var(--gradient-card);
+  scroll-snap-align: start;
+  transition: all var(--transition-base);
+}
+
+.market-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .market-header {

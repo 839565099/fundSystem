@@ -54,7 +54,7 @@
                         @click="showMobileMenu = true"
                       >
                         <template #icon>
-                          <n-icon size="24"><MenuOutline /></n-icon>
+                          <n-icon size="24"><IconMenu2 /></n-icon>
                         </template>
                       </n-button>
                       <n-breadcrumb class="hide-mobile">
@@ -66,6 +66,19 @@
                       <span class="mobile-title hide-desktop">{{ currentTitle }}</span>
                     </div>
                     <div class="header-actions">
+                      <!-- 管理员入口按钮 -->
+                      <n-button 
+                        v-if="authStore.isAdmin" 
+                        type="primary" 
+                        size="small"
+                        @click="router.push('/admin')"
+                        class="hide-mobile"
+                      >
+                        <template #icon>
+                          <n-icon><IconSettings /></n-icon>
+                        </template>
+                        管理后台
+                      </n-button>
                       <div
                         class="market-status hide-mobile"
                         :class="{ 'market-status--open': marketIsOpen }"
@@ -78,10 +91,10 @@
                         <template #trigger>
                           <n-switch v-model:value="isDark" @update:value="toggleTheme" size="small">
                             <template #checked>
-                              <n-icon><MoonOutline /></n-icon>
+                              <n-icon><IconMoon /></n-icon>
                             </template>
                             <template #unchecked>
-                              <n-icon><SunnyOutline /></n-icon>
+                              <n-icon><IconSun /></n-icon>
                             </template>
                           </n-switch>
                         </template>
@@ -123,6 +136,19 @@
                   @update:value="handleMobileMenuClick"
                   class="mobile-menu"
                 />
+                <!-- 管理员入口（移动端） -->
+                <div v-if="authStore.isAdmin" class="mobile-admin-entry">
+                  <n-button 
+                    type="primary" 
+                    block
+                    @click="() => { router.push('/admin'); showMobileMenu = false }"
+                  >
+                    <template #icon>
+                      <n-icon><IconSettings /></n-icon>
+                    </template>
+                    管理后台
+                  </n-button>
+                </div>
               </n-drawer-content>
             </n-drawer>
           </div>
@@ -159,27 +185,25 @@ import {
   type MenuOption,
 } from 'naive-ui'
 import {
-  HomeOutline,
-  SearchOutline,
-  TrophyOutline,
-  StarOutline,
-  GitCompareOutline,
-  NewspaperOutline,
-  PersonOutline,
-  SunnyOutline,
-  MoonOutline,
-  LogOutOutline,
-  GridOutline,
-  WalletOutline,
-  NotificationsOutline,
-  AnalyticsOutline,
-  SparklesOutline,
-  MenuOutline,
-  MailOutline,
-  SettingsOutline,
-  PeopleOutline,
-  DocumentTextOutline,
-} from '@vicons/ionicons5'
+  IconHome,
+  IconSearch,
+  IconTrophy,
+  IconStar,
+  IconGitCompare,
+  IconNews,
+  IconUser,
+  IconSun,
+  IconMoon,
+  IconLogout,
+  IconLayoutGrid,
+  IconWallet,
+  IconBell,
+  IconChartDots3,
+  IconSparkles,
+  IconMenu2,
+  IconMail,
+  IconSettings,
+} from '@tabler/icons-vue'
 import { useAuthStore } from './stores/auth'
 import { useThemeStore } from './stores/theme'
 import { lightThemeOverrides, darkThemeOverrides } from './styles/naive-theme'
@@ -273,46 +297,35 @@ const menuKeyToPath: Record<string, string> = {
   AIAssistant: '/ai-assistant',
   Analytics: '/analytics',
   News: '/news',
-  AdminUsers: '/admin/users',
-  AdminLogs: '/admin/logs',
   Profile: '/profile',
 }
 
 const menuOptions = computed<MenuOption[]>(() => [
-  { label: '首页', key: 'Home', icon: renderIcon(HomeOutline) },
-  { label: '投资概览', key: 'Dashboard', icon: renderIcon(GridOutline) },
-  { label: '基金搜索', key: 'Search', icon: renderIcon(SearchOutline) },
-  { label: '基金排行', key: 'Ranking', icon: renderIcon(TrophyOutline) },
-  { label: '板块排行', key: 'SectorRanking', icon: renderIcon(GridOutline) },
+  { label: '首页', key: 'Home', icon: renderIcon(IconHome) },
+  { label: '投资概览', key: 'Dashboard', icon: renderIcon(IconLayoutGrid) },
+  { label: '基金搜索', key: 'Search', icon: renderIcon(IconSearch) },
+  { label: '基金排行', key: 'Ranking', icon: renderIcon(IconTrophy) },
+  { label: '板块排行', key: 'SectorRanking', icon: renderIcon(IconLayoutGrid) },
   { type: 'divider', key: 'd1' },
-  { label: '我的收藏', key: 'Favorites', icon: renderIcon(StarOutline) },
-  { label: '投资组合', key: 'Portfolio', icon: renderIcon(WalletOutline) },
-  { label: '预警管理', key: 'Alerts', icon: renderIcon(NotificationsOutline) },
-  { label: '消息中心', key: 'Notifications', icon: renderIcon(MailOutline) },
-  { label: '基金对比', key: 'Compare', icon: renderIcon(GitCompareOutline) },
+  { label: '我的收藏', key: 'Favorites', icon: renderIcon(IconStar) },
+  { label: '投资组合', key: 'Portfolio', icon: renderIcon(IconWallet) },
+  { label: '预警管理', key: 'Alerts', icon: renderIcon(IconBell) },
+  { label: '消息中心', key: 'Notifications', icon: renderIcon(IconMail) },
+  { label: '基金对比', key: 'Compare', icon: renderIcon(IconGitCompare) },
   { type: 'divider', key: 'd2' },
-  { label: 'AI 助手', key: 'AIAssistant', icon: renderIcon(SparklesOutline) },
-  { label: '高级分析', key: 'Analytics', icon: renderIcon(AnalyticsOutline) },
-  { label: '资讯中心', key: 'News', icon: renderIcon(NewspaperOutline) },
+  { label: 'AI 助手', key: 'AIAssistant', icon: renderIcon(IconSparkles) },
+  { label: '高级分析', key: 'Analytics', icon: renderIcon(IconChartDots3) },
+  { label: '资讯中心', key: 'News', icon: renderIcon(IconNews) },
   { type: 'divider', key: 'd3' },
-  // 管理员菜单（仅管理员可见）
-  ...(authStore.isAdmin ? [
-    { label: '用户管理', key: 'AdminUsers', icon: renderIcon(PeopleOutline) } as MenuOption,
-    { label: '日志查看', key: 'AdminLogs', icon: renderIcon(DocumentTextOutline) } as MenuOption,
-  ] : []),
-  { label: '个人中心', key: 'Profile', icon: renderIcon(PersonOutline) },
+  { label: '个人中心', key: 'Profile', icon: renderIcon(IconUser) },
 ])
 
 const userOptions = computed(() => {
   const options: any[] = [
-    { label: '个人中心', key: 'profile', icon: renderIcon(PersonOutline) },
+    { label: '个人中心', key: 'profile', icon: renderIcon(IconUser) },
   ]
-  // 管理员入口
-  if (authStore.isAdmin) {
-    options.push({ label: '管理后台', key: 'admin', icon: renderIcon(SettingsOutline) })
-  }
   options.push({ type: 'divider', key: 'd1' })
-  options.push({ label: '退出登录', key: 'logout', icon: renderIcon(LogOutOutline) })
+  options.push({ label: '退出登录', key: 'logout', icon: renderIcon(IconLogout) })
   return options
 })
 
@@ -376,8 +389,8 @@ const toggleTheme = (value: boolean) => {
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: linear-gradient(150deg, rgba(0, 183, 201, 0.18), rgba(23, 99, 146, 0.18));
-  border: 1px solid rgba(0, 183, 201, 0.22);
+  background: linear-gradient(150deg, rgba(212, 168, 67, 0.15), rgba(39, 39, 46, 0.12));
+  border: 1px solid rgba(212, 168, 67, 0.22);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -389,7 +402,7 @@ const toggleTheme = (value: boolean) => {
 .logo__mark {
   width: 4px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #57d7e4, #1d8ead);
+  background: linear-gradient(180deg, #E0C870, #B8923A);
 }
 
 .logo__mark--a {
@@ -487,13 +500,13 @@ const toggleTheme = (value: boolean) => {
   height: 7px;
   border-radius: 50%;
   background: var(--danger-color);
-  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.5);
+  box-shadow: 0 0 0 0 rgba(229, 77, 66, 0.5);
   animation: market-pulse 1.8s infinite;
 }
 
 .market-status--open .market-status__dot {
   background: var(--success-color);
-  box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.5);
+  box-shadow: 0 0 0 0 rgba(43, 164, 113, 0.5);
 }
 
 @keyframes market-pulse {
@@ -547,6 +560,13 @@ const toggleTheme = (value: boolean) => {
 
 .mobile-menu {
   padding: 8px 0;
+}
+
+/* 移动端管理员入口 */
+.mobile-admin-entry {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
 }
 
 .page-enter-active {

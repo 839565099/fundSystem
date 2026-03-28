@@ -69,7 +69,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NTabs, NTabPane, NButton, NSpin, NEmpty, NIcon, createDiscreteApi } from 'naive-ui'
-import { NotificationsOutline, AlertCircleOutline, InformationCircleOutline, StarOutline } from '@vicons/ionicons5'
+import { IconBell, IconAlertCircle, IconInfoCircle, IconStar } from '@tabler/icons-vue'
 import { notificationApi, type Notification } from '../api/notification'
 
 const { message } = createDiscreteApi(['message'])
@@ -89,10 +89,10 @@ const hasMore = computed(() => notifications.value.length < total.value)
 
 const getIcon = (type: string) => {
   switch (type) {
-    case 'ALERT': return AlertCircleOutline
-    case 'SYSTEM': return InformationCircleOutline
-    case 'ACTIVITY': return StarOutline
-    default: return NotificationsOutline
+    case 'ALERT': return IconAlertCircle
+    case 'SYSTEM': return IconInfoCircle
+    case 'ACTIVITY': return IconStar
+    default: return IconBell
   }
 }
 

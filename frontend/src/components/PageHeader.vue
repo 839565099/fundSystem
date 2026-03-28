@@ -40,7 +40,7 @@ defineProps<{
   height: 12px;
   border-radius: 50%;
   background: var(--info-color);
-  box-shadow: 0 0 0 6px rgba(0, 183, 201, 0.14);
+  box-shadow: 0 0 0 6px rgba(201, 168, 76, 0.14);
 }
 
 .page-header__text {

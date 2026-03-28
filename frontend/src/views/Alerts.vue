@@ -4,7 +4,7 @@
       <template #actions>
         <n-button type="primary" @click="openCreateModal">
           <template #icon>
-            <n-icon><AddOutline /></n-icon>
+            <n-icon><IconPlus /></n-icon>
           </template>
           创建预警
         </n-button>
@@ -40,9 +40,9 @@
               />
               <div class="alert-icon" :class="getAlertType(alert.alertType)">
                 <n-icon size="20">
-                  <TrendingUpOutline v-if="alert.alertType === 'GROWTH'" />
-                  <NewspaperOutline v-else-if="alert.alertType === 'NEWS'" />
-                  <NotificationsOutline v-else />
+                  <IconTrendingUp v-if="alert.alertType === 'GROWTH'" />
+                  <IconNews v-else-if="alert.alertType === 'NEWS'" />
+                  <IconBell v-else />
                 </n-icon>
               </div>
               <div class="alert-content">
@@ -76,9 +76,9 @@
                   <div class="rule-title-row">
                     <div class="rule-icon" :class="getAlertTypeClass(rule.alertType)">
                       <n-icon size="18">
-                        <TrendingUpOutline v-if="rule.alertType === 'GROWTH'" />
-                        <NewspaperOutline v-else-if="rule.alertType === 'NEWS'" />
-                        <BarChartOutline v-else />
+                        <IconTrendingUp v-if="rule.alertType === 'GROWTH'" />
+                        <IconNews v-else-if="rule.alertType === 'NEWS'" />
+                        <IconChartBar v-else />
                       </n-icon>
                     </div>
                     <span class="rule-name">{{ rule.alertName }}</span>
@@ -117,7 +117,7 @@
                 <div class="rule-footer">
                   <div class="rule-stats">
                     <span class="stat-item">
-                      <n-icon size="14"><SpeedometerOutline /></n-icon>
+                      <n-icon size="14"><IconGauge /></n-icon>
                       触发 {{ rule.triggerCount || 0 }} 次
                     </span>
                     <span class="stat-divider">|</span>
@@ -130,11 +130,11 @@
                   </div>
                   <div class="rule-actions">
                     <n-button size="small" quaternary @click="editRule(rule)">
-                      <template #icon><n-icon><CreateOutline /></n-icon></template>
+                      <template #icon><n-icon><IconPencil /></n-icon></template>
                       编辑
                     </n-button>
                     <n-button size="small" quaternary type="error" @click="deleteRule(rule.id)">
-                      <template #icon><n-icon><TrashOutline /></n-icon></template>
+                      <template #icon><n-icon><IconTrash /></n-icon></template>
                       删除
                     </n-button>
                   </div>
@@ -196,7 +196,7 @@ import {
   NInput, NInputNumber, NSelect, NSwitch, NCheckbox, NTabs, NTabPane, NSpace,
   useMessage
 } from 'naive-ui'
-import { NotificationsOutline, AddOutline, TrendingUpOutline, NewspaperOutline, SpeedometerOutline, BarChartOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import { IconBell, IconPlus, IconTrendingUp, IconNews, IconGauge, IconChartBar, IconPencil, IconTrash } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { fundApi } from '@/api/fund'
 import type { AlertHistoryVO, AlertRuleVO } from '@/types'

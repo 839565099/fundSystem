@@ -197,7 +197,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, h } from 'vue'
 import { NIcon, NButton, NSelect, NSpin, NEmpty, NDataTable, NTag, NRadioButton, NRadioGroup, createDiscreteApi } from 'naive-ui'
-import { GitCompareOutline, CloseOutline, AddOutline, TrendingUpOutline, GridOutline } from '@vicons/ionicons5'
+import { IconGitCompare as GitCompareOutline, IconX as CloseOutline, IconPlus as AddOutline, IconTrendingUp as TrendingUpOutline, IconLayoutGrid as GridOutline } from '@tabler/icons-vue'
 import { fundApi, compareApi, favoriteApi } from '../api/fund'
 import type { Fund, FundCompareVO } from '../types'
 import * as echarts from 'echarts'

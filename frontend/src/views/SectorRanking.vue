@@ -3,7 +3,7 @@
     <PageHeader title="板块涨跌排行" icon="📊">
       <template #actions>
         <n-button @click="loadSectors" :loading="loading">
-          <template #icon><n-icon><RefreshOutline /></n-icon></template>
+          <template #icon><n-icon><IconRefresh /></n-icon></template>
           刷新
         </n-button>
       </template>
@@ -49,7 +49,7 @@
             @clear="loadSectors"
           >
             <template #prefix>
-              <n-icon><SearchOutline /></n-icon>
+              <n-icon><IconSearch /></n-icon>
             </template>
           </n-input>
         </div>
@@ -60,7 +60,7 @@
     <div class="overview-section" v-if="sectors.length > 0">
       <div class="overview-card up">
         <div class="overview-header">
-          <n-icon size="18" color="var(--up-color)"><TrendingUpOutline /></n-icon>
+          <n-icon size="18" color="var(--up-color)"><IconTrendingUp /></n-icon>
           <span>涨幅榜 TOP 5</span>
         </div>
         <div class="overview-list">
@@ -79,7 +79,7 @@
 
       <div class="overview-card down">
         <div class="overview-header">
-          <n-icon size="18" color="var(--down-color)"><TrendingDownOutline /></n-icon>
+          <n-icon size="18" color="var(--down-color)"><IconTrendingDown /></n-icon>
           <span>跌幅榜 TOP 5</span>
         </div>
         <div class="overview-list">
@@ -115,7 +115,7 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon, NButton, NDataTable, NButtonGroup, NSelect, NInput, NTag, createDiscreteApi } from 'naive-ui'
-import { RefreshOutline, SearchOutline, TrendingUpOutline, TrendingDownOutline } from '@vicons/ionicons5'
+import { IconRefresh, IconSearch, IconTrendingUp, IconTrendingDown } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { sectorApi } from '../api/sector'
 import type { SectorVO, SectorType } from '../types/sector'

@@ -23,7 +23,7 @@
               :loading="favoriteLoading"
             >
               <template #icon>
-                <n-icon><StarOutline /></n-icon>
+                <n-icon><IconStar /></n-icon>
               </template>
               {{ isFavorite ? '已收藏' : '添加收藏' }}
             </n-button>
@@ -59,7 +59,7 @@
 
         <section class="chart-section">
           <h2 class="section-title">
-            <n-icon size="22"><TrendingUpOutline /></n-icon>
+            <n-icon size="22"><IconTrendingUp /></n-icon>
             净值走势
           </h2>
           <FundTrendChart
@@ -251,7 +251,7 @@ import {
   NTag,
   createDiscreteApi,
 } from 'naive-ui'
-import { StarOutline, TrendingUpOutline } from '@vicons/ionicons5'
+import { IconStar, IconTrendingUp } from '@tabler/icons-vue'
 import { favoriteApi, fundApi } from '../api/fund'
 import { useAuthStore } from '../stores/auth'
 import FundTrendChart from '../components/FundTrendChart.vue'

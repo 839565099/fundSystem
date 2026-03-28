@@ -6,7 +6,7 @@
         <div class="sidebar-header">
           <n-button type="primary" block @click="createNewSession">
             <template #icon>
-              <n-icon><AddOutline /></n-icon>
+              <n-icon><IconPlus /></n-icon>
             </template>
             新建对话
           </n-button>
@@ -19,10 +19,10 @@
             :class="{ active: currentSessionId === session.sessionId }"
             @click="switchSession(session.sessionId)"
           >
-            <n-icon><ChatbubblesOutline /></n-icon>
+            <n-icon><IconMessages /></n-icon>
             <span class="session-title">{{ session.title || '新对话' }}</span>
             <n-button text size="small" @click.stop="deleteSession(session.sessionId)">
-              <n-icon><TrashOutline /></n-icon>
+              <n-icon><IconTrash /></n-icon>
             </n-button>
           </div>
         </div>
@@ -44,7 +44,7 @@
         <div class="chat-messages" ref="messagesContainer">
           <div v-if="messages.length === 0" class="welcome-section">
             <div class="welcome-icon">
-              <n-icon size="64"><SparklesOutline /></n-icon>
+              <n-icon size="64"><IconSparkles /></n-icon>
             </div>
             <h2>您好！我是您的 AI 投资助手</h2>
             <p>我可以帮助您分析基金、解读市场、提供投资建议。</p>
@@ -70,15 +70,15 @@
             :class="msg.role"
           >
             <div class="message-avatar">
-              <n-icon v-if="msg.role === 'user'" size="20"><PersonOutline /></n-icon>
-              <n-icon v-else size="20"><SparklesOutline /></n-icon>
+              <n-icon v-if="msg.role === 'user'" size="20"><IconUser /></n-icon>
+              <n-icon v-else size="20"><IconSparkles /></n-icon>
             </div>
             <div class="message-content">
               <div class="message-text" v-html="formatMessage(msg.content)"></div>
               <div v-if="msg.role === 'assistant'" class="message-actions">
                 <n-button text size="small" @click="copyMessage(msg.content)">
                   <template #icon>
-                    <n-icon><CopyOutline /></n-icon>
+                    <n-icon><IconCopy /></n-icon>
                   </template>
                   复制
                 </n-button>
@@ -88,7 +88,7 @@
 
           <div v-if="loading" class="message assistant">
             <div class="message-avatar">
-              <n-icon size="20"><SparklesOutline /></n-icon>
+              <n-icon size="20"><IconSparkles /></n-icon>
             </div>
             <div class="message-content">
               <div class="typing-indicator">
@@ -110,7 +110,7 @@
           />
           <n-button type="primary" :loading="loading" :disabled="!inputText.trim()" @click="sendMessage">
             <template #icon>
-              <n-icon><SendOutline /></n-icon>
+              <n-icon><IconSend /></n-icon>
             </template>
             发送
           </n-button>
@@ -130,10 +130,10 @@ import {
   NButton, NIcon, NInput, NSelect, useMessage
 } from 'naive-ui'
 import {
-  AddOutline, ChatbubblesOutline, TrashOutline, SparklesOutline,
-  PersonOutline, SendOutline, CopyOutline, TrendingUpOutline,
-  HelpCircleOutline, BulbOutline
-} from '@vicons/ionicons5'
+  IconPlus, IconMessages, IconTrash, IconSparkles,
+  IconUser, IconSend, IconCopy, IconTrendingUp,
+  IconHelpCircle, IconBulb
+} from '@tabler/icons-vue'
 import { fundApi } from '@/api/fund'
 
 const route = useRoute()
@@ -157,9 +157,9 @@ const modelOptions = [
 
 // 快捷操作
 const quickActions = [
-  { text: '今日市场行情分析', icon: TrendingUpOutline },
-  { text: '如何选择合适的基金？', icon: HelpCircleOutline },
-  { text: '定投策略建议', icon: BulbOutline }
+  { text: '今日市场行情分析', icon: IconTrendingUp },
+  { text: '如何选择合适的基金？', icon: IconHelpCircle },
+  { text: '定投策略建议', icon: IconBulb }
 ]
 
 // 加载会话列表

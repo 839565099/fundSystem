@@ -20,12 +20,12 @@
 import { computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  HomeOutline,
-  StatsChartOutline,
-  SearchOutline,
-  HeartOutline,
-  NotificationsOutline
-} from '@vicons/ionicons5'
+  IconHome,
+  IconChartBar,
+  IconSearch,
+  IconHeart,
+  IconBell
+} from '@tabler/icons-vue'
 
 interface NavItem {
   key: string
@@ -52,33 +52,33 @@ const navItems = computed<NavItem[]>(() => [
     key: 'home',
     label: '首页',
     path: '/',
-    icon: h(HomeOutline)
+    icon: h(IconHome)
   },
   {
     key: 'dashboard',
     label: '概览',
     path: '/dashboard',
-    icon: h(StatsChartOutline),
+    icon: h(IconChartBar),
     authRequired: true
   },
   {
     key: 'search',
     label: '搜索',
     path: '/search',
-    icon: h(SearchOutline)
+    icon: h(IconSearch)
   },
   {
     key: 'favorites',
     label: '收藏',
     path: '/favorites',
-    icon: h(HeartOutline),
+    icon: h(IconHeart),
     authRequired: true
   },
   {
     key: 'alerts',
     label: '预警',
     path: '/alerts',
-    icon: h(NotificationsOutline),
+    icon: h(IconBell),
     badge: props.alertCount,
     authRequired: true
   }
@@ -136,7 +136,7 @@ const handleNavClick = (item: NavItem) => {
 
 .mobile-nav__item--active {
   color: var(--primary-color);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-bg);
 }
 
 .mobile-nav__item:hover:not(.mobile-nav__item--active) {
@@ -172,7 +172,7 @@ const handleNavClick = (item: NavItem) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 4px rgba(229, 77, 66, 0.3);
 }
 
 @media (max-width: 768px) {

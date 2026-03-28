@@ -4,138 +4,115 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-基金实时查看系统，支持基金搜索、实时数据展示、趋势图分析、用户收藏等功能。对接东方财富 API 获取真实基金数据。
+基金实时查看系统，前后端分离架构。后端 Spring Boot 2.7.18 (Java 8) + MyBatis-Plus，前端 Vue 3 + TypeScript + Vite + Naive UI + Pinia。对接东方财富 API 获取真实基金数据。
+
+**注意**：README.md 中技术栈描述有误，实际前端是 Vue 3 + Naive UI，而非 React + Ant Design。
 
 ## 常用命令
 
 ### 后端 (backend/)
 ```bash
-# 编译打包
-mvn clean package -DskipTests
-
-# 运行应用
-java -jar target/fund-system-1.0.0.jar
-
-# 运行测试
-mvn test
+mvn spring-boot:run          # 本地启动后端
+mvn test                     # 运行测试
+mvn clean package -DskipTests # 打包 JAR
+java -jar target/fund-system-1.0.0.jar  # 运行 JAR
 ```
 
 ### 前端 (frontend/)
 ```bash
-# 安装依赖
-npm install
+npm ci                       # 按锁文件安装依赖
+npm run dev                  # 开发模式 (端口 3000)
+npm run build                # 类型检查 + 生产构建
+npm run preview              # 预览生产构建
+```
 
-# 开发模式 (端口 3000)
-npm run dev
-
-# 生产构建
-npm run build
+### Docker
+```bash
+docker compose up --build    # 一键启动 MySQL + Redis + backend + frontend
 ```
 
 ## 架构
 
-### 后端架构
-基于 Spring Boot 2.7.18 + MyBatis-Plus 的分层架构：
+### 后端分层 (`backend/src/main/java/com/fund/`)
 
-- **controller/** - REST API 控制器
-  - `AuthController` - 用户认证（登录/注册）
-  - `FundController` - 基金搜索、详情、净值历史
-  - `FundInfoController` - 基金经理、持仓明细
-  - `HotFundController` - 热门基金
-  - `MarketController` - 市场行情
-  - `FavoriteController` - 用户收藏
-  - `CompareController` - 基金对比
-  - `NewsController` - 资讯
-  - `SectorController` - 板块数据
-  - `PortfolioController` - 投资组合
-  - `AlertController` - 预警管理
-  - `AnalyticsController` - 高级分析
-  - `RecommendController` - 智能推荐
-  - `AIController` - AI 助手
-  - `ExportController` - 数据导出（Excel/PDF）
+标准 Spring Boot 分层：`controller` → `service`/`service/impl` → `mapper` → 数据库。包路径统一 `com.fund`。
 
-- **service/** - 业务逻辑层接口
-- **service/impl/** - 业务逻辑实现
-- **mapper/** - MyBatis-Plus 数据访问层
-- **entity/** - 数据库实体类
-- **dto/** - 数据传输对象（请求）
-- **vo/** - 视图对象（响应）
-- **external/** - 外部 API 服务
-  - `FundDataApiService` - 东方财富基金数据
-  - `SectorDataApiService` - 板块数据
-  - `NewsCrawlerService` - 资讯爬虫
-- **config/** - 配置类（Redis、WebSocket、Web）
-- **interceptor/** - JWT 认证拦截器
-- **util/** - 工具类
+- **common/** — 通用响应封装 (`Result`, `PageResult`)、MyBatis-Plus 自动填充处理器 (`MyMetaObjectHandler`)
+- **config/** — WebConfig（CORS + 拦截器注册）、RedisConfig、WebSocketConfig、DatabaseInitializer、AIConfig
+- **interceptor/** — `JwtInterceptor`（JWT 认证）+ `AdminInterceptor`（基于 `@RequireAdmin` 注解的权限校验）
+- **external/** — 外部 API 对接：`FundDataApiService`（东方财富基金数据）、`SectorDataApiService`（板块数据）、`NewsCrawlerService`（资讯爬虫）
+- **dto/** — 请求对象，**vo/** — 响应对象，**entity/** — 数据库实体（均使用 Lombok）
 
-### 前端架构
-Vue 3 + TypeScript + Vite + Naive UI + Pinia + ECharts：
+### 前端结构 (`frontend/src/`)
 
-- **api/** - API 请求封装（Axios 实例，自动添加 Bearer Token）
-- **views/** - 页面组件
-  - `Home` - 首页（热门基金、市场行情）
-  - `Dashboard` - 投资概览（需登录）
-  - `Search` - 基金搜索
-  - `FundDetail` - 基金详情（净值走势图）
-  - `Ranking` - 基金排行
-  - `SectorRanking` / `SectorDetail` - 板块排行/详情
-  - `MarketDetail` - 大盘详情
-  - `Favorites` - 我的收藏（需登录）
-  - `Compare` - 基金对比
-  - `Portfolio` - 投资组合（需登录）
-  - `Alerts` - 预警管理（需登录）
-  - `Analytics` - 高级分析
-  - `Recommend` - 智能推荐
-  - `AIAssistant` - AI 助手
-  - `News` / `NewsDetail` - 资讯中心/详情
-  - `Login` / `Register` / `Profile` - 用户相关
-- **stores/** - Pinia 状态管理（auth、theme）
-- **components/** - 通用组件（如 FundTrendChart）
-- **router/** - Vue Router 路由配置
+- **api/** — Axios 封装，按领域拆分（`auth.ts`、`fund.ts`、`admin.ts` 等）。实例 baseURL 为 `/api`，请求拦截器自动附加 Bearer Token
+- **views/** — 页面组件（PascalCase 命名）。子目录 `admin/` 包含管理后台页面
+- **components/** — 通用组件（`FundTrendChart`、`MobileNav`、`NotificationBell`、`Skeleton` 等）
+- **stores/** — Pinia 状态管理（`auth.ts` 管理登录态和角色、`theme.ts` 管理明暗主题）
+- **router/index.ts** — 路由配置，所有页面懒加载
 
-### API 认证
-- 使用 JWT Bearer Token 认证
-- Token 存储在 localStorage，由 axios 拦截器自动添加到请求头
-- 401 响应自动跳转登录页
-- 需认证的页面：Dashboard、Favorites、Portfolio、Alerts、Profile
+### 认证与权限
+
+三层权限模型：
+1. **公开接口** — WebConfig 中排除 JWT 拦截的路径（搜索、行情、资讯等）
+2. **登录用户** — 需 JWT Token，`requiresAuth: true` 的前端路由会检查 localStorage 中的 token
+3. **管理员** — 后端 `@RequireAdmin` 注解 + 前端 `requiresAdmin: true` 路由守卫，检查 `authStore.isAdmin`
+
+前端 401 响应自动跳转登录页并携带 `redirect` 参数。
 
 ### 数据流向
-1. 前端请求 → Vite 代理 → 后端 API (`/api/*`)
-2. 后端通过 `FundDataApiService` 调用东方财富 API 获取基金数据
-3. 数据缓存到 Redis（默认 5 分钟过期）
+
+1. 前端请求 → Vite 代理 (`/api` → `http://127.0.0.1:8080`) → 后端 API
+2. 后端通过 `external/` 服务调用东方财富 API
+3. 数据缓存到 Redis（TTL 300 秒）
 4. WebSocket 推送实时数据更新
+
+### 管理后台
+
+独立路由模块 `/admin/*`，包含用户管理、操作日志等功能。后端通过 `AdminController` 提供 API，使用 `AdminInterceptor` 拦截 `/admin/**` 路径校验管理员权限。
+
+### AI 助手
+
+后端 `AIController` → `AIConfig` 配置 Claude API 客户端。支持通过环境变量 `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL` 配置，默认模型 `claude-sonnet-4-6`。
 
 ## 配置
 
-### 后端配置 (application.yml)
-- 数据库：MySQL 8.0 (192.168.1.20:3306/fund_system)
-- Redis：192.168.1.20:6378
-- 服务端口：8080
-- Context Path：`/api`
-- Druid 监控：`/druid/*` (admin/admin123)
+### 环境变量覆盖 (application.yml)
+
+所有关键配置支持环境变量覆盖，无需修改代码即可适配不同环境：
+- **数据库**：`DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`（默认 192.168.1.20:3306/fund_system）
+- **Redis**：`REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`（默认 192.168.1.20:6378）
+- **JWT**：`JWT_SECRET`（过期时间 24 小时）
+- **AI**：`AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`
+- **邮件**：`MAIL_HOST`、`MAIL_PORT`、`MAIL_USERNAME`、`MAIL_PASSWORD`
 
 ### 前端配置 (vite.config.ts)
+- 路径别名：`@` → `./src`
 - 开发端口：3000
 - API 代理：`/api` → `http://127.0.0.1:8080`
 
-## 数据库表
+## 代码风格
 
-主要表（详见 docs/DATABASE.md）：
-- `t_user` - 用户
-- `t_fund` - 基金基本信息
-- `t_fund_nav_history` - 净值历史
-- `t_fund_manager` / `t_fund_manager_relation` - 基金经理
-- `t_fund_holdings` - 持仓明细
-- `t_user_favorite` - 用户收藏
-- `t_fund_news` - 资讯
-- `t_market_data` - 市场行情
-- `t_hot_fund_rank` - 热门基金排行
+遵循现有代码风格并与相邻文件保持一致：
 
-## 开发注意事项
+- **Java**：4 空格缩进；类名 `UpperCamelCase`；方法/字段 `lowerCamelCase`
+- **Vue/TS**：2 空格缩进；组件文件 `PascalCase`；变量/函数 `camelCase`
+- 提交信息使用 Conventional Commit：`feat`、`fix`、`chore`，可带 scope（如 `feat(profile): ...`）
 
-- 后端使用 Lombok 减少样板代码
-- MyBatis-Plus 自动填充 `create_time` / `update_time`
-- 前端使用 Naive UI 组件库
-- 图表使用 ECharts（vue-echarts）
-- 支持明暗主题切换
-- README.md 中的技术栈描述有误：实际前端是 Vue 3 + Naive UI，而非 React + Ant Design
+## 测试
+
+- 后端：JUnit 5 + Mockito（`spring-boot-starter-test`），测试类以 `Test` 结尾
+- 前端：`npm run build` 会先执行 `vue-tsc` 类型检查
+- CI（`.github/workflows/ci.yml`）：PR 触发后端测试 + 前端构建，push 到 master 额外构建 Docker 镜像
+
+## 数据库
+
+MySQL 8.0，12 张核心表（详见 `docs/DATABASE.md`）。`database/schema.sql` 为建表脚本，`backend/src/main/resources/db/` 包含初始化和迁移 SQL。MyBatis-Plus 自动填充 `create_time`/`update_time`，支持逻辑删除。
+
+## 其他文档
+
+- `docs/API.md` — 完整 API 文档
+- `docs/DEPLOYMENT.md` — 部署指南（含 Docker、Nginx、JVM 调优）
+- `docs/DATABASE.md` — 数据库设计文档
+- `docs/FEATURE_ENHANCEMENT.md` — 功能增强记录
+- `AGENTS.md` — 仓库规范（提交规范、PR 模板等）

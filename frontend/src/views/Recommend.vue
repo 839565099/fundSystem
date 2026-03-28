@@ -29,12 +29,12 @@
       <template #header>
         <div class="section-header">
           <span class="section-title">
-            <n-icon><TrendingUpOutline /></n-icon>
+            <n-icon><IconTrendingUp /></n-icon>
             涨幅排行 TOP 10
           </span>
           <n-button text @click="showMoreGrowth">
             查看更多
-            <n-icon><ChevronForwardOutline /></n-icon>
+            <n-icon><IconChevronRight /></n-icon>
           </n-button>
         </div>
       </template>
@@ -54,13 +54,13 @@
         <template #header>
           <div class="section-header">
             <span class="section-title">
-              <n-icon><FlameOutline /></n-icon>
+              <n-icon><IconFlame /></n-icon>
               热门推荐
             </span>
           </div>
         </template>
         <n-spin :show="hotLoading">
-          <div class="fund-grid">
+          <div v-if="hotFunds.length" class="fund-grid">
             <div
               v-for="fund in hotFunds"
               :key="fund.fundCode"
@@ -80,6 +80,7 @@
               <n-tag size="small" type="info" class="source-tag">热门</n-tag>
             </div>
           </div>
+          <n-empty v-else-if="!hotLoading" description="暂无热门推荐数据" />
         </n-spin>
       </n-card>
 
@@ -88,7 +89,7 @@
         <template #header>
           <div class="section-header">
             <span class="section-title">
-              <n-icon><PersonOutline /></n-icon>
+              <n-icon><IconUser /></n-icon>
               为您推荐
             </span>
             <span class="recommend-tip">基于您的投资偏好</span>
@@ -116,13 +117,14 @@
               <div v-if="fund.reason" class="recommend-reason">{{ fund.reason }}</div>
             </div>
           </div>
-          <n-empty v-else description="登录后获取个性化推荐">
+          <n-empty v-if="!authStore.isLoggedIn" description="登录后获取个性化推荐">
             <template #extra>
               <n-button type="primary" @click="router.push('/login')">
                 立即登录
               </n-button>
             </template>
           </n-empty>
+          <n-empty v-else description="暂无个性化推荐数据" />
         </n-spin>
       </n-card>
     </div>
@@ -144,7 +146,7 @@
         </n-tag>
       </div>
       <n-spin :show="typeLoading">
-        <div class="fund-grid">
+        <div v-if="typeFunds.length" class="fund-grid">
           <div
             v-for="fund in typeFunds"
             :key="fund.fundCode"
@@ -163,21 +165,22 @@
             </div>
           </div>
         </div>
+        <n-empty v-else-if="!typeLoading" :description="`暂无${selectedType}类型基金数据`" />
       </n-spin>
     </n-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, h, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NCard, NIcon, NDataTable, NSpin, NEmpty, NButton, NTag
 } from 'naive-ui'
 import {
-  TrendingUpOutline, ChevronForwardOutline, FlameOutline,
-  PersonOutline, ShieldCheckmarkOutline, WarningOutline, FlashOutline
-} from '@vicons/ionicons5'
+  IconTrendingUp, IconChevronRight, IconFlame,
+  IconUser, IconShieldCheck, IconAlertTriangle, IconBolt
+} from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 import { fundApi } from '@/api/fund'
@@ -200,9 +203,9 @@ const typeFunds = ref<any[]>([])
 const fundTypes = ['全部', '股票型', '混合型', '债券型', '指数型', '货币型', 'QDII']
 
 const preferences = [
-  { value: 1, label: '保守型', desc: '追求稳定收益，风险承受能力低', icon: ShieldCheckmarkOutline },
-  { value: 2, label: '稳健型', desc: '平衡收益与风险，追求长期增值', icon: WarningOutline },
-  { value: 3, label: '激进型', desc: '追求高收益，接受较大波动', icon: FlashOutline }
+  { value: 1, label: '保守型', desc: '追求稳定收益，风险承受能力低', icon: IconShieldCheck },
+  { value: 2, label: '稳健型', desc: '平衡收益与风险，追求长期增值', icon: IconAlertTriangle },
+  { value: 3, label: '激进型', desc: '追求高收益，接受较大波动', icon: IconBolt }
 ]
 
 const rankingColumns = [
@@ -212,13 +215,15 @@ const rankingColumns = [
   { title: '最新净值', key: 'nav', width: 100, render: (row: any) => row.nav?.toFixed(4) },
   { title: '日涨跌', key: 'dayGrowth', width: 100, render: (row: any) => {
     const val = row.dayGrowth
-    const cls = val >= 0 ? 'positive' : 'negative'
-    return { text: `${val >= 0 ? '+' : ''}${val?.toFixed(2)}%`, class: cls }
+    if (val === undefined || val === null) return '-'
+    return h('span', { class: val >= 0 ? 'positive' : 'negative' },
+      `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
   }},
   { title: '近一年', key: 'yearGrowth', width: 100, render: (row: any) => {
     const val = row.yearGrowth
-    const cls = val >= 0 ? 'positive' : 'negative'
-    return { text: `${val >= 0 ? '+' : ''}${val?.toFixed(2)}%`, class: cls }
+    if (val === undefined || val === null) return '-'
+    return h('span', { class: val >= 0 ? 'positive' : 'negative' },
+      `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
   }}
 ]
 
@@ -226,8 +231,8 @@ const rankingColumns = [
 const loadRanking = async () => {
   loading.value = true
   try {
-    const res = await fundApi.getRanking('dayGrowth', 'desc', 1, 10)
-    growthRanking.value = res.records || res.list || []
+    const res = await fundApi.getTopGrowthFunds(10)
+    growthRanking.value = res || []
   } finally {
     loading.value = false
   }
@@ -236,7 +241,7 @@ const loadRanking = async () => {
 const loadHotFunds = async () => {
   hotLoading.value = true
   try {
-    const res = await fundApi.getHotRecommend(8)
+    const res = await fundApi.getClassicHotFunds(8)
     hotFunds.value = res || []
   } finally {
     hotLoading.value = false
@@ -258,7 +263,7 @@ const loadTypeFunds = async (type: string) => {
   typeLoading.value = true
   try {
     if (type === '全部') {
-      const res = await fundApi.getHotRecommend(8)
+      const res = await fundApi.getClassicHotFunds(8)
       typeFunds.value = res || []
     } else {
       const res = await fundApi.search({ fundType: type, pageNum: 1, pageSize: 8 })

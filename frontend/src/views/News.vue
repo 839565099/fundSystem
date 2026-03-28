@@ -3,7 +3,7 @@
     <!-- 搜索栏 -->
     <div class="search-header card">
       <h2 class="section-title">
-        <n-icon size="24"><NewspaperOutline /></n-icon>
+        <n-icon size="24"><IconNews /></n-icon>
         资讯中心
       </h2>
       <div class="search-box">
@@ -14,7 +14,7 @@
           @keyup.enter="handleSearch"
         >
           <template #prefix>
-            <n-icon><SearchOutline /></n-icon>
+            <n-icon><IconSearch /></n-icon>
           </template>
         </n-input>
         <n-button type="primary" @click="handleSearch">搜索</n-button>
@@ -82,11 +82,11 @@
                         <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">东</text>
                       </svg>
                     </span>
-                    <n-icon v-else size="14"><LocationOutline /></n-icon>
+                    <n-icon v-else size="14"><IconMapPin /></n-icon>
                     <span class="source-name">{{ item.source || '未知来源' }}</span>
                   </span>
                   <span class="time">
-                    <n-icon size="14"><TimeOutline /></n-icon>
+                    <n-icon size="14"><IconClock /></n-icon>
                     {{ formatTime(item.publishTime || '') }}
                   </span>
                   <n-tag
@@ -119,7 +119,7 @@
         <!-- 热门资讯 -->
         <div class="sidebar-card card">
           <h3 class="sidebar-title">
-            <n-icon size="18"><FlameOutline /></n-icon>
+            <n-icon size="18"><IconFlame /></n-icon>
             热门资讯
           </h3>
           <div class="hot-list">
@@ -138,7 +138,7 @@
         <!-- 情感风向 -->
         <div class="sidebar-card card">
           <h3 class="sidebar-title">
-            <n-icon size="18"><StatsChartOutline /></n-icon>
+            <n-icon size="18"><IconChartBar /></n-icon>
             情感风向
           </h3>
           <div class="sentiment-stats">
@@ -178,9 +178,9 @@ import {
   NRadioGroup, NRadioButton, createDiscreteApi
 } from 'naive-ui'
 import {
-  NewspaperOutline, SearchOutline, LocationOutline,
-  TimeOutline, FlameOutline, StatsChartOutline
-} from '@vicons/ionicons5'
+  IconNews, IconSearch, IconMapPin,
+  IconClock, IconFlame, IconChartBar
+} from '@tabler/icons-vue'
 import { newsApi } from '../api/fund'
 import type { FundNews, NewsSentimentOverview } from '../types'
 

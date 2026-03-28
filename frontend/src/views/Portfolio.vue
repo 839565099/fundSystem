@@ -90,7 +90,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage } from 'naive-ui'
-import { AddOutline } from '@vicons/ionicons5'
+import { IconPlus as AddOutline } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import { fundApi } from '@/api/fund'
 import type { PortfolioVO } from '@/types'

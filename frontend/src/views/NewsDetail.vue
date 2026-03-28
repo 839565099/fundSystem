@@ -5,7 +5,7 @@
         <!-- 返回导航 -->
         <div class="back-nav">
           <n-button text @click="router.push('/news')">
-            <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
+            <template #icon><n-icon><IconArrowLeft /></n-icon></template>
             返回资讯列表
           </n-button>
         </div>
@@ -17,7 +17,7 @@
               <h1 class="news-title">{{ news.title }}</h1>
               <div class="action-btns">
                 <n-button quaternary circle size="small" @click="handleShare">
-                  <template #icon><n-icon><ShareSocialOutline /></n-icon></template>
+                  <template #icon><n-icon><IconShare /></n-icon></template>
                 </n-button>
               </div>
             </div>
@@ -37,19 +37,19 @@
                     <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">东</text>
                   </svg>
                 </span>
-                <n-icon v-else size="16"><LocationOutline /></n-icon>
+                <n-icon v-else size="16"><IconMapPin /></n-icon>
                 <span class="source-name">{{ news.source }}</span>
               </span>
               <span v-if="news.author" class="meta-item">
-                <n-icon size="14"><PersonOutline /></n-icon>
+                <n-icon size="14"><IconUser /></n-icon>
                 {{ news.author }}
               </span>
               <span v-if="news.publishTime" class="meta-item">
-                <n-icon size="14"><TimeOutline /></n-icon>
+                <n-icon size="14"><IconClock /></n-icon>
                 {{ formatTime(news.publishTime) }}
               </span>
               <span v-if="news.viewCount" class="meta-item">
-                <n-icon size="14"><EyeOutline /></n-icon>
+                <n-icon size="14"><IconEye /></n-icon>
                 {{ news.viewCount }} 阅读
               </span>
             </div>
@@ -78,7 +78,7 @@
                 size="16"
                 :color="i <= news.impactLevel ? '#f59e0b' : '#e5e7eb'"
               >
-                <StarOutline />
+                <IconStar />
               </n-icon>
             </div>
           </div>
@@ -90,12 +90,12 @@
           <div v-else-if="news.summary" class="content-text">
             {{ news.summary }}
             <div v-if="news.originalUrl" class="content-note">
-              <n-icon size="16"><InformationCircleOutline /></n-icon>
+              <n-icon size="16"><IconInfoCircle /></n-icon>
               正文内容较少，建议查看原文获取完整内容
             </div>
             <div v-if="news.originalUrl" class="original-link">
               <n-button type="primary" @click="openOriginal(news.originalUrl)">
-                <template #icon><n-icon><OpenOutline /></n-icon></template>
+                <template #icon><n-icon><IconExternalLink /></n-icon></template>
                 查看原文
               </n-button>
             </div>
@@ -112,7 +112,7 @@
           <!-- 原文链接 -->
           <div v-if="news.originalUrl && news.content && news.content.length >= 100" class="original-link">
             <n-button type="primary" @click="openOriginal(news.originalUrl)">
-              <template #icon><n-icon><OpenOutline /></n-icon></template>
+              <template #icon><n-icon><IconExternalLink /></n-icon></template>
               查看原文
             </n-button>
           </div>
@@ -121,7 +121,7 @@
         <!-- 相关推荐 -->
         <div v-if="relatedNews.length > 0" class="related-section card">
           <h3 class="section-title">
-            <n-icon size="20"><DocumentsOutline /></n-icon>
+            <n-icon size="20"><IconFiles /></n-icon>
             相关资讯
           </h3>
           <div class="related-list">
@@ -153,7 +153,7 @@
         <!-- 底部操作 -->
         <div class="news-actions">
           <n-button @click="router.push('/news')">
-            <template #icon><n-icon><ListOutline /></n-icon></template>
+            <template #icon><n-icon><IconList /></n-icon></template>
             返回列表
           </n-button>
         </div>
@@ -169,10 +169,10 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NButton, NIcon, NSpin, NEmpty, NTag, createDiscreteApi } from 'naive-ui'
 import {
-  ArrowBackOutline, LocationOutline, PersonOutline, TimeOutline,
-  EyeOutline, StarOutline, ShareSocialOutline, OpenOutline,
-  DocumentsOutline, ListOutline, InformationCircleOutline
-} from '@vicons/ionicons5'
+  IconArrowLeft, IconMapPin, IconUser, IconClock,
+  IconEye, IconStar, IconShare, IconExternalLink,
+  IconFiles, IconList, IconInfoCircle
+} from '@tabler/icons-vue'
 import { newsApi } from '../api/fund'
 import type { FundNews } from '../types'
 import dayjs from 'dayjs'

@@ -7,7 +7,7 @@
           <div class="header-top">
             <div class="title-area">
               <n-button text @click="router.back()">
-                <template #icon><n-icon><ArrowBackOutline /></n-icon></template>
+                <template #icon><n-icon><IconArrowLeft /></n-icon></template>
               </n-button>
               <h1>{{ sector.name }}</h1>
               <n-tag :type="getTypeTagType(sector.type)">{{ getTypeLabel(sector.type) }}</n-tag>
@@ -59,7 +59,7 @@
         <div class="chart-section card">
           <div class="section-header">
             <h3 class="section-title">
-              <n-icon size="20"><TrendingUpOutline /></n-icon>
+              <n-icon size="20"><IconTrendingUp /></n-icon>
               走势图
             </h3>
             <div class="chart-modes">
@@ -80,7 +80,7 @@
         <!-- 成分股 -->
         <div class="stocks-section card">
           <h3 class="section-title">
-            <n-icon size="20"><ListOutline /></n-icon>
+            <n-icon size="20"><IconList /></n-icon>
             成分股 (共{{ stocks.length }}只)
           </h3>
           <n-data-table
@@ -100,7 +100,7 @@
 import { ref, computed, onMounted, onUnmounted, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NButton, NIcon, NTag, NSpin, NDataTable, createDiscreteApi } from 'naive-ui'
-import { ArrowBackOutline, TrendingUpOutline, ListOutline } from '@vicons/ionicons5'
+import { IconArrowLeft, IconTrendingUp, IconList } from '@tabler/icons-vue'
 import * as echarts from 'echarts'
 import { sectorApi } from '../api/sector'
 import type { SectorVO, SectorStockVO, SectorKLineItem } from '../types/sector'
