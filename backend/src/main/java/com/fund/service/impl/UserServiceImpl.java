@@ -68,7 +68,8 @@ public class UserServiceImpl implements UserService {
         user.setPhone(registerDTO.getPhone());
         user.setNickname(registerDTO.getNickname() != null ? registerDTO.getNickname() : registerDTO.getUsername());
         user.setStatus(1);
-        
+        user.setRole("USER"); // 默认角色为普通用户
+
         userMapper.insert(user);
         
         return convertToVO(user);
@@ -91,8 +92,9 @@ public class UserServiceImpl implements UserService {
         
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
-        
-        return jwtUtil.generateToken(user.getId(), user.getUsername());
+
+        String role = user.getRole() != null ? user.getRole() : "USER";
+        return jwtUtil.generateToken(user.getId(), user.getUsername(), role);
     }
     
     @Override

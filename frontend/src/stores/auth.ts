@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserVO | null>(null)
 
   const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
+  const role = computed(() => user.value?.role || 'USER')
 
   const login = async (data: LoginDTO) => {
     const tokenValue = await authApi.login(data)
@@ -31,7 +33,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return
     try {
       user.value = await authApi.getProfile()
-    } catch {
+      console.log('fetchProfile result:', user.value)
+      console.log('role:', user.value?.role)
+    } catch (e) {
+      console.error('fetchProfile error:', e)
       logout()
     }
   }
@@ -44,6 +49,8 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoggedIn,
+    isAdmin,
+    role,
     login,
     register,
     logout,

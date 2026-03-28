@@ -4,7 +4,15 @@
       <n-dialog-provider>
         <n-notification-provider>
           <div class="app-container" :class="{ 'dark-mode': isDark }">
-            <n-layout has-sider class="main-layout">
+            <!-- 认证页面（登录/注册等）直接显示 router-view -->
+            <router-view v-if="isAuthPage" v-slot="{ Component }">
+              <transition name="page" mode="out-in">
+                <component :is="Component" :key="route.path" />
+              </transition>
+            </router-view>
+
+            <!-- 正常布局页面 -->
+            <n-layout v-else has-sider class="main-layout">
               <n-layout-sider
                 bordered
                 collapse-mode="width"
@@ -85,7 +93,6 @@
                           <n-avatar round size="small" class="user-avatar">
                             {{ authStore.user?.nickname || authStore.user?.username?.charAt(0) || 'U' }}
                           </n-avatar>
-                          <span class="user-name hide-mobile">{{ authStore.user?.nickname || authStore.user?.username }}</span>
                         </n-button>
                       </n-dropdown>
                       <n-button v-else type="primary" size="small" @click="router.push('/login')">
@@ -169,6 +176,9 @@ import {
   SparklesOutline,
   MenuOutline,
   MailOutline,
+  SettingsOutline,
+  PeopleOutline,
+  DocumentTextOutline,
 } from '@vicons/ionicons5'
 import { useAuthStore } from './stores/auth'
 import { useThemeStore } from './stores/theme'
@@ -198,6 +208,13 @@ const currentThemeOverrides = computed(() => isDark.value ? darkThemeOverrides :
 
 const currentKey = computed(() => route.name as string)
 const currentTitle = computed(() => (route.meta.title as string) || '首页')
+
+// 判断是否是认证相关页面（登录、注册、忘记密码等）
+const isAuthPage = computed(() => {
+  const authPages = ['Login', 'Register', 'ForgotPassword', 'ResetPassword']
+  return authPages.includes(route.name as string)
+})
+
 const marketClock = computed(() => nowTime.value.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }))
 
 const marketIsOpen = computed(() => {
@@ -256,10 +273,12 @@ const menuKeyToPath: Record<string, string> = {
   AIAssistant: '/ai-assistant',
   Analytics: '/analytics',
   News: '/news',
+  AdminUsers: '/admin/users',
+  AdminLogs: '/admin/logs',
   Profile: '/profile',
 }
 
-const menuOptions: MenuOption[] = [
+const menuOptions = computed<MenuOption[]>(() => [
   { label: '首页', key: 'Home', icon: renderIcon(HomeOutline) },
   { label: '投资概览', key: 'Dashboard', icon: renderIcon(GridOutline) },
   { label: '基金搜索', key: 'Search', icon: renderIcon(SearchOutline) },
@@ -276,14 +295,26 @@ const menuOptions: MenuOption[] = [
   { label: '高级分析', key: 'Analytics', icon: renderIcon(AnalyticsOutline) },
   { label: '资讯中心', key: 'News', icon: renderIcon(NewspaperOutline) },
   { type: 'divider', key: 'd3' },
+  // 管理员菜单（仅管理员可见）
+  ...(authStore.isAdmin ? [
+    { label: '用户管理', key: 'AdminUsers', icon: renderIcon(PeopleOutline) } as MenuOption,
+    { label: '日志查看', key: 'AdminLogs', icon: renderIcon(DocumentTextOutline) } as MenuOption,
+  ] : []),
   { label: '个人中心', key: 'Profile', icon: renderIcon(PersonOutline) },
-]
+])
 
-const userOptions = [
-  { label: '个人中心', key: 'profile', icon: renderIcon(PersonOutline) },
-  { type: 'divider', key: 'd1' },
-  { label: '退出登录', key: 'logout', icon: renderIcon(LogOutOutline) },
-]
+const userOptions = computed(() => {
+  const options: any[] = [
+    { label: '个人中心', key: 'profile', icon: renderIcon(PersonOutline) },
+  ]
+  // 管理员入口
+  if (authStore.isAdmin) {
+    options.push({ label: '管理后台', key: 'admin', icon: renderIcon(SettingsOutline) })
+  }
+  options.push({ type: 'divider', key: 'd1' })
+  options.push({ label: '退出登录', key: 'logout', icon: renderIcon(LogOutOutline) })
+  return options
+})
 
 const handleMenuClick = (key: string) => {
   const path = menuKeyToPath[key]
@@ -300,9 +331,11 @@ const handleMobileMenuClick = (key: string) => {
 const handleUserAction = (key: string) => {
   if (key === 'logout') {
     authStore.logout()
-    router.push('/')
+    router.push('/login')
   } else if (key === 'profile') {
     router.push('/profile')
+  } else if (key === 'admin') {
+    router.push('/admin')
   }
 }
 

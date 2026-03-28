@@ -1,5 +1,6 @@
 package com.fund.config;
 
+import com.fund.interceptor.AdminInterceptor;
 import com.fund.interceptor.JwtInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -10,8 +11,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
-    
+
     private final JwtInterceptor jwtInterceptor;
+    private final AdminInterceptor adminInterceptor;
     
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -25,11 +27,16 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // JWT 拦截器
         registry.addInterceptor(jwtInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                         "/auth/login",
                         "/auth/register",
+                        "/auth/forgot-password",
+                        "/auth/validate-reset-token",
+                        "/auth/validate-reset-code",
+                        "/auth/reset-password",
                         "/fund/search",
                         "/fund/search/**",
                         "/fund/detail/**",
@@ -53,5 +60,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/actuator/health",
                         "/error"
                 );
+
+        // 管理员权限拦截器
+        registry.addInterceptor(adminInterceptor)
+                .addPathPatterns("/admin/**");
     }
 }

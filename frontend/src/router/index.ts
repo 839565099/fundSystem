@@ -1,11 +1,12 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
     component: () => import('../views/Home.vue'),
-    meta: { title: '首页' }
+    meta: { title: '首页', requiresAuth: true }
   },
   {
     path: '/dashboard',
@@ -145,6 +146,39 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/Profile.vue'),
     meta: { title: '个人中心', requiresAuth: true }
   },
+  // 管理员路由
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('../views/admin/AdminLayout.vue'),
+    meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard',
+        component: () => import('../views/admin/Dashboard.vue'),
+        meta: { title: '管理概览', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('../views/admin/UserManage.vue'),
+        meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'logs',
+        name: 'AdminLogs',
+        component: () => import('../views/admin/OperationLog.vue'),
+        meta: { title: '操作日志', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'users/:id',
+        name: 'AdminUserDetail',
+        component: () => import('../views/admin/UserDetail.vue'),
+        meta: { title: '用户详情', requiresAuth: true, requiresAdmin: true }
+      }
+    ]
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -160,15 +194,24 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   document.title = `${to.meta.title || '基金系统'} - Fund System`
-  
+
   const token = localStorage.getItem('token')
   const isLoggedIn = !!token
-  
+  const authStore = useAuthStore()
+
+  // 需要认证但未登录 -> 跳转登录页
   if (to.meta.requiresAuth && !isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else if ((to.name === 'Login' || to.name === 'Register') && isLoggedIn) {
+  }
+  // 需要管理员权限但不是管理员 -> 跳转首页
+  else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     next({ name: 'Home' })
-  } else {
+  }
+  // 已登录访问登录/注册页 -> 跳转首页
+  else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && isLoggedIn) {
+    next({ name: 'Home' })
+  }
+  else {
     next()
   }
 })

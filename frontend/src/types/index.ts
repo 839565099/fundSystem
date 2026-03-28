@@ -29,6 +29,7 @@ export interface UserVO {
   nickname?: string
   avatar?: string
   status: number
+  role: 'ADMIN' | 'USER'
   createTime?: string
 }
 

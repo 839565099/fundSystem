@@ -27,7 +27,9 @@ public class User implements Serializable {
     private String avatar;
     
     private Integer status;
-    
+
+    private String role; // 角色: ADMIN-管理员, USER-普通用户
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     

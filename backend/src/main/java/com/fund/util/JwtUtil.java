@@ -29,9 +29,14 @@ public class JwtUtil {
     }
     
     public String generateToken(Long userId, String username) {
+        return generateToken(userId, username, "USER");
+    }
+
+    public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        claims.put("role", role);
         return createToken(claims, username);
     }
     
@@ -62,7 +67,13 @@ public class JwtUtil {
         Claims claims = parseToken(token);
         return claims.getSubject();
     }
-    
+
+    public String getRole(String token) {
+        Claims claims = parseToken(token);
+        String role = claims.get("role", String.class);
+        return role != null ? role : "USER"; // 兼容旧 Token，默认为普通用户
+    }
+
     public boolean isTokenExpired(String token) {
         Claims claims = parseToken(token);
         return claims.getExpiration().before(new Date());
