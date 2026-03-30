@@ -252,7 +252,7 @@ const loadPersonalFunds = async () => {
   if (!authStore.isLoggedIn) return
   personalLoading.value = true
   try {
-    const res = await fundApi.getPersonalizedRecommend(8)
+    const res = await fundApi.getRiskBasedRecommend(selectedPreference.value, 8)
     personalFunds.value = res || []
   } finally {
     personalLoading.value = false
@@ -266,8 +266,8 @@ const loadTypeFunds = async (type: string) => {
       const res = await fundApi.getClassicHotFunds(8)
       typeFunds.value = res || []
     } else {
-      const res = await fundApi.search({ fundType: type, pageNum: 1, pageSize: 8 })
-      typeFunds.value = res.records || res.list || []
+      const res = await fundApi.getHotFundsByType(type, 8)
+      typeFunds.value = res || []
     }
   } finally {
     typeLoading.value = false

@@ -195,63 +195,92 @@
       </div>
     </div>
 
-    <div class="bottom-section">
-      <n-card title="智能推荐" class="recommend-card card--elevated">
-        <template #header-extra>
-          <n-button text @click="router.push('/recommend')">
-            更多
-          </n-button>
-        </template>
-        <n-spin :show="recommendLoading">
-          <div class="recommend-grid">
-            <div
-              v-for="fund in recommendFunds"
-              :key="fund.fundCode"
-              class="fund-card card-stagger"
-              @click="router.push(`/fund/${fund.fundCode}`)"
-            >
-              <div class="header">
-                <div>
-                  <div class="name">{{ fund.fundName }}</div>
-                  <div class="code">{{ fund.fundCode }}</div>
+    <!-- 智能推荐 - 全宽横向滚动 -->
+    <n-card class="recommend-card card--elevated">
+      <template #header>
+        <div class="section-header">
+          <span class="section-icon">✨</span>
+          <span class="section-title">智能推荐</span>
+        </div>
+      </template>
+      <template #header-extra>
+        <n-button text @click="router.push('/recommend')">
+          查看更多
+          <template #icon><n-icon><IconChevronRight /></n-icon></template>
+        </n-button>
+      </template>
+      <n-spin :show="recommendLoading">
+        <div class="recommend-scroll">
+          <div
+            v-for="fund in recommendFunds"
+            :key="fund.fundCode"
+            class="fund-card"
+            @click="router.push(`/fund/${fund.fundCode}`)"
+          >
+            <div class="fund-card-top">
+              <div class="fund-info">
+                <div class="fund-name">{{ fund.fundName }}</div>
+                <div class="fund-code">{{ fund.fundCode }}</div>
+              </div>
+              <n-tag size="small" :type="getRiskType(fund.riskLevel)" round>
+                {{ getRiskText(fund.riskLevel) }}
+              </n-tag>
+            </div>
+            <div class="fund-card-bottom">
+              <div class="fund-metrics">
+                <div class="metric">
+                  <span class="metric-label">最新净值</span>
+                  <span class="metric-value">{{ fund.nav?.toFixed(4) || '-' }}</span>
                 </div>
-                <n-tag size="small" :type="getRiskType(fund.riskLevel)">
-                  {{ getRiskText(fund.riskLevel) }}
-                </n-tag>
-              </div>
-              <div class="nav">{{ fund.nav?.toFixed(4) }}</div>
-              <div class="growth">
-                <GrowthText :value="fund.dayGrowth" />
+                <div class="metric">
+                  <span class="metric-label">日涨跌</span>
+                  <span class="metric-value growth">
+                    <GrowthText :value="fund.dayGrowth" />
+                  </span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">近一年</span>
+                  <span class="metric-value growth">
+                    <GrowthText :value="fund.yearGrowth" />
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </n-spin>
-      </n-card>
+        </div>
+      </n-spin>
+    </n-card>
 
-      <n-card title="市场热点" class="news-card card--elevated">
-        <template #header-extra>
-          <n-button text @click="router.push('/news')">
-            更多
-          </n-button>
-        </template>
-        <n-spin :show="newsLoading">
-          <div class="news-list">
-            <div
-              v-for="news in hotNews"
-              :key="news.id"
-              class="news-item hover-lift"
-              @click="router.push(`/news/${news.id}`)"
-            >
-              <div class="news-title">{{ news.title }}</div>
-              <div class="news-meta">
-                <span>{{ news.source }}</span>
-                <span>{{ formatTime(news.publishTime) }}</span>
-              </div>
+    <!-- 市场热点 -->
+    <n-card class="news-card card--elevated">
+      <template #header>
+        <div class="section-header">
+          <span class="section-icon">📰</span>
+          <span class="section-title">市场热点</span>
+        </div>
+      </template>
+      <template #header-extra>
+        <n-button text @click="router.push('/news')">
+          更多
+        </n-button>
+      </template>
+      <n-spin :show="newsLoading">
+        <div class="news-list">
+          <div
+            v-for="news in hotNews"
+            :key="news.id"
+            class="news-item"
+            @click="router.push(`/news/${news.id}`)"
+          >
+            <div class="news-title">{{ news.title }}</div>
+            <div class="news-meta">
+              <span>{{ news.source }}</span>
+              <span>{{ formatTime(news.publishTime) }}</span>
             </div>
           </div>
-        </n-spin>
-      </n-card>
-    </div>
+        </div>
+      </n-spin>
+    </n-card>
   </div>
 </template>
 
@@ -266,7 +295,7 @@ import {
 import {
   IconRefresh,
   IconBell, IconMessage,
-  IconAlertCircle, IconNews
+  IconAlertCircle, IconNews, IconChevronRight
 } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
@@ -324,14 +353,14 @@ const loadData = async () => {
       fundApi.getUnreadAlertCount(),
       fundApi.getAlertHistory(undefined, 5),
       fundApi.getFavorites(),
-      fundApi.getNewsList(1, 5)
+      fundApi.getNewsList(1, 10)
     ])
 
     portfolio.value = portfolioRes
     unreadAlertCount.value = alertCountRes
     recentAlerts.value = alertsRes
     topFavorites.value = favoritesRes.slice(0, 5)
-    hotNews.value = newsRes.records || []
+    hotNews.value = (newsRes.records || []).slice(0, 10)
 
     loadRecommendFunds()
   } catch (error: any) {
@@ -348,7 +377,7 @@ const loadData = async () => {
 const loadRecommendFunds = async () => {
   recommendLoading.value = true
   try {
-    const res = await fundApi.getHotFunds(4)
+    const res = await fundApi.getClassicHotFunds(4)
     recommendFunds.value = res
   } catch (error) {
     console.error('加载推荐失败', error)
@@ -671,40 +700,119 @@ onMounted(() => {
   font-size: 15px;
 }
 
-.bottom-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+.recommend-card {
+  margin-bottom: 24px;
 }
 
-@media (max-width: 1024px) {
-  .bottom-section {
-    grid-template-columns: 1fr;
-  }
+.recommend-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
-.recommend-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+.recommend-scroll::-webkit-scrollbar {
+  height: 4px;
 }
 
-@media (max-width: 768px) {
-  .recommend-grid {
-    grid-template-columns: 1fr;
-  }
+.recommend-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.recommend-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+.fund-card {
+  flex: 0 0 280px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  scroll-snap-align: start;
+}
+
+.fund-card:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.fund-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.fund-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fund-code {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+.fund-card-bottom {
+  margin-top: 4px;
+}
+
+.fund-metrics {
+  display: flex;
+  gap: 20px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.metric-value.growth {
+  font-size: 18px;
+}
+
+.news-card {
+  margin-bottom: 24px;
 }
 
 .news-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 400px;
+  gap: 10px;
+  max-height: 420px;
   overflow: hidden;
 }
 
 .news-item {
-  padding: 14px;
+  padding: 14px 16px;
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
   cursor: pointer;
@@ -717,6 +825,7 @@ onMounted(() => {
 
 .news-title {
   font-weight: 500;
+  font-size: 14px;
   margin-bottom: 8px;
   color: var(--text-primary);
   overflow: hidden;
@@ -729,6 +838,21 @@ onMounted(() => {
   gap: 12px;
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  font-size: 18px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {

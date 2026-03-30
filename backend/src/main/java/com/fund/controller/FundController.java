@@ -89,4 +89,12 @@ public class FundController {
         List<String> companies = fundService.getFundCompanies();
         return Result.success(companies);
     }
+
+    @GetMapping("/hot-by-type")
+    public Result<List<Fund>> getHotFundsByType(
+            @RequestParam String fundType,
+            @RequestParam(defaultValue = "8") int limit) {
+        List<Fund> funds = fundService.getHotFundsByType(fundType, limit);
+        return Result.success(funds);
+    }
 }

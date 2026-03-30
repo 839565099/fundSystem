@@ -759,7 +759,52 @@ public class FundDataApiService {
         }
         return funds;
     }
-    
+
+    /**
+     * 按基金类型获取热门基金（从东方财富API获取）
+     */
+    public List<Fund> fetchHotFundsByType(String fundType, int limit) {
+        List<Fund> funds = new ArrayList<>();
+        try {
+            String ftCode = getFundTypeCode(fundType);
+            LocalDate now = LocalDate.now();
+            String sd = now.minusYears(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            String ed = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            String url = String.format(
+                "https://fund.eastmoney.com/data/rankhandler.aspx?op=ph&dt=kf&ft=%s&rs=&gs=0&sc=1nzf&st=desc&sd=%s&ed=%s&qdii=&tabSubtype=,,,,,&pi=1&pn=%d&dx=1",
+                ftCode, sd, ed, limit
+            );
+
+            log.info("按类型获取热门基金URL: {}", url);
+            String response = httpGetWithReferer(url, "https://fund.eastmoney.com/data/fundranking.html");
+
+            if (response != null) {
+                funds = parseRankingResponse(response);
+                log.info("获取{}类型热门基金: {}条", fundType, funds.size());
+            }
+        } catch (Exception e) {
+            log.error("按类型获取热门基金失败: {}", fundType, e);
+        }
+        return funds;
+    }
+
+    /**
+     * 将中文基金类型映射为东方财富API的ft参数
+     */
+    private String getFundTypeCode(String fundType) {
+        if (fundType == null) return "all";
+        switch (fundType) {
+            case "股票型": return "gp";
+            case "混合型": return "hh";
+            case "债券型": return "zq";
+            case "指数型": return "zs";
+            case "货币型": return "hb";
+            case "QDII": return "qdii";
+            default: return "all";
+        }
+    }
+
     private String getSortField(String rankingType, String period) {
         if ("scale".equals(rankingType)) {
             return "gm";

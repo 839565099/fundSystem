@@ -42,6 +42,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/fund/detail/**",
                         "/fund/hot",
                         "/fund/top",
+                        "/fund/hot-by-type",
                         "/fund/nav-history/**",
                         "/fund/ranking",
                         "/fund/types",
@@ -56,6 +57,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/news/related/**",
                         "/sector/**",
                         "/compare/**",
+                        "/recommend/hot",
+                        "/recommend/personalized",
+                        "/recommend/risk-based",
                         "/druid/**",
                         "/actuator/health",
                         "/error"

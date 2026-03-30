@@ -2,6 +2,11 @@
   <div class="login-page">
     <!-- 左侧品牌区域 -->
     <div class="brand-section">
+      <canvas ref="particleCanvas" class="particle-canvas"></canvas>
+      <div class="glow-orb glow-orb-1"></div>
+      <div class="glow-orb glow-orb-2"></div>
+      <div class="glow-orb glow-orb-3"></div>
+
       <div class="brand-content">
         <div class="brand-logo">
           <svg viewBox="0 0 48 48" fill="none">
@@ -13,7 +18,7 @@
             </defs>
             <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" fill="url(#logoGradient)" opacity="0.9"/>
             <path d="M24 14L34 20V32L24 38L14 32V20L24 14Z" fill="#ffffff"/>
-            <circle cx="24" cy="24" r="4" fill="#D4A843"/>
+            <circle cx="24" cy="24" r="4" fill="#C9A96E"/>
           </svg>
         </div>
 
@@ -48,12 +53,6 @@
             <span>安全可靠</span>
           </div>
         </div>
-      </div>
-
-      <div class="brand-decoration">
-        <div class="circle circle-1"></div>
-        <div class="circle circle-2"></div>
-        <div class="circle circle-3"></div>
       </div>
     </div>
 
@@ -125,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   NForm,
@@ -153,6 +152,107 @@ const form = reactive({
   password: '',
 })
 
+// 粒子动画
+const particleCanvas = ref<HTMLCanvasElement>()
+let animationId: number | null = null
+
+interface Particle {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  radius: number
+  alpha: number
+  alphaSpeed: number
+}
+
+const initParticles = () => {
+  const canvas = particleCanvas.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const parent = canvas.parentElement!
+  let w = parent.clientWidth
+  let h = parent.clientHeight
+  canvas.width = w
+  canvas.height = h
+
+  const particleCount = 60
+  const particles: Particle[] = []
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: Math.random() * 2 + 0.5,
+      alpha: Math.random() * 0.5 + 0.2,
+      alphaSpeed: (Math.random() - 0.5) * 0.005,
+    })
+  }
+
+  const maxDist = 120
+
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h)
+
+    // 绘制粒子间连线
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x
+        const dy = particles[i].y - particles[j].y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < maxDist) {
+          const lineAlpha = (1 - dist / maxDist) * 0.15
+          ctx.beginPath()
+          ctx.moveTo(particles[i].x, particles[i].y)
+          ctx.lineTo(particles[j].x, particles[j].y)
+          ctx.strokeStyle = `rgba(201, 169, 110, ${lineAlpha})`
+          ctx.lineWidth = 0.5
+          ctx.stroke()
+        }
+      }
+    }
+
+    // 绘制粒子
+    for (const p of particles) {
+      p.x += p.vx
+      p.y += p.vy
+      p.alpha += p.alphaSpeed
+      if (p.alpha <= 0.1 || p.alpha >= 0.7) p.alphaSpeed *= -1
+      p.alpha = Math.max(0.1, Math.min(0.7, p.alpha))
+
+      if (p.x < 0) p.x = w
+      if (p.x > w) p.x = 0
+      if (p.y < 0) p.y = h
+      if (p.y > h) p.y = 0
+
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(201, 169, 110, ${p.alpha})`
+      ctx.fill()
+    }
+
+    animationId = requestAnimationFrame(draw)
+  }
+
+  draw()
+
+  const handleResize = () => {
+    w = parent.clientWidth
+    h = parent.clientHeight
+    canvas.width = w
+    canvas.height = h
+  }
+  window.addEventListener('resize', handleResize)
+
+  return () => {
+    window.removeEventListener('resize', handleResize)
+  }
+}
+
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [
@@ -166,6 +266,13 @@ onMounted(() => {
   if (savedUsername) {
     form.username = savedUsername
     rememberMe.value = true
+  }
+  initParticles()
+})
+
+onUnmounted(() => {
+  if (animationId !== null) {
+    cancelAnimationFrame(animationId)
   }
 })
 
@@ -207,12 +314,76 @@ const handleLogin = async () => {
 /* 左侧品牌区域 */
 .brand-section {
   flex: 1;
-  background: var(--gradient-brand);
+  background: linear-gradient(135deg, #0C0C0E 0%, #18181B 40%, #1C1C1F 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+}
+
+.particle-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 漂浮光晕球 */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.glow-orb-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #C9A96E 0%, transparent 70%);
+  top: -80px;
+  right: -60px;
+  animation: orbFloat1 8s ease-in-out infinite;
+}
+
+.glow-orb-2 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #B08D4E 0%, transparent 70%);
+  bottom: -60px;
+  left: -40px;
+  animation: orbFloat2 10s ease-in-out infinite;
+}
+
+.glow-orb-3 {
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, #D4BA82 0%, transparent 70%);
+  top: 50%;
+  left: 55%;
+  transform: translate(-50%, -50%);
+  animation: orbFloat3 12s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(-30px, 40px); }
+  66% { transform: translate(20px, -20px); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(40px, -30px); }
+  66% { transform: translate(-20px, 20px); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.3); }
 }
 
 .brand-content {
@@ -281,39 +452,6 @@ const handleLogin = async () => {
   color: white;
 }
 
-.brand-decoration {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.circle-1 {
-  width: 400px;
-  height: 400px;
-  top: -100px;
-  right: -100px;
-}
-
-.circle-2 {
-  width: 300px;
-  height: 300px;
-  bottom: -50px;
-  left: -50px;
-}
-
-.circle-3 {
-  width: 200px;
-  height: 200px;
-  top: 50%;
-  left: 60%;
-}
-
 /* 右侧登录区域 */
 .login-section {
   width: 500px;
@@ -374,12 +512,12 @@ const handleLogin = async () => {
   font-weight: 600;
   border-radius: 10px;
   background: var(--gradient-accent) !important;
-  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(201, 169, 110, 0.3);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.4);
+  box-shadow: 0 6px 20px rgba(201, 169, 110, 0.4);
 }
 
 .divider {
@@ -485,7 +623,7 @@ const handleLogin = async () => {
 .login-card :deep(.n-input:focus-within) {
   background-color: var(--card-bg) !important;
   border-color: var(--accent-color) !important;
-  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.1) !important;
 }
 
 /* 输入框文字颜色 */

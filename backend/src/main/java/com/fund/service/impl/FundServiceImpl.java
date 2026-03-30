@@ -372,4 +372,20 @@ public class FundServiceImpl implements FundService {
                 .filter(StrUtil::isNotBlank)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Fund> getHotFundsByType(String fundType, int limit) {
+        String cacheKey = "fund:hotType:" + fundType + ":" + limit;
+        @SuppressWarnings("unchecked")
+        List<Fund> cached = (List<Fund>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        List<Fund> funds = fundDataApiService.fetchHotFundsByType(fundType, limit);
+        if (!funds.isEmpty()) {
+            redisTemplate.opsForValue().set(cacheKey, funds, CACHE_EXPIRE, TimeUnit.SECONDS);
+        }
+        return funds;
+    }
 }

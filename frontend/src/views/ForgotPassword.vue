@@ -13,7 +13,7 @@
             </defs>
             <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" fill="url(#logoGradient)" opacity="0.9"/>
             <path d="M24 14L34 20V32L24 38L14 32V20L24 14Z" fill="#ffffff"/>
-            <circle cx="24" cy="24" r="4" fill="#D4A843"/>
+            <circle cx="24" cy="24" r="4" fill="#C9A96E"/>
           </svg>
         </div>
 
@@ -345,13 +345,13 @@ const handleSend = async () => {
   font-weight: 600;
   border-radius: 10px;
   background: var(--gradient-accent) !important;
-  box-shadow: 0 4px 12px rgba(212, 168, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(201, 169, 110, 0.3);
   margin-top: 8px;
 }
 
 .submit-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.4);
+  box-shadow: 0 6px 20px rgba(201, 169, 110, 0.4);
 }
 
 /* 成功提示 */
@@ -474,7 +474,7 @@ const handleSend = async () => {
 .forgot-card :deep(.n-input:focus-within) {
   background-color: var(--card-bg) !important;
   border-color: var(--accent-color) !important;
-  box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.1) !important;
 }
 
 .forgot-card :deep(.n-input .n-input__input-el),

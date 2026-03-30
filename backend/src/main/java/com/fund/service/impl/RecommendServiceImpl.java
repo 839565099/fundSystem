@@ -187,7 +187,6 @@ public class RecommendServiceImpl implements RecommendService {
         // 热门推荐策略：
         // 1. 近一年收益率高的基金
         // 2. 规模适中（10-100亿）
-        // 3. 近期访问量高
         LambdaQueryWrapper<Fund> wrapper = new LambdaQueryWrapper<>();
         wrapper.isNotNull(Fund::getYearGrowth)
                 .ge(Fund::getFundScale, new BigDecimal("10"))
@@ -196,6 +195,24 @@ public class RecommendServiceImpl implements RecommendService {
                 .last("LIMIT " + Math.min(limit * 2, 100));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
+
+        // 如果严格条件无结果，放宽条件：只要有年增长率即可
+        if (funds.isEmpty()) {
+            LambdaQueryWrapper<Fund> fallbackWrapper = new LambdaQueryWrapper<>();
+            fallbackWrapper.isNotNull(Fund::getYearGrowth)
+                    .orderByDesc(Fund::getYearGrowth)
+                    .last("LIMIT " + Math.min(limit * 2, 100));
+            funds = fundMapper.selectList(fallbackWrapper);
+        }
+
+        // 如果仍然无结果，按净值更新时间取最新的基金
+        if (funds.isEmpty()) {
+            LambdaQueryWrapper<Fund> lastWrapper = new LambdaQueryWrapper<>();
+            lastWrapper.isNotNull(Fund::getNav)
+                    .orderByDesc(Fund::getUpdateTime)
+                    .last("LIMIT " + limit);
+            funds = fundMapper.selectList(lastWrapper);
+        }
 
         // 计算综合得分并排序
         List<RecommendFundVO> result = funds.stream()
@@ -262,6 +279,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         LambdaQueryWrapper<Fund> wrapper = new LambdaQueryWrapper<>();
         wrapper.between(Fund::getRiskLevel, minRisk, maxRisk)
+                .isNotNull(Fund::getYearGrowth)
                 .ge(Fund::getYearGrowth, minGrowth)
                 .le(Fund::getYearGrowth, maxGrowth);
 
@@ -279,6 +297,25 @@ public class RecommendServiceImpl implements RecommendService {
                 .last("LIMIT " + Math.min(limit, 50));
 
         List<Fund> funds = fundMapper.selectList(wrapper);
+
+        // 如果精确匹配无结果，放宽条件：只按风险等级筛选
+        if (funds.isEmpty()) {
+            LambdaQueryWrapper<Fund> fallbackWrapper = new LambdaQueryWrapper<>();
+            fallbackWrapper.between(Fund::getRiskLevel, Math.max(1, minRisk - 1), Math.min(5, maxRisk + 1))
+                    .isNotNull(Fund::getYearGrowth)
+                    .orderByDesc(Fund::getYearGrowth)
+                    .last("LIMIT " + Math.min(limit, 50));
+            funds = fundMapper.selectList(fallbackWrapper);
+        }
+
+        // 如果仍然无结果，按年增长率排序返回
+        if (funds.isEmpty()) {
+            LambdaQueryWrapper<Fund> lastWrapper = new LambdaQueryWrapper<>();
+            lastWrapper.isNotNull(Fund::getYearGrowth)
+                    .orderByDesc(Fund::getYearGrowth)
+                    .last("LIMIT " + limit);
+            funds = fundMapper.selectList(lastWrapper);
+        }
 
         return funds.stream()
                 .map(f -> {

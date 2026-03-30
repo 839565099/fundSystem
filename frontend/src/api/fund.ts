@@ -372,6 +372,10 @@ export const fundApi = {
     const response = await api.get<Result<any[]>>('/fund/hot', { params: { limit } })
     return handleResponse(response)
   },
+  getHotFundsByType: async (fundType: string, limit: number = 8) => {
+    const response = await api.get<Result<any[]>>('/fund/hot-by-type', { params: { fundType, limit } })
+    return handleResponse(response)
+  },
   getTopGrowthFunds: async (limit: number = 10) => {
     const response = await api.get<Result<any[]>>('/fund/top', { params: { limit } })
     return handleResponse(response)
@@ -382,6 +386,12 @@ export const fundApi = {
   },
   getPersonalizedRecommend: async (limit: number = 10) => {
     const response = await api.get<Result<any[]>>('/recommend/personalized', { params: { limit } })
+    return handleResponse(response)
+  },
+  getRiskBasedRecommend: async (riskLevel: number, limit: number = 10) => {
+    const response = await api.post<Result<any[]>>('/recommend/risk-based', { riskLevel }, {
+      params: { limit }
+    })
     return handleResponse(response)
   },
   recordBehavior: async (fundCode: string, behaviorType: string, dwellTime: number = 0) => {

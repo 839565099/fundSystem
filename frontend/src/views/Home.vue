@@ -3,6 +3,10 @@
     <!-- Hero 区域 + 搜索 -->
     <div class="hero-section">
       <div class="hero-bg"></div>
+      <canvas ref="heroCanvas" class="hero-canvas"></canvas>
+      <div class="hero-glow hero-glow-1"></div>
+      <div class="hero-glow hero-glow-2"></div>
+      <div class="hero-glow hero-glow-3"></div>
       <div class="hero-content">
         <h1 class="hero-title">智能基金投资平台</h1>
         <p class="hero-subtitle">专业的基金数据分析与投资决策工具</p>
@@ -200,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NAutoComplete, NIcon, NSpin, NEmpty, NButton, NTag, createDiscreteApi } from 'naive-ui'
 import {
@@ -245,6 +249,94 @@ const favoritesCount = computed(() => favorites.value.length)
 const upCount = computed(() => hotFunds.value.filter(f => (f.dayGrowth || 0) >= 0).length)
 const downCount = computed(() => hotFunds.value.filter(f => (f.dayGrowth || 0) < 0).length)
 const hotFundsCount = computed(() => hotFunds.value.length)
+
+// Hero 粒子动画
+const heroCanvas = ref<HTMLCanvasElement>()
+let heroAnimId: number | null = null
+
+interface HeroParticle {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  radius: number
+  alpha: number
+  alphaSpeed: number
+}
+
+const initHeroParticles = () => {
+  const canvas = heroCanvas.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const parent = canvas.parentElement!
+  let w = parent.clientWidth
+  let h = parent.clientHeight
+  canvas.width = w
+  canvas.height = h
+
+  const count = 45
+  const particles: HeroParticle[] = []
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: Math.random() * 2 + 0.5,
+      alpha: Math.random() * 0.5 + 0.2,
+      alphaSpeed: (Math.random() - 0.5) * 0.004,
+    })
+  }
+
+  const maxDist = 100
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h)
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x
+        const dy = particles[i].y - particles[j].y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < maxDist) {
+          const a = (1 - dist / maxDist) * 0.12
+          ctx.beginPath()
+          ctx.moveTo(particles[i].x, particles[i].y)
+          ctx.lineTo(particles[j].x, particles[j].y)
+          ctx.strokeStyle = `rgba(201, 169, 110, ${a})`
+          ctx.lineWidth = 0.5
+          ctx.stroke()
+        }
+      }
+    }
+    for (const p of particles) {
+      p.x += p.vx
+      p.y += p.vy
+      p.alpha += p.alphaSpeed
+      if (p.alpha <= 0.1 || p.alpha >= 0.6) p.alphaSpeed *= -1
+      p.alpha = Math.max(0.1, Math.min(0.6, p.alpha))
+      if (p.x < 0) p.x = w
+      if (p.x > w) p.x = 0
+      if (p.y < 0) p.y = h
+      if (p.y > h) p.y = 0
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(201, 169, 110, ${p.alpha})`
+      ctx.fill()
+    }
+    heroAnimId = requestAnimationFrame(draw)
+  }
+  draw()
+
+  const onResize = () => {
+    w = parent.clientWidth
+    h = parent.clientHeight
+    canvas.width = w
+    canvas.height = h
+  }
+  window.addEventListener('resize', onResize)
+  return () => window.removeEventListener('resize', onResize)
+}
 
 const setMiniChartRef = (el: any, code: string) => {
   if (el) {
@@ -436,6 +528,13 @@ onMounted(() => {
   loadFavorites()
   loadHotFunds()
   loadNews()
+  initHeroParticles()
+})
+
+onUnmounted(() => {
+  if (heroAnimId !== null) {
+    cancelAnimationFrame(heroAnimId)
+  }
 })
 </script>
 
@@ -458,7 +557,7 @@ onMounted(() => {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #18181B 0%, #27272A 40%, #3F3F46 100%);
+  background: linear-gradient(135deg, #0C0C0E 0%, #18181B 35%, #1C1C1F 70%, #C9A96E 160%);
   z-index: 0;
 }
 
@@ -467,8 +566,70 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 70% 30%, rgba(212, 168, 67, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse at 10% 90%, rgba(212, 168, 67, 0.1) 0%, transparent 40%);
+    radial-gradient(ellipse at 75% 25%, rgba(201, 169, 110, 0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 10% 85%, rgba(201, 169, 110, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(201, 169, 110, 0.08) 0%, transparent 60%);
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-glow-1 {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(201, 169, 110, 0.35) 0%, transparent 70%);
+  top: -60px;
+  right: 10%;
+  animation: heroGlow1 7s ease-in-out infinite;
+}
+
+.hero-glow-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(176, 141, 78, 0.3) 0%, transparent 70%);
+  bottom: -40px;
+  left: 8%;
+  animation: heroGlow2 9s ease-in-out infinite;
+}
+
+.hero-glow-3 {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(212, 186, 130, 0.25) 0%, transparent 70%);
+  top: 40%;
+  left: 50%;
+  animation: heroGlow3 11s ease-in-out infinite;
+}
+
+@keyframes heroGlow1 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(-25px, 30px); }
+  66% { transform: translate(15px, -15px); }
+}
+
+@keyframes heroGlow2 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(30px, -20px); }
+  66% { transform: translate(-15px, 15px); }
+}
+
+@keyframes heroGlow3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.4); }
 }
 
 .hero-content {
@@ -566,30 +727,16 @@ onMounted(() => {
 }
 
 .market-scroll {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scroll-snap-type: x mandatory;
-}
-
-.market-scroll::-webkit-scrollbar {
-  height: 4px;
-}
-
-.market-scroll::-webkit-scrollbar-thumb {
-  background: var(--text-tertiary);
-  border-radius: 4px;
 }
 
 .market-card {
-  min-width: 280px;
-  flex-shrink: 0;
   padding: 20px;
   cursor: pointer;
   border: 1px solid var(--border-color);
   background: var(--gradient-card);
-  scroll-snap-align: start;
   transition: all var(--transition-base);
 }
 
@@ -682,6 +829,10 @@ onMounted(() => {
 
 @media (max-width: 1000px) {
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .market-scroll {
     grid-template-columns: 1fr;
   }
 }

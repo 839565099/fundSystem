@@ -389,8 +389,8 @@ const toggleTheme = (value: boolean) => {
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: linear-gradient(150deg, rgba(212, 168, 67, 0.15), rgba(39, 39, 46, 0.12));
-  border: 1px solid rgba(212, 168, 67, 0.22);
+  background: linear-gradient(150deg, rgba(201, 169, 110, 0.15), rgba(39, 39, 46, 0.12));
+  border: 1px solid rgba(201, 169, 110, 0.22);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -402,7 +402,7 @@ const toggleTheme = (value: boolean) => {
 .logo__mark {
   width: 4px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #E0C870, #B8923A);
+  background: linear-gradient(180deg, #D4BA82, #B08D4E);
 }
 
 .logo__mark--a {

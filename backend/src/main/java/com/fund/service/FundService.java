@@ -32,6 +32,11 @@ public interface FundService {
     List<String> getFundCompanies();
 
     /**
+     * 按基金类型获取热门基金（从东方财富API获取）
+     */
+    List<Fund> getHotFundsByType(String fundType, int limit);
+
+    /**
      * 从外部 API 获取基金信息并保存到数据库
      * @param fundCode 基金代码
      * @return 基金信息，如果获取失败返回 null

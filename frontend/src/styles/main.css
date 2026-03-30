@@ -24,17 +24,17 @@
   --primary-bg: rgba(39, 39, 42, 0.06);
   --primary-bg-hover: rgba(39, 39, 42, 0.12);
 
-  /* 强调色 - 金色 */
-  --accent-50: #FDF8EC;
-  --accent-100: #F5EACC;
-  --accent-200: #EBDA9E;
-  --accent-300: #E0C870;
-  --accent-400: #D4A843;
-  --accent-500: #B8923A;
-  --accent-600: #977A30;
-  --accent-700: #7A6227;
-  --accent-800: #5C4A1D;
-  --accent-900: #3E3214;
+  /* 强调色 - 香槟金 */
+  --accent-50: #FBF7F0;
+  --accent-100: #F3ECDA;
+  --accent-200: #E5D5B0;
+  --accent-300: #D4BA82;
+  --accent-400: #C9A96E;
+  --accent-500: #B08D4E;
+  --accent-600: #8E7138;
+  --accent-700: #6B5629;
+  --accent-800: #4D3E1D;
+  --accent-900: #332913;
 
   --accent-color: var(--accent-400);
   --accent-hover: var(--accent-300);
@@ -100,13 +100,13 @@
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 
   /* 渐变 */
-  --gradient-brand: linear-gradient(128deg, #18181B 0%, #27272A 45%, #D4A843 100%);
+  --gradient-brand: linear-gradient(128deg, #18181B 0%, #27272A 45%, #C9A96E 100%);
   --gradient-primary: linear-gradient(128deg, #18181B 0%, #27272A 100%);
-  --gradient-accent: linear-gradient(128deg, #B8923A 0%, #D4A843 50%, #E0C870 100%);
+  --gradient-accent: linear-gradient(128deg, #B08D4E 0%, #C9A96E 50%, #D4BA82 100%);
   --gradient-up: linear-gradient(128deg, #E54D42 0%, #F06B62 100%);
   --gradient-down: linear-gradient(128deg, #2BA471 0%, #3DB882 100%);
   --gradient-card: linear-gradient(145deg, #ffffff 0%, #FAFAFA 100%);
-  --gradient-shine: linear-gradient(90deg, transparent, rgba(212, 168, 67, 0.15), transparent);
+  --gradient-shine: linear-gradient(90deg, transparent, rgba(201, 169, 110, 0.15), transparent);
 
   --font-sans: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
   --font-number: 'DIN Alternate', 'SF Mono', Menlo, Consolas, monospace;
@@ -158,18 +158,18 @@
   --primary-800: #A8A8AE;
   --primary-900: #D4D4D8;
 
-  --primary-color: #D4A843;
-  --primary-hover: #E0C870;
-  --primary-dark: #B8923A;
-  --primary-light: #EBDA9E;
-  --primary-bg: rgba(212, 168, 67, 0.12);
-  --primary-bg-hover: rgba(212, 168, 67, 0.2);
+  --primary-color: #C9A96E;
+  --primary-hover: #D4BA82;
+  --primary-dark: #B08D4E;
+  --primary-light: #E5D5B0;
+  --primary-bg: rgba(201, 169, 110, 0.12);
+  --primary-bg-hover: rgba(201, 169, 110, 0.2);
 
   /* 强调色 - 深色模式金色提亮 */
-  --accent-400: #E0C870;
+  --accent-400: #D4BA82;
   --accent-color: var(--accent-400);
-  --accent-hover: #EBDA9E;
-  --accent-dark: #D4A843;
+  --accent-hover: #E5D5B0;
+  --accent-dark: #C9A96E;
 
   /* 功能色 */
   --success-color: #34D399;
@@ -231,13 +231,13 @@
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.4);
 
   /* 渐变 */
-  --gradient-brand: linear-gradient(128deg, #141416 0%, #27272A 45%, #E0C870 100%);
+  --gradient-brand: linear-gradient(128deg, #141416 0%, #27272A 45%, #D4BA82 100%);
   --gradient-primary: linear-gradient(128deg, #141416 0%, #1C1C1F 100%);
-  --gradient-accent: linear-gradient(128deg, #B8923A 0%, #E0C870 50%, #EBDA9E 100%);
+  --gradient-accent: linear-gradient(128deg, #B08D4E 0%, #D4BA82 50%, #E5D5B0 100%);
   --gradient-up: linear-gradient(128deg, #F87171 0%, #FCA5A3 100%);
   --gradient-down: linear-gradient(128deg, #34D399 0%, #6EE7B7 100%);
   --gradient-card: linear-gradient(145deg, #141416 0%, #09090B 100%);
-  --gradient-shine: linear-gradient(90deg, transparent, rgba(224, 200, 112, 0.12), transparent);
+  --gradient-shine: linear-gradient(90deg, transparent, rgba(212, 186, 130, 0.12), transparent);
 }
 
 body {
@@ -250,7 +250,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-image:
     radial-gradient(circle at 10% 15%, rgba(39, 39, 42, 0.05) 0, transparent 36%),
-    radial-gradient(circle at 85% 10%, rgba(212, 168, 67, 0.04) 0, transparent 42%);
+    radial-gradient(circle at 85% 10%, rgba(201, 169, 110, 0.04) 0, transparent 42%);
 }
 
 /* ========== 统一卡片样式 ========== */
