@@ -415,26 +415,43 @@ public class RecommendServiceImpl implements RecommendService {
     @Override
     @Scheduled(cron = "0 0 3 * * ?") // 每天凌晨3点执行
     public void calculateFundSimilarity() {
-        log.info("开始计算基金相似度...");
+        log.info("开始计算基金相似度（增量模式）...");
 
-        // 获取所有基金
+        // 获取最近一天更新过的基金
+        LambdaQueryWrapper<Fund> recentWrapper = new LambdaQueryWrapper<>();
+        recentWrapper.ge(Fund::getUpdateTime, LocalDateTime.now().minusDays(1));
+        List<Fund> updatedFunds = fundMapper.selectList(recentWrapper);
+
+        if (updatedFunds.isEmpty()) {
+            log.info("没有需要更新的基金，跳过相似度计算");
+            return;
+        }
+
+        log.info("需要更新相似度的基金数量: {}", updatedFunds.size());
+
+        // 只计算更新过的基金与所有基金的相似度
         List<Fund> allFunds = fundMapper.selectList(null);
+        Set<String> updatedCodes = updatedFunds.stream()
+                .map(Fund::getFundCode)
+                .collect(Collectors.toSet());
 
-        // 计算两两相似度
-        for (int i = 0; i < allFunds.size(); i++) {
-            for (int j = i + 1; j < allFunds.size(); j++) {
-                Fund fundA = allFunds.get(i);
-                Fund fundB = allFunds.get(j);
+        for (Fund updatedFund : updatedFunds) {
+            for (Fund otherFund : allFunds) {
+                if (updatedFund.getFundCode().equals(otherFund.getFundCode())) {
+                    continue;
+                }
 
-                BigDecimal similarity = calculateSimilarity(fundA, fundB);
+                BigDecimal similarity = calculateSimilarity(updatedFund, otherFund);
                 if (similarity.compareTo(new BigDecimal("0.5")) > 0) {
-                    // 只保存相似度 > 0.5 的记录
-                    saveSimilarity(fundA.getFundCode(), fundB.getFundCode(), similarity);
+                    saveSimilarity(updatedFund.getFundCode(), otherFund.getFundCode(), similarity);
+                } else {
+                    // 删除低于阈值的旧记录
+                    deleteSimilarity(updatedFund.getFundCode(), otherFund.getFundCode());
                 }
             }
         }
 
-        log.info("基金相似度计算完成");
+        log.info("基金相似度增量计算完成");
     }
 
     // ========== 私有方法 ==========
@@ -602,6 +619,13 @@ public class RecommendServiceImpl implements RecommendService {
             newSim.setCalcTime(LocalDateTime.now());
             similarityMapper.insert(newSim);
         }
+    }
+
+    private void deleteSimilarity(String fundCodeA, String fundCodeB) {
+        LambdaQueryWrapper<FundSimilarity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.eq(FundSimilarity::getFundCodeA, fundCodeA).eq(FundSimilarity::getFundCodeB, fundCodeB))
+                .or(w -> w.eq(FundSimilarity::getFundCodeA, fundCodeB).eq(FundSimilarity::getFundCodeB, fundCodeA));
+        similarityMapper.delete(wrapper);
     }
 
     private BigDecimal calculateHotScore(RecommendFundVO vo) {
