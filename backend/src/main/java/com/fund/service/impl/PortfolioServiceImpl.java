@@ -474,8 +474,19 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .eq(PortfolioItem::getStatus, 1);
         List<PortfolioItem> items = portfolioItemMapper.selectList(wrapper);
 
+        // 批量获取所有需要的 Fund，避免 N 次重复查询
+        Map<String, Fund> fundMap = new HashMap<>();
+        for (PortfolioItem item : items) {
+            if (!fundMap.containsKey(item.getFundCode())) {
+                Fund fund = fundService.getByFundCode(item.getFundCode());
+                if (fund != null) {
+                    fundMap.put(item.getFundCode(), fund);
+                }
+            }
+        }
+
         List<PortfolioItemVO> itemVOs = items.stream()
-                .map(this::convertItemToVO)
+                .map(item -> convertItemToVO(item, fundMap))
                 .collect(Collectors.toList());
         vo.setItems(itemVOs);
 
@@ -524,18 +535,28 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     /**
-     * 转换持仓为VO（简化版：直接使用已计算的值）
+     * 转换持仓为VO（便利方法，单个查询）
      */
     private PortfolioItemVO convertItemToVO(PortfolioItem item) {
+        Fund fund = fundService.getByFundCode(item.getFundCode());
+        Map<String, Fund> fundMap = new HashMap<>();
+        if (fund != null) {
+            fundMap.put(item.getFundCode(), fund);
+        }
+        return convertItemToVO(item, fundMap);
+    }
+
+    /**
+     * 转换持仓为VO（使用预查询的 Fund Map）
+     */
+    private PortfolioItemVO convertItemToVO(PortfolioItem item, Map<String, Fund> fundMap) {
         PortfolioItemVO vo = new PortfolioItemVO();
         BeanUtils.copyProperties(item, vo);
 
-        // 获取基金类型和日涨跌幅
-        Fund fund = fundService.getByFundCode(item.getFundCode());
+        Fund fund = fundMap.get(item.getFundCode());
         if (fund != null) {
             vo.setFundType(fund.getFundType());
             vo.setDayGrowth(fund.getDayGrowth());
-            // 获取昨日涨跌幅并计算昨日盈亏（基于当前市值）
             vo.setYesterdayGrowth(fund.getYesterdayGrowth());
             if (fund.getYesterdayGrowth() != null && item.getCurrentValue() != null
                     && item.getCurrentValue().compareTo(BigDecimal.ZERO) > 0) {
@@ -547,8 +568,6 @@ public class PortfolioServiceImpl implements PortfolioService {
             log.warn("基金不存在: {}", item.getFundCode());
         }
 
-        // 直接使用 refreshPortfolio 中计算的值
-        // profit, profitRatio, dayProfit, currentValue 已经在 refreshPortfolio 中设置
         return vo;
     }
 }
