@@ -2,6 +2,7 @@ package com.fund.service.impl;
 
 import cn.hutool.core.date.DateUtil;
 import com.fund.entity.UserFavorite;
+import com.fund.exception.BusinessException;
 import com.fund.service.ExportService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -63,7 +65,7 @@ public class ExportServiceImpl implements ExportService {
             writer.close();
         } catch (IOException e) {
             log.error("导出CSV失败", e);
-            throw new RuntimeException("导出CSV失败: " + e.getMessage());
+            throw new BusinessException("导出CSV失败", e);
         }
     }
     
@@ -115,7 +117,7 @@ public class ExportServiceImpl implements ExportService {
             out.flush();
         } catch (IOException e) {
             log.error("导出Excel失败", e);
-            throw new RuntimeException("导出Excel失败: " + e.getMessage());
+            throw new BusinessException("导出Excel失败", e);
         }
     }
     
@@ -179,7 +181,7 @@ public class ExportServiceImpl implements ExportService {
             document.close();
         } catch (Exception e) {
             log.error("导出PDF失败", e);
-            throw new RuntimeException("导出PDF失败: " + e.getMessage());
+            throw new BusinessException("导出PDF失败", e);
         }
     }
     
@@ -248,7 +250,7 @@ public class ExportServiceImpl implements ExportService {
     private void createPercentCell(Row row, int column, BigDecimal value, CellStyle style) {
         Cell cell = row.createCell(column);
         if (value != null) {
-            cell.setCellValue(value.divide(new BigDecimal(100)).doubleValue());
+            cell.setCellValue(value.divide(new BigDecimal(100), RoundingMode.HALF_UP).doubleValue());
         } else {
             cell.setCellValue("");
         }
@@ -289,10 +291,10 @@ public class ExportServiceImpl implements ExportService {
     }
     
     private String formatNumber(BigDecimal value) {
-        return value != null ? value.setScale(4, BigDecimal.ROUND_HALF_UP).toString() : "";
+        return value != null ? value.setScale(4, RoundingMode.HALF_UP).toString() : "";
     }
     
     private String formatPercent(BigDecimal value) {
-        return value != null ? value.setScale(2, BigDecimal.ROUND_HALF_UP).toString() : "";
+        return value != null ? value.setScale(2, RoundingMode.HALF_UP).toString() : "";
     }
 }

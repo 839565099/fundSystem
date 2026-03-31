@@ -4,9 +4,11 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fund.common.ErrorCode;
 import com.fund.config.AIConfig;
 import com.fund.dto.AIChatRequest;
 import com.fund.entity.AIChatHistory;
+import com.fund.exception.BusinessException;
 import com.fund.entity.AIChatSession;
 import com.fund.entity.Fund;
 import com.fund.mapper.AIChatHistoryMapper;
@@ -115,7 +117,7 @@ public class AIChatServiceImpl implements AIChatService {
     public void deleteSession(Long userId, String sessionId) {
         AIChatSession session = sessionMapper.selectBySessionId(sessionId);
         if (session == null || !session.getUserId().equals(userId)) {
-            throw new RuntimeException("session not found or no permission");
+            throw new BusinessException(ErrorCode.AI_SESSION_NOT_FOUND);
         }
 
         LambdaQueryWrapper<AIChatHistory> historyWrapper = new LambdaQueryWrapper<>();

@@ -1,6 +1,7 @@
 package com.fund.controller;
 
 import com.fund.common.Result;
+import com.fund.exception.BusinessException;
 import com.fund.entity.UserFavorite;
 import com.fund.service.ExportService;
 import com.fund.service.UserFavoriteService;
@@ -31,7 +32,7 @@ public class ExportController {
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"code\":400,\"message\":\"暂无收藏数据可导出\"}");
             } catch (Exception e) {
-                throw new RuntimeException("写入响应失败");
+                throw new BusinessException("写入响应失败");
             }
             return;
         }
@@ -53,7 +54,7 @@ public class ExportController {
                     response.setContentType("application/json;charset=UTF-8");
                     response.getWriter().write("{\"code\":400,\"message\":\"不支持的导出格式: " + format + "\"}");
                 } catch (Exception e) {
-                    throw new RuntimeException("写入响应失败");
+                    throw new BusinessException("写入响应失败");
                 }
         }
     }

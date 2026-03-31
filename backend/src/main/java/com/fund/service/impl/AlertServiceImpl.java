@@ -2,10 +2,12 @@ package com.fund.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.fund.common.ErrorCode;
 import com.fund.dto.AlertRuleDTO;
 import com.fund.entity.AlertHistory;
 import com.fund.entity.Fund;
 import com.fund.entity.UserAlertRule;
+import com.fund.exception.BusinessException;
 import com.fund.mapper.AlertHistoryMapper;
 import com.fund.mapper.UserAlertRuleMapper;
 import com.fund.service.AlertService;
@@ -69,7 +71,7 @@ public class AlertServiceImpl implements AlertService {
     public AlertRuleVO updateRule(Long userId, Long id, AlertRuleDTO dto) {
         UserAlertRule rule = alertRuleMapper.selectById(id);
         if (rule == null || !rule.getUserId().equals(userId)) {
-            throw new RuntimeException("预警规则不存在或无权操作");
+            throw new BusinessException(ErrorCode.ALERT_RULE_NOT_FOUND);
         }
 
         if (dto.getAlertName() != null) {
@@ -97,7 +99,7 @@ public class AlertServiceImpl implements AlertService {
     public void toggleRule(Long userId, Long id, Integer status) {
         UserAlertRule rule = alertRuleMapper.selectById(id);
         if (rule == null || !rule.getUserId().equals(userId)) {
-            throw new RuntimeException("预警规则不存在或无权操作");
+            throw new BusinessException(ErrorCode.ALERT_RULE_NOT_FOUND);
         }
         rule.setStatus(status);
         alertRuleMapper.updateById(rule);
@@ -108,7 +110,7 @@ public class AlertServiceImpl implements AlertService {
     public void deleteRule(Long userId, Long ruleId) {
         UserAlertRule rule = alertRuleMapper.selectById(ruleId);
         if (rule == null || !rule.getUserId().equals(userId)) {
-            throw new RuntimeException("预警规则不存在或无权操作");
+            throw new BusinessException(ErrorCode.ALERT_RULE_NOT_FOUND);
         }
         alertRuleMapper.deleteById(ruleId);
     }
@@ -126,7 +128,7 @@ public class AlertServiceImpl implements AlertService {
     public AlertRuleVO getRuleDetail(Long userId, Long ruleId) {
         UserAlertRule rule = alertRuleMapper.selectById(ruleId);
         if (rule == null || !rule.getUserId().equals(userId)) {
-            throw new RuntimeException("预警规则不存在或无权操作");
+            throw new BusinessException(ErrorCode.ALERT_RULE_NOT_FOUND);
         }
         return convertToVO(rule);
     }

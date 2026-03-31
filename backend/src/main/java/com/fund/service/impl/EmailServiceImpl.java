@@ -1,5 +1,6 @@
 package com.fund.service.impl;
 
+import com.fund.exception.BusinessException;
 import com.fund.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
             log.info("密码重置邮件发送成功: {}", to);
         } catch (MessagingException e) {
             log.error("密码重置邮件发送失败: {}", e.getMessage());
-            throw new RuntimeException("邮件发送失败，请稍后重试");
+            throw new BusinessException("邮件发送失败，请稍后重试");
         }
     }
 
@@ -77,7 +78,7 @@ public class EmailServiceImpl implements EmailService {
             log.info("验证码邮件发送成功: {}", to);
         } catch (MessagingException e) {
             log.error("验证码邮件发送失败: {}", e.getMessage());
-            throw new RuntimeException("邮件发送失败，请稍后重试");
+            throw new BusinessException("邮件发送失败，请稍后重试");
         }
     }
 

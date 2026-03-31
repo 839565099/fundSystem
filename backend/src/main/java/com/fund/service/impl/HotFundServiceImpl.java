@@ -1,8 +1,10 @@
 package com.fund.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fund.common.ErrorCode;
 import com.fund.entity.Fund;
 import com.fund.entity.HotFundConfig;
+import com.fund.exception.BusinessException;
 import com.fund.external.FundDataApiService;
 import com.fund.mapper.FundMapper;
 import com.fund.mapper.HotFundConfigMapper;
@@ -66,7 +68,7 @@ public class HotFundServiceImpl implements HotFundService {
             if (fund != null) {
                 fundMapper.insert(fund);
             } else {
-                throw new RuntimeException("基金不存在: " + fundCode);
+                throw new BusinessException(ErrorCode.FUND_NOT_FOUND);
             }
         }
         
