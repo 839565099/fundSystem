@@ -17,18 +17,16 @@ import org.springframework.stereotype.Service;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -40,69 +38,21 @@ import java.util.List;
 @Service
 public class FundDataApiService {
 
-    private static final javax.net.ssl.SSLSocketFactory TRUST_ALL_SSL_FACTORY;
-    private static final javax.net.ssl.HostnameVerifier TRUST_ALL_HOSTNAME_VERIFIER;
+    @Autowired
+    private CloseableHttpClient httpClient;
 
-    static {
-        javax.net.ssl.SSLSocketFactory sslFactory = null;
-        javax.net.ssl.HostnameVerifier hostnameVerifier = null;
-        try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                    }
-                }
-            };
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            sslFactory = sc.getSocketFactory();
-            hostnameVerifier = (hostname, session) -> true;
-        } catch (Exception e) {
-            log.error("初始化SSL失败", e);
-        }
-        TRUST_ALL_SSL_FACTORY = sslFactory;
-        TRUST_ALL_HOSTNAME_VERIFIER = hostnameVerifier;
-    }
-    
     private String httpGet(String urlStr) {
         try {
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            if (conn instanceof HttpsURLConnection) {
-                HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
-                if (TRUST_ALL_SSL_FACTORY != null) {
-                    httpsConn.setSSLSocketFactory(TRUST_ALL_SSL_FACTORY);
+            HttpGet request = new HttpGet(urlStr);
+            request.addHeader("Accept", "*/*");
+            request.addHeader("Accept-Language", "zh-CN,zh;q=0.9");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    log.warn("HTTP请求失败, 状态码: {}, URL: {}", response.getStatusLine().getStatusCode(), urlStr);
+                    return null;
                 }
-                if (TRUST_ALL_HOSTNAME_VERIFIER != null) {
-                    httpsConn.setHostnameVerifier(TRUST_ALL_HOSTNAME_VERIFIER);
-                }
+                return EntityUtils.toString(response.getEntity(), "UTF-8");
             }
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            conn.setRequestProperty("Accept", "*/*");
-            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
-            
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                log.warn("HTTP请求失败, 状态码: {}, URL: {}", responseCode, urlStr);
-                return null;
-            }
-            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                result.append(line);
-            }
-            reader.close();
-            return result.toString();
         } catch (Exception e) {
             log.error("HTTP请求失败: {}", urlStr, e);
             return null;
@@ -111,47 +61,20 @@ public class FundDataApiService {
     
     private String httpPost(String urlStr, String body) {
         try {
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            if (conn instanceof HttpsURLConnection) {
-                HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
-                if (TRUST_ALL_SSL_FACTORY != null) {
-                    httpsConn.setSSLSocketFactory(TRUST_ALL_SSL_FACTORY);
-                }
-                if (TRUST_ALL_HOSTNAME_VERIFIER != null) {
-                    httpsConn.setHostnameVerifier(TRUST_ALL_HOSTNAME_VERIFIER);
-                }
-            }
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Accept", "*/*");
-            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
-
+            HttpPost request = new HttpPost(urlStr);
+            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.addHeader("Accept", "*/*");
+            request.addHeader("Accept-Language", "zh-CN,zh;q=0.9");
             if (body != null && !body.isEmpty()) {
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(body.getBytes("UTF-8"));
-                    os.flush();
+                request.setEntity(new StringEntity(body, "UTF-8"));
+            }
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    log.warn("HTTP POST请求失败, 状态码: {}, URL: {}", response.getStatusLine().getStatusCode(), urlStr);
+                    return null;
                 }
+                return EntityUtils.toString(response.getEntity(), "UTF-8");
             }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                log.warn("HTTP POST请求失败, 状态码: {}, URL: {}", responseCode, urlStr);
-                return null;
-            }
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                result.append(line);
-            }
-            reader.close();
-            return result.toString();
         } catch (Exception e) {
             log.error("HTTP POST请求失败: {}", urlStr, e);
             return null;
@@ -160,31 +83,18 @@ public class FundDataApiService {
 
     private String httpGetWithReferer(String urlStr, String referer) {
         try {
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            conn.setRequestProperty("Accept", "*/*");
-            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
-            conn.setRequestProperty("Referer", referer);
-            conn.setRequestProperty("Cookie", "qgqp_b_id=7d5f5e0a8a8a4a8a8a8a8a8a8a8a8a8a");
-            
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                log.warn("HTTP请求失败, 状态码: {}, URL: {}", responseCode, urlStr);
-                return null;
+            HttpGet request = new HttpGet(urlStr);
+            request.addHeader("Accept", "*/*");
+            request.addHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+            request.addHeader("Referer", referer);
+            request.addHeader("Cookie", "qgqp_b_id=7d5f5e0a8a8a4a8a8a8a8a8a8a8a8a8a");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    log.warn("HTTP请求失败, 状态码: {}, URL: {}", response.getStatusLine().getStatusCode(), urlStr);
+                    return null;
+                }
+                return EntityUtils.toString(response.getEntity(), "UTF-8");
             }
-            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                result.append(line);
-            }
-            reader.close();
-            return result.toString();
         } catch (Exception e) {
             log.error("HTTP请求失败: {}", urlStr, e);
             return null;
