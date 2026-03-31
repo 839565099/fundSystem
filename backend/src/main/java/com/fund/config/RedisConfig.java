@@ -21,44 +21,42 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class RedisConfig {
-    
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-        
+
+    private Jackson2JsonRedisSerializer<Object> createRedisSerializer() {
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
         objectMapper.registerModule(new JavaTimeModule());
         serializer.setObjectMapper(objectMapper);
-        
+        return serializer;
+    }
+
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        Jackson2JsonRedisSerializer<Object> serializer = createRedisSerializer();
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
         template.setValueSerializer(serializer);
         template.setHashValueSerializer(serializer);
         template.afterPropertiesSet();
-        
+
         return template;
     }
-    
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
-        objectMapper.registerModule(new JavaTimeModule());
-        serializer.setObjectMapper(objectMapper);
-        
+        Jackson2JsonRedisSerializer<Object> serializer = createRedisSerializer();
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(300))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer))
                 .disableCachingNullValues();
-        
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();
