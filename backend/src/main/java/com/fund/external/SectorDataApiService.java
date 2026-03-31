@@ -7,10 +7,13 @@ import com.fund.vo.SectorHistoryVO;
 import com.fund.vo.SectorStockVO;
 import com.fund.vo.SectorVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -23,36 +26,25 @@ import java.util.*;
 @Service
 public class SectorDataApiService {
 
+    @Autowired
+    private CloseableHttpClient httpClient;
+
     /**
-     * 使用curl发送HTTP请求（绕过Java网络问题）
+     * 使用HttpClient连接池发送HTTP请求
      */
     private String httpGet(String urlStr) {
         try {
             log.info("板块API请求: {}", urlStr);
+            HttpGet request = new HttpGet(urlStr);
+            request.addHeader("Accept", "*/*");
+            request.addHeader("Accept-Language", "zh-CN,zh;q=0.9");
+            request.addHeader("Referer", "http://quote.eastmoney.com/center/boardlist.html");
 
-            // 使用curl命令
-            ProcessBuilder pb = new ProcessBuilder(
-                "curl", "-s", "-L",
-                "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "-H", "Accept: */*",
-                "-H", "Accept-Language: zh-CN,zh;q=0.9",
-                "-H", "Referer: http://quote.eastmoney.com/center/boardlist.html",
-                "--connect-timeout", "15",
-                urlStr
-            );
-            pb.redirectErrorStream(true);
-
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"));
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                result.append(line);
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                String result = EntityUtils.toString(response.getEntity(), "UTF-8");
+                log.info("板块API响应长度: {}", result.length());
+                return result;
             }
-            process.waitFor();
-
-            log.info("板块API响应长度: {}", result.length());
-            return result.toString();
         } catch (Exception e) {
             log.error("HTTP请求失败: {}", urlStr, e);
             return null;
