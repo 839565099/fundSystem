@@ -36,9 +36,16 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void batchCreate(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            return;
+        }
+        // 先完成所有插入
         for (Notification notification : notifications) {
             notification.setIsRead(0);
             notificationMapper.insert(notification);
+        }
+        // 再批量推送
+        for (Notification notification : notifications) {
             pushNotification(notification);
         }
     }
