@@ -469,7 +469,7 @@ public class RecommendServiceImpl implements RecommendService {
     }
 
     private List<RecommendFundVO> recommendByCollaborativeFiltering(Long userId, Integer limit) {
-        // 获取用户收藏的基金
+        // 1. 一次查出用户所有收藏的 fundCode
         LambdaQueryWrapper<UserFavorite> favWrapper = new LambdaQueryWrapper<>();
         favWrapper.eq(UserFavorite::getUserId, userId);
         List<UserFavorite> favorites = favoriteMapper.selectList(favWrapper);
@@ -478,32 +478,35 @@ public class RecommendServiceImpl implements RecommendService {
             return new ArrayList<>();
         }
 
-        // 找到收藏了相同基金的其他用户
-        Set<Long> similarUsers = new HashSet<>();
-        for (UserFavorite fav : favorites) {
-            LambdaQueryWrapper<UserFavorite> otherFavWrapper = new LambdaQueryWrapper<>();
-            otherFavWrapper.eq(UserFavorite::getFundCode, fav.getFundCode())
-                    .ne(UserFavorite::getUserId, userId);
-            List<UserFavorite> otherFavs = favoriteMapper.selectList(otherFavWrapper);
-            for (UserFavorite otherFav : otherFavs) {
-                similarUsers.add(otherFav.getUserId());
-            }
-        }
-
-        // 获取相似用户收藏但当前用户未收藏的基金
         Set<String> myFundCodes = favorites.stream()
                 .map(UserFavorite::getFundCode)
                 .collect(Collectors.toSet());
 
+        // 2. 一次查出收藏了相同基金的其他用户 ID
+        LambdaQueryWrapper<UserFavorite> otherFavWrapper = new LambdaQueryWrapper<>();
+        otherFavWrapper.in(UserFavorite::getFundCode, myFundCodes)
+                .ne(UserFavorite::getUserId, userId)
+                .select(UserFavorite::getUserId);
+        List<UserFavorite> otherFavs = favoriteMapper.selectList(otherFavWrapper);
+
+        Set<Long> similarUsers = otherFavs.stream()
+                .map(UserFavorite::getUserId)
+                .collect(Collectors.toSet());
+
+        if (similarUsers.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 3. 一次查出相似用户的所有收藏
+        LambdaQueryWrapper<UserFavorite> userFavWrapper = new LambdaQueryWrapper<>();
+        userFavWrapper.in(UserFavorite::getUserId, similarUsers);
+        List<UserFavorite> allSimilarFavs = favoriteMapper.selectList(userFavWrapper);
+
+        // 内存中聚合计算推荐
         Map<String, Integer> fundScores = new HashMap<>();
-        for (Long similarUserId : similarUsers) {
-            LambdaQueryWrapper<UserFavorite> userFavWrapper = new LambdaQueryWrapper<>();
-            userFavWrapper.eq(UserFavorite::getUserId, similarUserId);
-            List<UserFavorite> userFavs = favoriteMapper.selectList(userFavWrapper);
-            for (UserFavorite userFav : userFavs) {
-                if (!myFundCodes.contains(userFav.getFundCode())) {
-                    fundScores.merge(userFav.getFundCode(), 1, Integer::sum);
-                }
+        for (UserFavorite fav : allSimilarFavs) {
+            if (!myFundCodes.contains(fav.getFundCode())) {
+                fundScores.merge(fav.getFundCode(), 1, Integer::sum);
             }
         }
 
