@@ -2,10 +2,10 @@ import type { GlobalThemeOverrides } from 'naive-ui'
 
 export const lightThemeOverrides: GlobalThemeOverrides = {
   common: {
-    primaryColor: '#27272A',
-    primaryColorHover: '#3F3F46',
-    primaryColorPressed: '#18181B',
-    primaryColorSuppl: '#52525B',
+    primaryColor: '#C9A96E',
+    primaryColorHover: '#D4BA82',
+    primaryColorPressed: '#B08D4E',
+    primaryColorSuppl: '#E5D5B0',
     successColor: '#2BA471',
     successColorHover: '#3DB882',
     successColorPressed: '#1F8A5C',
@@ -69,6 +69,9 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
     heightSmall: '30px',
     heightLarge: '40px',
     fontWeightStrong: '600',
+    borderHover: '1px solid #C9A96E',
+    borderFocus: '1px solid #C9A96E',
+    boxShadowFocus: '0 0 0 2px rgba(201, 169, 110, 0.15)',
   },
   DataTable: {
     thColor: '#FAFAFA',
@@ -92,16 +95,16 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
     itemColorHover: '#F4F4F5',
   },
   Tabs: {
-    tabTextColorActiveLine: '#18181B',
-    tabTextColorHoverLine: '#3F3F46',
-    tabTextColorActiveBar: '#18181B',
-    tabTextColorHoverBar: '#3F3F46',
+    tabTextColorActiveLine: '#C9A96E',
+    tabTextColorHoverLine: '#D4BA82',
+    tabTextColorActiveBar: '#C9A96E',
+    tabTextColorHoverBar: '#D4BA82',
     barColor: '#C9A96E',
     tabFontWeightActive: '600',
   },
   Input: {
     borderRadius: '10px',
-    borderHover: '1px solid #3F3F46',
+    borderHover: '1px solid #C9A96E',
     borderFocus: '1px solid #C9A96E',
     boxShadowFocus: '0 0 0 2px rgba(201, 169, 110, 0.15)',
     heightMedium: '36px',

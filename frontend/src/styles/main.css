@@ -17,12 +17,12 @@
   --primary-800: #141416;
   --primary-900: #0C0C0E;
 
-  --primary-color: var(--primary-600);
-  --primary-hover: var(--primary-500);
-  --primary-dark: var(--primary-700);
-  --primary-light: var(--primary-400);
-  --primary-bg: rgba(39, 39, 42, 0.06);
-  --primary-bg-hover: rgba(39, 39, 42, 0.12);
+  --primary-color: #C9A96E;
+  --primary-hover: #D4BA82;
+  --primary-dark: #B08D4E;
+  --primary-light: #E5D5B0;
+  --primary-bg: rgba(201, 169, 110, 0.08);
+  --primary-bg-hover: rgba(201, 169, 110, 0.15);
 
   /* 强调色 - 香槟金 */
   --accent-50: #FBF7F0;
@@ -100,9 +100,9 @@
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 
   /* 渐变 */
-  --gradient-brand: linear-gradient(128deg, #18181B 0%, #27272A 45%, #C9A96E 100%);
-  --gradient-primary: linear-gradient(128deg, #18181B 0%, #27272A 100%);
-  --gradient-accent: linear-gradient(128deg, #B08D4E 0%, #C9A96E 50%, #D4BA82 100%);
+  --gradient-brand: linear-gradient(128deg, #1C1C1F 0%, #3F3F46 30%, #C9A96E 100%);
+  --gradient-primary: linear-gradient(128deg, #27272A 0%, #C9A96E 100%);
+  --gradient-accent: linear-gradient(128deg, #B08D4E 0%, #C9A96E 40%, #E5D5B0 100%);
   --gradient-up: linear-gradient(128deg, #E54D42 0%, #F06B62 100%);
   --gradient-down: linear-gradient(128deg, #2BA471 0%, #3DB882 100%);
   --gradient-card: linear-gradient(145deg, #ffffff 0%, #FAFAFA 100%);
@@ -249,8 +249,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image:
-    radial-gradient(circle at 10% 15%, rgba(39, 39, 42, 0.05) 0, transparent 36%),
-    radial-gradient(circle at 85% 10%, rgba(201, 169, 110, 0.04) 0, transparent 42%);
+    radial-gradient(circle at 10% 15%, rgba(201, 169, 110, 0.08) 0, transparent 36%),
+    radial-gradient(circle at 85% 10%, rgba(201, 169, 110, 0.06) 0, transparent 42%),
+    radial-gradient(circle at 50% 80%, rgba(201, 169, 110, 0.04) 0, transparent 40%);
 }
 
 /* ========== 统一卡片样式 ========== */
@@ -272,8 +273,8 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--gradient-primary);
-  opacity: 0;
+  background: var(--gradient-accent);
+  opacity: 0.5;
   transition: opacity var(--transition-base);
 }
 
@@ -284,6 +285,8 @@ body {
 
 .card:hover::before {
   opacity: 1;
+  height: 3px;
+  background: var(--gradient-accent);
 }
 
 /* 可点击卡片 */

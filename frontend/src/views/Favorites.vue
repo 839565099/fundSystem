@@ -168,11 +168,14 @@ const trendPeriods = [
 const selectedTrendFunds = ref<string[]>([])
 
 // 基于索引生成区分度高的颜色（HSL色彩空间）
+const PALETTE = [
+  '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4',
+  '#a855f7', '#84cc16', '#e11d48', '#0ea5e9', '#eab308',
+]
+
 const generateColors = (count: number): string[] => {
-  return Array.from({ length: count }, (_, i) => {
-    const hue = (i * 360 / count) % 360
-    return `hsl(${hue}, 70%, 50%)`
-  })
+  return Array.from({ length: count }, (_, i) => PALETTE[i % PALETTE.length])
 }
 
 // 初始化选中基金（默认前5只或全部）
@@ -253,6 +256,13 @@ const loadTrendChart = async () => {
   const series: any[] = []
   const colors = generateColors(selectedFunds.length)
 
+  // 解析实际颜色值，用于 tooltip
+  const upColor = getCssColor('--up-color', '#ef4444')
+  const downColor = getCssColor('--down-color', '#22c55e')
+  const textColor = getCssColor('--text-primary', '#1e293b')
+  const textSecondary = getCssColor('--text-secondary', '#64748b')
+  const cardBg = getCssColor('--card-bg', '#ffffff')
+
   selectedFunds.forEach((fav, index) => {
     const history = navHistories.get(fav.fundCode) || []
     if (history.length === 0) return
@@ -268,9 +278,22 @@ const loadTrendChart = async () => {
       name: fav.fundName?.substring(0, 6),
       type: 'line',
       data: growthData,
-      smooth: true,
-      symbol: 'none',
-      lineStyle: { width: 2, color: colors[index] },
+      smooth: 0.4,
+      symbol: 'circle',
+      symbolSize: 4,
+      showSymbol: false,
+      lineStyle: { width: 2.5, color: colors[index] },
+      itemStyle: { color: colors[index] },
+      emphasis: {
+        focus: 'series',
+        lineStyle: { width: 3.5 },
+      },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: colors[index] + '30' },
+          { offset: 1, color: colors[index] + '05' },
+        ]),
+      },
     })
   })
 
@@ -278,29 +301,37 @@ const loadTrendChart = async () => {
     trendChart.clear()
     return
   }
-  
+
   trendChart.setOption({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: 'var(--border-color)',
+      backgroundColor: cardBg,
+      borderColor: isDark.value ? 'rgba(255,255,255,0.12)' : '#e2e8f0',
       borderWidth: 1,
-      textStyle: { color: 'var(--text-color)' },
+      padding: [12, 16],
+      textStyle: { color: textColor, fontSize: 12 },
       confine: true,
+      axisPointer: {
+        type: 'cross',
+        crossStyle: { color: textSecondary + '40' },
+        lineStyle: { color: textSecondary + '40', type: 'dashed' },
+      },
       formatter: (params: any[]) => {
         if (!params || params.length === 0) return ''
         const date = params[0].axisValue
-        let html = `<div style="padding: 8px;"><div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`
+        let html = `<div style="font-weight:600;margin-bottom:10px;font-size:13px;color:${textColor};">${date}</div>`
         params.forEach((p: any) => {
           if (p.value !== null && p.value !== undefined) {
-            const color = p.value >= 0 ? 'var(--up-color)' : 'var(--down-color)'
-            html += `<div style="display: flex; justify-content: space-between; gap: 16px;">
-              <span>${p.seriesName}</span>
-              <span style="color: ${color}; font-weight: 600;">${p.value >= 0 ? '+' : ''}${p.value.toFixed(2)}%</span>
+            const valColor = p.value >= 0 ? upColor : downColor
+            html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:4px;">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};"></span>
+                <span style="color:${textColor};font-size:12px;">${p.seriesName}</span>
+              </span>
+              <span style="color:${valColor};font-weight:600;font-size:12px;">${p.value >= 0 ? '+' : ''}${p.value.toFixed(2)}%</span>
             </div>`
           }
         })
-        html += '</div>'
         return html
       },
     },
@@ -308,13 +339,16 @@ const loadTrendChart = async () => {
       data: series.map(s => s.name),
       bottom: 0,
       type: 'scroll',
-      textStyle: { fontSize: 11 },
+      textStyle: { fontSize: 11, color: textSecondary },
+      icon: 'roundRect',
+      itemWidth: 12,
+      itemHeight: 3,
     },
     grid: {
       left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '10%',
+      right: '3%',
+      bottom: '14%',
+      top: '8%',
       containLabel: true,
     },
     xAxis: {
@@ -324,7 +358,7 @@ const loadTrendChart = async () => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: getCssColor('--text-secondary', '#64748b'),
+        color: textSecondary,
         fontSize: 11,
         formatter: (value: string) => value.slice(5),
       },
@@ -333,21 +367,26 @@ const loadTrendChart = async () => {
       type: 'value',
       name: '涨跌幅(%)',
       nameTextStyle: {
-        color: getCssColor('--text-secondary', '#64748b'),
-        fontSize: 12,
-        padding: [0, 0, 0, 40],
+        color: textSecondary,
+        fontSize: 11,
+        padding: [0, 0, 0, 30],
       },
-      splitLine: { lineStyle: { color: isDark.value ? 'rgba(255, 255, 255, 0.08)' : getCssColor('--border-light', '#f1f5f9'), type: 'dashed' } },
+      splitLine: {
+        lineStyle: {
+          color: isDark.value ? 'rgba(255, 255, 255, 0.06)' : '#f1f5f9',
+          type: 'dashed',
+        },
+      },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: getCssColor('--text-secondary', '#64748b'),
+        color: textSecondary,
         fontSize: 11,
         formatter: (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
       },
     },
     series,
-    animationDuration: 500,
+    animationDuration: 600,
     animationEasing: 'cubicOut' as const,
   }, true)
 }
