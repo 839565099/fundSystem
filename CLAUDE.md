@@ -99,6 +99,10 @@ docker compose up --build    # 一键启动 MySQL + Redis + backend + frontend
 - **Vue/TS**：2 空格缩进；组件文件 `PascalCase`；变量/函数 `camelCase`
 - 提交信息使用 Conventional Commit：`feat`、`fix`、`chore`，可带 scope（如 `feat(profile): ...`）
 
+## 重要规则
+
+- **禁止自动提交代码**：不要主动执行 `git commit`、`git push`、创建 PR 或合并分支。只有用户明确要求时才执行这些操作。完成工作后只需汇报结果，不要触发 finishing-a-development-branch 等会引导提交的技能流程。
+
 ## 测试
 
 - 后端：JUnit 5 + Mockito（`spring-boot-starter-test`），测试类以 `Test` 结尾

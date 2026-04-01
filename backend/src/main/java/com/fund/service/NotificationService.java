@@ -35,6 +35,11 @@ public interface NotificationService {
     boolean markAsRead(Long userId, Long notificationId);
 
     /**
+     * 批量标记通知为已读
+     */
+    void batchMarkAsRead(Long userId, List<Long> notificationIds);
+
+    /**
      * 标记所有通知为已读
      */
     int markAllAsRead(Long userId);

@@ -37,4 +37,5 @@ logs/
 *.jar
 *.war
 *.ear
-hs_err_pid*
+docs/superpowers/
+backend/.project

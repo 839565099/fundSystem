@@ -82,6 +82,19 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public void batchMarkAsRead(Long userId, List<Long> notificationIds) {
+        LocalDateTime now = LocalDateTime.now();
+        for (Long id : notificationIds) {
+            Notification notification = notificationMapper.selectById(id);
+            if (notification != null && notification.getUserId().equals(userId)) {
+                notification.setIsRead(1);
+                notification.setReadTime(now);
+                notificationMapper.updateById(notification);
+            }
+        }
+    }
+
+    @Override
     public int markAllAsRead(Long userId) {
         return notificationMapper.markAllAsRead(userId);
     }

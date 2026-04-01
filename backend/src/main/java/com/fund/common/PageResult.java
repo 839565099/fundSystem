@@ -1,5 +1,6 @@
 package com.fund.common;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
@@ -22,5 +23,9 @@ public class PageResult<T> implements Serializable {
         this.size = size;
         this.current = current;
         this.pages = (total + size - 1) / size;
+    }
+
+    public static <T> PageResult<T> from(Page<T> page) {
+        return new PageResult<>(page.getRecords(), page.getTotal(), page.getSize(), page.getCurrent());
     }
 }

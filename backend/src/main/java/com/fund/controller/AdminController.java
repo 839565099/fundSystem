@@ -13,30 +13,22 @@ import java.util.Map;
 
 /**
  * 管理员控制器
- * 所有接口需要管理员权限
  */
 @RestController
 @RequestMapping("/admin")
+@RequireAdmin
 @RequiredArgsConstructor
 public class AdminController {
 
     private final AdminService adminService;
     private final LogService logService;
 
-    /**
-     * 获取系统统计数据
-     */
     @GetMapping("/stats")
-    @RequireAdmin
     public Result<Map<String, Object>> getSystemStats() {
         return Result.success(adminService.getSystemStats());
     }
 
-    /**
-     * 获取用户列表
-     */
     @GetMapping("/users")
-    @RequireAdmin
     public Result<Map<String, Object>> listUsers(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
@@ -46,11 +38,7 @@ public class AdminController {
         return Result.success(adminService.listUsers(page, pageSize, keyword, role, status));
     }
 
-    /**
-     * 获取用户详情
-     */
     @GetMapping("/users/{id}")
-    @RequireAdmin
     public Result<UserVO> getUserDetail(@PathVariable Long id) {
         UserVO vo = adminService.getUserDetail(id);
         if (vo == null) {
@@ -59,62 +47,43 @@ public class AdminController {
         return Result.success(vo);
     }
 
-    /**
-     * 更新用户状态（启用/禁用）
-     */
     @PutMapping("/users/{id}/status")
-    @RequireAdmin
     public Result<?> updateUserStatus(@PathVariable Long id, @RequestParam Integer status, HttpServletRequest request) {
-        Long currentUserId = (Long) request.getAttribute("userId");
-        String currentUsername = (String) request.getAttribute("username");
-        String ip = request.getRemoteAddr();
-
-        String error = adminService.updateUserStatus(id, status, currentUserId, currentUsername, ip);
+        String error = adminService.updateUserStatus(id, status,
+                (Long) request.getAttribute("userId"),
+                (String) request.getAttribute("username"),
+                request.getRemoteAddr());
         if (error != null) {
             return Result.error(error);
         }
         return Result.success(status == 1 ? "用户已启用" : "用户已禁用");
     }
 
-    /**
-     * 更新用户角色
-     */
     @PutMapping("/users/{id}/role")
-    @RequireAdmin
     public Result<?> updateUserRole(@PathVariable Long id, @RequestParam String role, HttpServletRequest request) {
-        Long currentUserId = (Long) request.getAttribute("userId");
-        String currentUsername = (String) request.getAttribute("username");
-        String ip = request.getRemoteAddr();
-
-        String error = adminService.updateUserRole(id, role, currentUserId, currentUsername, ip);
+        String error = adminService.updateUserRole(id, role,
+                (Long) request.getAttribute("userId"),
+                (String) request.getAttribute("username"),
+                request.getRemoteAddr());
         if (error != null) {
             return Result.error(error);
         }
         return Result.success("角色更新成功");
     }
 
-    /**
-     * 删除用户
-     */
     @DeleteMapping("/users/{id}")
-    @RequireAdmin
     public Result<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
-        Long currentUserId = (Long) request.getAttribute("userId");
-        String currentUsername = (String) request.getAttribute("username");
-        String ip = request.getRemoteAddr();
-
-        String error = adminService.deleteUser(id, currentUserId, currentUsername, ip);
+        String error = adminService.deleteUser(id,
+                (Long) request.getAttribute("userId"),
+                (String) request.getAttribute("username"),
+                request.getRemoteAddr());
         if (error != null) {
             return Result.error(error);
         }
         return Result.success("用户已删除");
     }
 
-    /**
-     * 获取操作日志
-     */
     @GetMapping("/logs/operations")
-    @RequireAdmin
     public Result<Map<String, Object>> getOperationLogs(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize,
@@ -123,11 +92,7 @@ public class AdminController {
         return Result.success(adminService.buildPageResult(logService.getOperationLogs(page, pageSize, operation, username), page, pageSize));
     }
 
-    /**
-     * 获取系统日志
-     */
     @GetMapping("/logs/systems")
-    @RequireAdmin
     public Result<Map<String, Object>> getSystemLogs(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize,

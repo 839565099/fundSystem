@@ -12,7 +12,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,6 +42,21 @@ public class MarketDataServiceImpl implements MarketDataService {
                 .collect(Collectors.toList());
     }
     
+    @Override
+    public List<Map<String, Object>> getMarketHistory(String marketCode, String period) {
+        List<Object[]> history = fundDataApiService.fetchMarketHistory(marketCode, period);
+        List<Map<String, Object>> result = new ArrayList<>();
+        String[] keys = {"date", "open", "close", "high", "low", "volume", "changeRatio"};
+        for (Object[] item : history) {
+            Map<String, Object> map = new HashMap<>();
+            for (int i = 0; i < keys.length && i < item.length; i++) {
+                map.put(keys[i], item[i]);
+            }
+            result.add(map);
+        }
+        return result;
+    }
+
     @Override
     @Scheduled(fixedRate = 30000)
     public void updateMarketData() {
