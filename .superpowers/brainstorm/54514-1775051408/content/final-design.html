@@ -1,0 +1,231 @@
+<h2>投资概览页面 — 最终设计方案</h2>
+<p class="subtitle">优化双栏布局 · 紧凑排列 · 信息完整</p>
+
+<div class="mockup">
+  <div class="mockup-header">最终布局预览</div>
+  <div class="mockup-body" style="padding:16px;background:#f8fafc;">
+
+    <!-- 顶部统计卡片 -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="flex:1;min-width:100px;background:linear-gradient(135deg,#4f46e5,#6366f1);border-radius:8px;padding:12px;color:white;">
+        <div style="font-size:10px;opacity:0.8;">总资产</div>
+        <div style="font-size:18px;font-weight:700;">¥271,523</div>
+        <div style="font-size:9px;opacity:0.8;">总收益率 -3.11%</div>
+      </div>
+      <div style="flex:1;min-width:100px;background:#fff;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">
+        <div style="font-size:10px;color:#64748b;">今日收益</div>
+        <div style="font-size:18px;font-weight:700;color:#ef4444;">-¥3,784</div>
+        <div style="font-size:9px;color:#ef4444;">-1.39%</div>
+      </div>
+      <div style="flex:1;min-width:100px;background:#fff;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">
+        <div style="font-size:10px;color:#64748b;">昨日收益</div>
+        <div style="font-size:18px;font-weight:700;color:#ef4444;">-¥2,156</div>
+        <div style="font-size:9px;color:#ef4444;">-0.82%</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:#fff;border-radius:8px;padding:12px;border:1px solid #e2e8f0;text-align:center;">
+        <div style="font-size:10px;color:#64748b;">持仓基金</div>
+        <div style="font-size:18px;font-weight:700;">14</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:#fff;border-radius:8px;padding:12px;border:1px solid #fecaca;text-align:center;">
+        <div style="font-size:10px;color:#64748b;">预警通知</div>
+        <div style="font-size:18px;font-weight:700;color:#ef4444;">3</div>
+      </div>
+    </div>
+
+    <!-- 双栏主体 -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+
+      <!-- 左侧 -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- 资产配置 -->
+        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:600;font-size:14px;">资产配置</span>
+            <span style="font-size:11px;color:#6366f1;cursor:pointer;">详情 →</span>
+          </div>
+          <div style="height:180px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">
+            🎯 环形饼图（14 只基金配置）
+          </div>
+        </div>
+
+        <!-- 持仓明细 -->
+        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:600;font-size:14px;">持仓明细</span>
+            <span style="font-size:11px;color:#6366f1;cursor:pointer;">管理 →</span>
+          </div>
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f8fafc;color:#64748b;">
+                <th style="padding:8px 12px;text-align:left;">基金名称</th>
+                <th style="padding:8px 6px;text-align:right;">成本</th>
+                <th style="padding:8px 6px;text-align:right;">市值</th>
+                <th style="padding:8px 6px;text-align:right;">占比</th>
+                <th style="padding:8px 6px;text-align:right;">收益率</th>
+                <th style="padding:8px 6px;text-align:right;">今日</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px;">易方达全球成长精选</td>
+                <td style="padding:8px 6px;text-align:right;">¥6.7万</td>
+                <td style="padding:8px 6px;text-align:right;">¥6.7万</td>
+                <td style="padding:8px 6px;text-align:right;">24.7%</td>
+                <td style="padding:8px 6px;text-align:right;color:#ef4444;">-0.72%</td>
+                <td style="padding:8px 6px;text-align:right;color:#ef4444;">-1.2%</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px;">易方达中证1000量化</td>
+                <td style="padding:8px 6px;text-align:right;">¥5.8万</td>
+                <td style="padding:8px 6px;text-align:right;">¥5.6万</td>
+                <td style="padding:8px 6px;text-align:right;">20.6%</td>
+                <td style="padding:8px 6px;text-align:right;color:#ef4444;">-3.83%</td>
+                <td style="padding:8px 6px;text-align:right;color:#ef4444;">-0.8%</td>
+              </tr>
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px 12px;">华夏中证电网设备</td>
+                <td style="padding:8px 6px;text-align:right;">¥4.3万</td>
+                <td style="padding:8px 6px;text-align:right;">¥4.1万</td>
+                <td style="padding:8px 6px;text-align:right;">15.1%</td>
+                <td style="padding:8px 6px;text-align:right;color:#ef4444;">-3.79%</td>
+                <td style="padding:8px 6px;text-align:right;color:#22c55e;">+0.3%</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding:8px 12px;text-align:center;font-size:11px;color:#6366f1;border-top:1px solid #f1f5f9;cursor:pointer;">查看全部 14 只基金 →</div>
+        </div>
+      </div>
+
+      <!-- 右侧 -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- AI 助手 -->
+        <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:10px;padding:16px;color:white;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:8px;">AI 投资助手</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+            <span style="background:rgba(255,255,255,0.2);border-radius:12px;padding:4px 10px;font-size:10px;">今日大盘走势如何？</span>
+            <span style="background:rgba(255,255,255,0.2);border-radius:12px;padding:4px 10px;font-size:10px;">推荐稳健基金</span>
+            <span style="background:rgba(255,255,255,0.2);border-radius:12px;padding:4px 10px;font-size:10px;">降低风险</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:6px;padding:6px 10px;font-size:10px;color:rgba(255,255,255,0.7);">输入您的投资问题...</div>
+            <div style="background:rgba(255,255,255,0.25);border-radius:6px;padding:6px 12px;font-size:10px;font-weight:600;">提问</div>
+          </div>
+        </div>
+
+        <!-- 预警中心 -->
+        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:600;font-size:14px;">预警中心</span>
+            <span style="font-size:11px;color:#6366f1;cursor:pointer;">全部 →</span>
+          </div>
+          <div style="padding:8px 12px;">
+            <div style="display:flex;gap:8px;padding:8px;background:#fef2f2;border-radius:6px;margin-bottom:6px;border-left:3px solid #ef4444;">
+              <div style="font-size:10px;flex:1;">
+                <div style="font-weight:600;">净值波动预警</div>
+                <div style="color:#64748b;font-size:9px;margin-top:2px;">基金 025857 跌幅超过 3%</div>
+              </div>
+              <div style="font-size:9px;color:#94a3b8;">2小时前</div>
+            </div>
+            <div style="display:flex;gap:8px;padding:8px;background:#fffbeb;border-radius:6px;border-left:3px solid #f59e0b;">
+              <div style="font-size:10px;flex:1;">
+                <div style="font-weight:600;">资讯提醒</div>
+                <div style="color:#64748b;font-size:9px;margin-top:2px;">半导体板块异动</div>
+              </div>
+              <div style="font-size:9px;color:#94a3b8;">5小时前</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 我的收藏 -->
+        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:600;font-size:14px;">我的收藏</span>
+            <span style="font-size:11px;color:#6366f1;cursor:pointer;">全部 →</span>
+          </div>
+          <div style="padding:8px 12px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8fafc;">
+              <div><div style="font-size:11px;font-weight:500;">易方达全球成长</div><div style="font-size:9px;color:#94a3b8;">012920</div></div>
+              <div style="font-size:12px;font-weight:600;color:#ef4444;">-1.2%</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8fafc;">
+              <div><div style="font-size:11px;font-weight:500;">华夏黄金ETF联接</div><div style="font-size:9px;color:#94a3b8;">008701</div></div>
+              <div style="font-size:12px;font-weight:600;color:#22c55e;">+0.5%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部并排 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <!-- 智能推荐 -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+          <span style="font-weight:600;font-size:14px;">✨ 智能推荐</span>
+          <span style="font-size:11px;color:#6366f1;cursor:pointer;">更多 →</span>
+        </div>
+        <div style="display:flex;gap:10px;padding:12px;overflow-x:auto;">
+          <div style="flex:0 0 140px;background:#f8fafc;border-radius:8px;padding:10px;border:1px solid #e2e8f0;">
+            <div style="font-size:10px;font-weight:600;margin-bottom:4px;">招商中证白酒</div>
+            <div style="font-size:9px;color:#94a3b8;">161725</div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;">
+              <span style="color:#64748b;">日涨跌</span>
+              <span style="color:#22c55e;">+1.2%</span>
+            </div>
+          </div>
+          <div style="flex:0 0 140px;background:#f8fafc;border-radius:8px;padding:10px;border:1px solid #e2e8f0;">
+            <div style="font-size:10px;font-weight:600;margin-bottom:4px;">天弘沪深300</div>
+            <div style="font-size:9px;color:#94a3b8;">000961</div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;">
+              <span style="color:#64748b;">日涨跌</span>
+              <span style="color:#ef4444;">-0.3%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 市场热点 -->
+      <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+          <span style="font-weight:600;font-size:14px;">📰 市场热点</span>
+          <span style="font-size:11px;color:#6366f1;cursor:pointer;">更多 →</span>
+        </div>
+        <div style="padding:8px 12px;">
+          <div style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+            <div style="font-size:11px;font-weight:500;">A股三大指数集体高开 半导体板块领涨</div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:2px;">东方财富 · 30分钟前</div>
+          </div>
+          <div style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+            <div style="font-size:11px;font-weight:500;">央行开展MLF操作 释放流动性信号</div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:2px;">证券时报 · 2小时前</div>
+          </div>
+          <div style="padding:8px 0;">
+            <div style="font-size:11px;font-weight:500;">新能源赛道基金回暖 机构看好后市</div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:2px;">中国基金报 · 3小时前</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">设计要点总结</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+  <div style="background:#f0fdf4;border-radius:8px;padding:16px;">
+    <h4 style="color:#16a34a;margin:0 0 8px;">布局修复</h4>
+    <ul style="margin:0;padding-left:16px;font-size:13px;line-height:1.8;">
+      <li>Grid <code>align-items: start</code> 消除左右高度不匹配</li>
+      <li>各模块紧凑排列，无空白浪费</li>
+      <li>底部并排推荐+热点，页面更紧凑</li>
+    </ul>
+  </div>
+  <div style="background:#eff6ff;border-radius:8px;padding:16px;">
+    <h4 style="color:#2563eb;margin:0 0 8px;">信息增强</h4>
+    <ul style="margin:0;padding-left:16px;font-size:13px;line-height:1.8;">
+      <li>持仓明细增加“成本”“市值”“占比”“今日”列</li>
+      <li>后端已有 actualRatio 字段，直接使用</li>
+      <li>饼图缩小高度，给表格更多空间</li>
+    </ul>
+  </div>
+</div>

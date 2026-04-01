@@ -1,0 +1,144 @@
+<h2>投资概览页面 — 布局方案选择</h2>
+<p class="subtitle">选择一个整体布局方向，后续再细化各模块内容</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">总资产</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">今日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">昨日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">持仓基金</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">预警通知</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="background:#e2e8f0;border-radius:6px;height:24px;margin-bottom:6px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;">资产配置（饼图）</div>
+          <div style="background:#e2e8f0;border-radius:6px;height:80px;display:flex;flex-direction:column;justify-content:center;padding:6px;font-size:10px;">
+            <div style="font-weight:600;margin-bottom:4px;">持仓明细</div>
+            <div style="display:flex;justify-content:space-between;color:#64748b;"><span>基金名称</span><span>市值</span><span>占比</span><span>收益率</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金A</span><span>¥6.7万</span><span>24.5%</span><span style="color:#ef4444;">-0.72%</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金B</span><span>¥5.6万</span><span>20.5%</span><span style="color:#ef4444;">-3.83%</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金C</span><span>¥4.1万</span><span>15.0%</span><span style="color:#ef4444;">-3.79%</span></div>
+            <div style="text-align:right;color:#6366f1;font-size:9px;margin-top:3px;">查看全部 →</div>
+          </div>
+        </div>
+        <div style="flex:0 0 120px;">
+          <div style="background:#e2e8f0;border-radius:6px;height:24px;margin-bottom:6px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;">AI 助手</div>
+          <div style="background:#e2e8f0;border-radius:6px;height:24px;margin-bottom:6px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;">预警中心</div>
+          <div style="background:#e2e8f0;border-radius:6px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;">我的收藏</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div class="placeholder" style="flex:1;height:36px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">✨ 智能推荐（横向卡片）</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="placeholder" style="flex:1;height:30px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">📰 市场热点</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 优化双栏（推荐）</h3>
+      <p>保持双栏结构，但左侧聚焦核心投资数据（配置图 + 持仓明细合一），右侧放辅助功能。各模块紧凑排列，消除空白。</p>
+      <div class="pros-cons" style="margin-top:8px;">
+        <div class="pros"><h4>优势</h4><ul><li>信息层次清晰，投资数据一目了然</li><li>改动量适中，风险可控</li><li>解决高度不匹配问题</li></ul></div>
+        <div class="cons"><h4>不足</h4><ul><li>仍然是双栏，移动端需堆叠</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">总资产</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">今日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">昨日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">持仓基金</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">预警通知</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="flex:0 0 45%;">
+          <div style="background:#e2e8f0;border-radius:6px;height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:10px;">
+            <div style="font-weight:600;margin-bottom:4px;">资产配置饼图</div>
+            <div style="color:#64748b;">环形图 + 图例</div>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div style="background:#e2e8f0;border-radius:6px;height:30px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:10px;">
+            <span style="font-weight:600;">AI 助手</span><span style="color:#6366f1;">快速提问 →</span>
+          </div>
+          <div style="background:#e2e8f0;border-radius:6px;height:30px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:10px;">
+            <span style="font-weight:600;">预警中心</span><span style="color:#6366f1;">全部 →</span>
+          </div>
+          <div style="background:#e2e8f0;border-radius:6px;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:10px;">
+            <span style="font-weight:600;">我的收藏</span><span style="color:#6366f1;">全部 →</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:#e2e8f0;border-radius:6px;height:80px;margin-bottom:8px;padding:6px;font-size:10px;">
+        <div style="font-weight:600;margin-bottom:4px;">持仓明细（全宽表格）</div>
+        <div style="display:flex;justify-content:space-between;color:#64748b;"><span>基金名称</span><span>类型</span><span>份额</span><span>成本</span><span>市值</span><span>占比</span><span>收益</span><span>收益率</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金A</span><span>混合</span><span>2.4万</span><span>¥6.7万</span><span>¥6.7万</span><span>24.5%</span><span>-¥482</span><span style="color:#ef4444;">-0.72%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金B</span><span>混合</span><span>3.7万</span><span>¥5.8万</span><span>¥5.6万</span><span>20.5%</span><span>-¥2223</span><span style="color:#ef4444;">-3.83%</span></div>
+        <div style="text-align:right;color:#6366f1;font-size:9px;margin-top:3px;">查看全部 →</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div class="placeholder" style="flex:1;height:36px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">✨ 智能推荐</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div class="placeholder" style="flex:1;height:30px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">📰 市场热点</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 混合布局：横向分区 + 全宽表格</h3>
+      <p>上方用横向分栏放饼图+辅助模块，持仓明细独占全宽显示完整信息，底部智能推荐和市场热点。</p>
+      <div class="pros-cons" style="margin-top:8px;">
+        <div class="pros"><h4>优势</h4><ul><li>持仓明细全宽，可展示更多列（占比、市值等）</li><li>空间利用率高，无空白</li><li>各区域高度独立，互不影响</li></ul></div>
+        <div class="cons"><h4>不足</h4><ul><li>页面偏长，需要滚动</li><li>辅助模块被压缩为摘要卡片</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">总资产</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">今日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">昨日收益</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">持仓基金</div>
+        <div class="placeholder" style="flex:1;min-width:80px;height:40px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;">预警通知</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div style="background:#e2e8f0;border-radius:6px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;padding:4px;">
+          <div style="font-weight:600;">资产配置</div>
+          <div style="color:#64748b;font-size:9px;margin-top:2px;">环形图 + 占比</div>
+        </div>
+        <div style="background:#e2e8f0;border-radius:6px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;padding:4px;">
+          <div style="font-weight:600;">AI 助手</div>
+          <div style="color:#64748b;font-size:9px;margin-top:2px;">快速提问入口</div>
+        </div>
+        <div style="background:#e2e8f0;border-radius:6px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;padding:4px;">
+          <div style="font-weight:600;">预警 / 收藏</div>
+          <div style="color:#64748b;font-size:9px;margin-top:2px;">通知 + 收藏基金</div>
+        </div>
+      </div>
+      <div style="background:#e2e8f0;border-radius:6px;height:80px;margin-bottom:8px;padding:6px;font-size:10px;">
+        <div style="font-weight:600;margin-bottom:4px;">持仓明细（全宽表格）</div>
+        <div style="display:flex;justify-content:space-between;color:#64748b;"><span>基金名称</span><span>类型</span><span>成本</span><span>市值</span><span>占比</span><span>收益率</span><span>今日</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金A</span><span>混合</span><span>¥6.7万</span><span>¥6.7万</span><span>24.5%</span><span style="color:#ef4444;">-0.72%</span><span style="color:#ef4444;">-1.2%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span>基金B</span><span>混合</span><span>¥5.8万</span><span>¥5.6万</span><span>20.5%</span><span style="color:#ef4444;">-3.83%</span><span style="color:#ef4444;">-0.8%</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div class="placeholder" style="height:36px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">✨ 智能推荐</div>
+        <div class="placeholder" style="height:36px;border-radius:6px;font-size:10px;display:flex;align-items:center;justify-content:center;">📰 市场热点</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 仪表盘网格：三栏均分 + 全宽表格</h3>
+      <p>顶部统计卡片，中间三栏放配置/AI/预警收藏，持仓明细全宽，底部智能推荐和市场热点并排。</p>
+      <div class="pros-cons" style="margin-top:8px;">
+        <div class="pros"><h4>优势</h4><ul><li>空间最紧凑，页面最短</li><li>底部并排推荐和热点，一屏看完</li><li>所有模块紧凑，无空白浪费</li></ul></div>
+        <div class="cons"><h4>不足</h4><ul><li>三栏在小屏幕上需堆叠</li><li>饼图空间较小，可能不够清晰</li><li>改动量最大</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

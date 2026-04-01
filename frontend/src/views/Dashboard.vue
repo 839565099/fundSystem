@@ -165,33 +165,6 @@
           </div>
           <n-empty v-else description="暂无预警" />
         </n-card>
-
-        <n-card title="我的收藏" class="favorites-card card--elevated">
-          <template #header-extra>
-            <n-button text @click="router.push('/favorites')">
-              全部
-            </n-button>
-          </template>
-          <n-spin :show="favoritesLoading">
-            <div v-if="topFavorites.length" class="favorites-list">
-              <div
-                v-for="fav in topFavorites.slice(0, 5)"
-                :key="fav.fundCode"
-                class="favorite-item hover-lift"
-                @click="router.push(`/fund/${fav.fundCode}`)"
-              >
-                <div class="fav-info">
-                  <div class="fav-name">{{ fav.fundName }}</div>
-                  <div class="fav-code">{{ fav.fundCode }}</div>
-                </div>
-                <div class="fav-growth">
-                  <GrowthText :value="fav.dayGrowth" />
-                </div>
-              </div>
-            </div>
-            <n-empty v-else description="暂无收藏" />
-          </n-spin>
-        </n-card>
       </div>
     </div>
 
@@ -251,36 +224,65 @@
       </n-spin>
     </n-card>
 
-    <!-- 市场热点 -->
-    <n-card class="news-card card--elevated">
-      <template #header>
-        <div class="section-header">
-          <span class="section-icon">📰</span>
-          <span class="section-title">市场热点</span>
-        </div>
-      </template>
-      <template #header-extra>
-        <n-button text @click="router.push('/news')">
-          更多
-        </n-button>
-      </template>
-      <n-spin :show="newsLoading">
-        <div class="news-list">
-          <div
-            v-for="news in hotNews"
-            :key="news.id"
-            class="news-item"
-            @click="router.push(`/news/${news.id}`)"
-          >
-            <div class="news-title">{{ news.title }}</div>
-            <div class="news-meta">
-              <span>{{ news.source }}</span>
-              <span>{{ formatTime(news.publishTime) }}</span>
+    <!-- 底部并排：我的收藏 + 市场热点 -->
+    <div class="bottom-section">
+      <n-card title="我的收藏" class="card--elevated">
+        <template #header-extra>
+          <n-button text @click="router.push('/favorites')">
+            全部
+          </n-button>
+        </template>
+        <n-spin :show="favoritesLoading">
+          <div v-if="topFavorites.length" class="favorites-list">
+            <div
+              v-for="fav in topFavorites.slice(0, 5)"
+              :key="fav.fundCode"
+              class="favorite-item hover-lift"
+              @click="router.push(`/fund/${fav.fundCode}`)"
+            >
+              <div class="fav-info">
+                <div class="fav-name">{{ fav.fundName }}</div>
+                <div class="fav-code">{{ fav.fundCode }}</div>
+              </div>
+              <div class="fav-growth">
+                <GrowthText :value="fav.dayGrowth" />
+              </div>
             </div>
           </div>
-        </div>
-      </n-spin>
-    </n-card>
+          <n-empty v-else description="暂无收藏" />
+        </n-spin>
+      </n-card>
+
+      <n-card class="card--elevated">
+        <template #header>
+          <div class="section-header">
+            <span class="section-icon">📰</span>
+            <span class="section-title">市场热点</span>
+          </div>
+        </template>
+        <template #header-extra>
+          <n-button text @click="router.push('/news')">
+            更多
+          </n-button>
+        </template>
+        <n-spin :show="newsLoading">
+          <div class="news-list">
+            <div
+              v-for="news in hotNews"
+              :key="news.id"
+              class="news-item"
+              @click="router.push(`/news/${news.id}`)"
+            >
+              <div class="news-title">{{ news.title }}</div>
+              <div class="news-meta">
+                <span>{{ news.source }}</span>
+                <span>{{ formatTime(news.publishTime) }}</span>
+              </div>
+            </div>
+          </div>
+        </n-spin>
+      </n-card>
+    </div>
   </div>
 </template>
 
@@ -334,13 +336,44 @@ const quickQuestions = [
 
 const holdingColumns = [
   { title: '基金名称', key: 'fundName', ellipsis: { tooltip: true } },
-  { title: '持有金额', key: 'amount', width: 100, render: (row: any) => `¥${row.amount?.toFixed(2) || '0.00'}` },
-  { title: '收益率', key: 'profitRatio', width: 90, render: (row: any) => {
-    const val = row.profitRatio
-    if (val === null || val === undefined) return '-'
-    const cls = val >= 0 ? 'growth-positive' : 'growth-negative'
-    return h('span', { class: cls }, `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
-  }}
+  {
+    title: '成本', key: 'amount', width: 100, render: (row: any) => {
+      if (!row.amount) return '-'
+      return row.amount >= 10000
+        ? `¥${(row.amount / 10000).toFixed(2)}万`
+        : `¥${row.amount.toFixed(2)}`
+    }
+  },
+  {
+    title: '市值', key: 'currentValue', width: 100, render: (row: any) => {
+      if (!row.currentValue) return '-'
+      return row.currentValue >= 10000
+        ? `¥${(row.currentValue / 10000).toFixed(2)}万`
+        : `¥${row.currentValue.toFixed(2)}`
+    }
+  },
+  {
+    title: '占比', key: 'actualRatio', width: 70, render: (row: any) => {
+      if (row.actualRatio === null || row.actualRatio === undefined) return '-'
+      return `${row.actualRatio.toFixed(1)}%`
+    }
+  },
+  {
+    title: '收益率', key: 'profitRatio', width: 80, render: (row: any) => {
+      const val = row.profitRatio
+      if (val === null || val === undefined) return '-'
+      const cls = val >= 0 ? 'growth-positive' : 'growth-negative'
+      return h('span', { class: cls }, `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
+    }
+  },
+  {
+    title: '今日', key: 'dayGrowth', width: 70, render: (row: any) => {
+      const val = row.dayGrowth
+      if (val === null || val === undefined) return '-'
+      const cls = val >= 0 ? 'growth-positive' : 'growth-negative'
+      return h('span', { class: cls }, `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`)
+    }
+  }
 ]
 
 const loadData = async () => {
@@ -536,6 +569,7 @@ onMounted(() => {
   grid-template-columns: 1fr 380px;
   gap: 24px;
   margin-bottom: 24px;
+  align-items: start;
 }
 
 @media (max-width: 1200px) {
@@ -552,17 +586,16 @@ onMounted(() => {
 }
 
 .chart-card {
-  min-height: 380px;
+  min-height: 300px;
   border: 1px solid var(--border-color);
 }
 
 .chart-container {
   width: 100%;
-  height: 320px;
+  height: 240px;
 }
 
 .holdings-card {
-  flex: 1;
 }
 
 .ai-quick-questions {
@@ -700,6 +733,12 @@ onMounted(() => {
   font-size: 15px;
 }
 
+.bottom-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
 .recommend-card {
   margin-bottom: 24px;
 }
@@ -799,10 +838,6 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.news-card {
-  margin-bottom: 24px;
-}
-
 .news-list {
   display: flex;
   flex-direction: column;
@@ -855,20 +890,26 @@ onMounted(() => {
   font-weight: 600;
 }
 
+@media (max-width: 1200px) {
+  .bottom-section {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-page {
     padding: 16px;
   }
-  
+
   .main-content {
     gap: 16px;
   }
-  
+
   .left-panel,
   .right-panel {
     gap: 16px;
   }
-  
+
   .bottom-section {
     gap: 16px;
   }
