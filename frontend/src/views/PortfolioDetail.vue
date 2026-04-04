@@ -17,6 +17,7 @@
             </div>
           </div>
           <div class="top-bar-actions">
+            <PrivacyToggle />
             <n-button type="primary" @click="showAddFundModal = true">
               <template #icon><n-icon><IconPlus /></n-icon></template>
               添加基金
@@ -33,35 +34,35 @@
           <div class="hero-top">
             <div class="hero-asset">
               <span class="hero-tag">总资产</span>
-              <span class="hero-amount">{{ formatMoney(portfolio.currentValue) }}</span>
+              <span class="hero-amount">{{ isHidden ? '****' : formatMoney(portfolio.currentValue) }}</span>
             </div>
             <div class="hero-meta">
-              成本 {{ formatMoney(portfolio.totalAmount) }}&emsp;持仓 {{ portfolio.fundCount }} 只基金
+              成本 {{ isHidden ? '****' : formatMoney(portfolio.totalAmount) }}&emsp;持仓 {{ portfolio.fundCount }} 只基金
             </div>
           </div>
           <div class="hero-metrics-row">
             <div class="hero-chip">
               <span class="chip-label">总收益</span>
-              <span class="chip-val" :class="portfolio.totalProfit >= 0 ? 'up' : 'down'">
-                {{ portfolio.totalProfit >= 0 ? '+' : '' }}{{ formatMoney(portfolio.totalProfit) }}
+              <span class="chip-val" :class="!isHidden && portfolio.totalProfit >= 0 ? 'up' : (!isHidden ? 'down' : '')">
+                {{ isHidden ? '****' : (portfolio.totalProfit >= 0 ? '+' : '') + formatMoney(portfolio.totalProfit) }}
               </span>
             </div>
             <div class="hero-chip">
               <span class="chip-label">收益率</span>
-              <span class="chip-val" :class="portfolio.totalReturn >= 0 ? 'up' : 'down'">
-                {{ portfolio.totalReturn >= 0 ? '+' : '' }}{{ portfolio.totalReturn?.toFixed(2) }}%
+              <span class="chip-val" :class="!isHidden && portfolio.totalReturn >= 0 ? 'up' : (!isHidden ? 'down' : '')">
+                {{ isHidden ? '****' : (portfolio.totalReturn >= 0 ? '+' : '') + portfolio.totalReturn?.toFixed(2) + '%' }}
               </span>
             </div>
             <div class="hero-chip">
               <span class="chip-label">今日收益</span>
-              <span class="chip-val" :class="portfolio.dayProfit >= 0 ? 'up' : 'down'">
-                {{ portfolio.dayProfit >= 0 ? '+' : '' }}{{ formatMoney(portfolio.dayProfit) }}
+              <span class="chip-val" :class="!isHidden && portfolio.dayProfit >= 0 ? 'up' : (!isHidden ? 'down' : '')">
+                {{ isHidden ? '****' : (portfolio.dayProfit >= 0 ? '+' : '') + formatMoney(portfolio.dayProfit) }}
               </span>
             </div>
             <div class="hero-chip">
               <span class="chip-label">日收益率</span>
-              <span class="chip-val" :class="portfolio.dayReturn >= 0 ? 'up' : 'down'">
-                {{ portfolio.dayReturn >= 0 ? '+' : '' }}{{ portfolio.dayReturn?.toFixed(2) }}%
+              <span class="chip-val" :class="!isHidden && portfolio.dayReturn >= 0 ? 'up' : (!isHidden ? 'down' : '')">
+                {{ isHidden ? '****' : (portfolio.dayReturn >= 0 ? '+' : '') + portfolio.dayReturn?.toFixed(2) + '%' }}
               </span>
             </div>
           </div>
@@ -76,7 +77,7 @@
                 <span class="legend-color" :style="{ background: item.color }"></span>
                 <span class="legend-name">{{ item.name }}</span>
                 <span class="legend-value">{{ item.ratio?.toFixed(1) }}%</span>
-                <span class="legend-amount">{{ formatMoneyShort(item.value) }}</span>
+                <span class="legend-amount">{{ isHidden ? '****' : formatMoneyShort(item.value) }}</span>
               </div>
             </div>
           </div>
@@ -191,6 +192,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInputNumber, NDataTable, NSelect, useMessage, type DataTableColumns } from 'naive-ui'
 import { IconArrowLeft, IconPlus, IconRefresh, IconTrash, IconPencil } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
+import PrivacyToggle from '../components/PrivacyToggle.vue'
+import { usePrivacy } from '../composables/usePrivacy'
 import { fundApi, favoriteApi } from '../api/fund'
 import type { UserFavorite, Fund } from '../types'
 import * as echarts from 'echarts'
@@ -240,6 +243,7 @@ interface Portfolio {
 }
 
 const router = useRouter()
+const { isHidden } = usePrivacy()
 const route = useRoute()
 const message = useMessage()
 
@@ -525,11 +529,11 @@ const columns: DataTableColumns<PortfolioItem> = [
   },
   {
     title: '成本', key: 'amount', width: 100,
-    render: (row) => formatMoneyShort(row.amount)
+    render: (row) => isHidden.value ? '****' : formatMoneyShort(row.amount)
   },
   {
     title: '市值', key: 'currentValue', width: 100,
-    render: (row) => formatMoneyShort(row.currentValue)
+    render: (row) => isHidden.value ? '****' : formatMoneyShort(row.currentValue)
   },
   {
     title: '占比', key: 'actualRatio', width: 70,
@@ -540,12 +544,12 @@ const columns: DataTableColumns<PortfolioItem> = [
   },
   {
     title: '收益', key: 'profit', width: 100,
-    render: (row) => h('span', { class: row.profit >= 0 ? 'positive' : 'negative' },
+    render: (row) => isHidden.value ? h('span', {}, '****') : h('span', { class: row.profit >= 0 ? 'positive' : 'negative' },
       `${row.profit >= 0 ? '+' : ''}${formatMoneyShort(row.profit)}`)
   },
   {
     title: '收益率', key: 'profitRatio', width: 80,
-    render: (row) => h('span', { class: row.profitRatio >= 0 ? 'positive' : 'negative' },
+    render: (row) => isHidden.value ? h('span', {}, '****') : h('span', { class: row.profitRatio >= 0 ? 'positive' : 'negative' },
       `${row.profitRatio >= 0 ? '+' : ''}${row.profitRatio?.toFixed(2)}%`)
   },
   {

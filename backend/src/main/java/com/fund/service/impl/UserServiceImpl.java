@@ -15,12 +15,15 @@ import com.fund.entity.UserFavorite;
 import com.fund.entity.Portfolio;
 import com.fund.entity.UserAlertRule;
 import com.fund.service.UserService;
+import com.fund.service.SessionService;
 import com.fund.util.JwtUtil;
+import com.fund.vo.LoginVO;
 import com.fund.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -36,7 +39,9 @@ public class UserServiceImpl implements UserService {
     private final PortfolioMapper portfolioMapper;
     private final UserAlertRuleMapper userAlertRuleMapper;
     private final JwtUtil jwtUtil;
-    
+    private final SessionService sessionService;
+    private final HttpServletRequest httpServletRequest;
+
     @Override
     public UserVO register(RegisterDTO registerDTO) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -76,25 +81,36 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
-    public String login(LoginDTO loginDTO) {
+    public LoginVO login(LoginDTO loginDTO) {
         User user = getByUsername(loginDTO.getUsername());
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
-        
+
         if (!BCrypt.checkpw(loginDTO.getPassword(), user.getPassword())) {
             throw new BusinessException(ErrorCode.PASSWORD_ERROR);
         }
-        
+
         if (user.getStatus() != 1) {
             throw new BusinessException(ErrorCode.USER_DISABLED);
         }
-        
+
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
 
         String role = user.getRole() != null ? user.getRole() : "USER";
-        return jwtUtil.generateToken(user.getId(), user.getUsername(), role);
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), role);
+
+        // 创建会话
+        LoginVO.SessionInfo sessionInfo = sessionService.createSession(
+                user.getId(), user.getUsername(), role, httpServletRequest);
+
+        // 构建返回值
+        LoginVO loginVO = new LoginVO();
+        loginVO.setToken(token);
+        loginVO.setUser(convertToVO(user));
+        loginVO.setSessionInfo(sessionInfo);
+        return loginVO;
     }
     
     @Override

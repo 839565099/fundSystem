@@ -8,6 +8,7 @@ import com.fund.dto.RegisterDTO;
 import com.fund.dto.UpdateProfileDTO;
 import com.fund.exception.BusinessException;
 import com.fund.service.UserService;
+import com.fund.vo.LoginVO;
 import com.fund.vo.UserVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -111,7 +112,10 @@ class AuthControllerTest {
     @DisplayName("登录成功")
     void login_success() throws Exception {
         // given
-        when(userService.login(any(LoginDTO.class))).thenReturn("test-jwt-token");
+        LoginVO loginVO = new LoginVO();
+        loginVO.setToken("test-jwt-token");
+        loginVO.setUser(userVO);
+        when(userService.login(any(LoginDTO.class))).thenReturn(loginVO);
 
         // when & then
         mockMvc.perform(post("/auth/login")
@@ -120,7 +124,7 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.message").value("登录成功"))
-            .andExpect(jsonPath("$.data").value("test-jwt-token"));
+            .andExpect(jsonPath("$.data.token").value("test-jwt-token"));
 
         verify(userService, times(1)).login(any(LoginDTO.class));
     }

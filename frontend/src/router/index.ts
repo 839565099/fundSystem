@@ -166,6 +166,24 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
       },
       {
+        path: 'sessions',
+        name: 'AdminSessions',
+        component: () => import('../views/admin/SessionManage.vue'),
+        meta: { title: '会话管理', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'session-config',
+        name: 'AdminSessionConfig',
+        component: () => import('../views/admin/SessionConfig.vue'),
+        meta: { title: '会话配置', requiresAuth: true, requiresAdmin: true }
+      },
+      {
+        path: 'session-logs',
+        name: 'AdminSessionLogs',
+        component: () => import('../views/admin/SessionLog.vue'),
+        meta: { title: '会话日志', requiresAuth: true, requiresAdmin: true }
+      },
+      {
         path: 'logs',
         name: 'AdminLogs',
         component: () => import('../views/admin/OperationLog.vue'),

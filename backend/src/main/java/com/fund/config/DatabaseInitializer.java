@@ -23,6 +23,7 @@ public class DatabaseInitializer {
     public void init() {
         executeSqlScript("db/init.sql");
         executeSqlScript("db/migration_news_sentiment.sql");
+        executeSqlScript("db/migration_session_management.sql");
         log.info("数据库初始化完成");
     }
 

@@ -7,6 +7,7 @@
             <span class="pulse-dot"></span>
             实时更新
           </div>
+          <PrivacyToggle />
           <n-button @click="refreshData" :loading="refreshing">
             <template #icon>
               <n-icon><IconRefresh /></n-icon>
@@ -22,30 +23,30 @@
     <div v-else class="dashboard-grid">
       <StatCard
         label="总资产"
-        :value="portfolio?.currentValue || 0"
-        prefix="¥"
+        :value="isHidden ? '****' : (portfolio?.currentValue || 0)"
+        :prefix="isHidden ? '' : '¥'"
         icon="AUM"
-        :change="portfolio?.totalReturn"
+        :change="isHidden ? null : portfolio?.totalReturn"
         trend-label="总收益率"
         variant="primary"
       />
-      
+
       <StatCard
         label="今日收益"
-        :value="portfolio?.dayProfit || 0"
-        prefix="¥"
+        :value="isHidden ? '****' : (portfolio?.dayProfit || 0)"
+        :prefix="isHidden ? '' : '¥'"
         icon="DPNL"
-        :change="portfolio?.dayReturn"
+        :change="isHidden ? null : portfolio?.dayReturn"
         :change-type="portfolio?.dayReturn >= 0 ? 'up' : 'down'"
         show-sign
       />
-      
+
       <StatCard
         label="昨日收益"
-        :value="portfolio?.yesterdayProfit || 0"
-        prefix="¥"
+        :value="isHidden ? '****' : (portfolio?.yesterdayProfit || 0)"
+        :prefix="isHidden ? '' : '¥'"
         icon="YPNL"
-        :change="portfolio?.yesterdayReturn"
+        :change="isHidden ? null : portfolio?.yesterdayReturn"
         :change-type="portfolio?.yesterdayReturn >= 0 ? 'up' : 'down'"
         show-sign
       />
@@ -303,12 +304,15 @@ import PageHeader from '../components/PageHeader.vue'
 import StatCard from '../components/StatCard.vue'
 import GrowthText from '../components/GrowthText.vue'
 import Skeleton from '../components/Skeleton.vue'
+import PrivacyToggle from '../components/PrivacyToggle.vue'
+import { usePrivacy } from '../composables/usePrivacy'
 import * as echarts from 'echarts'
 import { fundApi } from '@/api/fund'
 import type { PortfolioVO, AlertHistoryVO, Fund } from '@/types'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { isHidden } = usePrivacy()
 const message = useMessage()
 
 const loading = ref(true)
@@ -338,6 +342,7 @@ const holdingColumns = [
   { title: '基金名称', key: 'fundName', ellipsis: { tooltip: true } },
   {
     title: '成本', key: 'amount', width: 100, render: (row: any) => {
+      if (isHidden.value) return '****'
       if (!row.amount) return '-'
       return row.amount >= 10000
         ? `¥${(row.amount / 10000).toFixed(2)}万`
@@ -346,6 +351,7 @@ const holdingColumns = [
   },
   {
     title: '市值', key: 'currentValue', width: 100, render: (row: any) => {
+      if (isHidden.value) return '****'
       if (!row.currentValue) return '-'
       return row.currentValue >= 10000
         ? `¥${(row.currentValue / 10000).toFixed(2)}万`
@@ -360,6 +366,7 @@ const holdingColumns = [
   },
   {
     title: '收益率', key: 'profitRatio', width: 80, render: (row: any) => {
+      if (isHidden.value) return '****'
       const val = row.profitRatio
       if (val === null || val === undefined) return '-'
       const cls = val >= 0 ? 'growth-positive' : 'growth-negative'

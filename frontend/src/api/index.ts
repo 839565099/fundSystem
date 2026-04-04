@@ -27,8 +27,15 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      // 跳过 logout 请求的拦截，避免退出登录时死循环
+      if (error.config?.url === '/auth/logout') {
+        return Promise.reject(error)
+      }
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      const msg = error.response?.data?.message || ''
+      const reason = msg.includes('会话已过期') ? 'session_expired' : ''
+      const loginUrl = reason ? `/login?reason=${reason}` : '/login'
+      window.location.href = loginUrl
     }
     return Promise.reject(error)
   }

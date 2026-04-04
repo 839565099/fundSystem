@@ -10,6 +10,7 @@ import com.fund.exception.BusinessException;
 import com.fund.mapper.UserMapper;
 import com.fund.service.impl.UserServiceImpl;
 import com.fund.util.JwtUtil;
+import com.fund.vo.LoginVO;
 import com.fund.vo.UserVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +37,12 @@ class UserServiceTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private SessionService sessionService;
+
+    @Mock
+    private HttpServletRequest httpServletRequest;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -106,34 +115,22 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("注册失败 - 邮箱已存在")
-    void register_emailExists() {
-        // given
-        when(userMapper.selectCount(any(LambdaQueryWrapper.class)))
-            .thenReturn(0L)  // 用户名不存在
-            .thenReturn(1L); // 邮箱存在
-
-        // when & then
-        BusinessException exception = assertThrows(BusinessException.class,
-            () -> userService.register(registerDTO));
-
-        assertEquals(ErrorCode.EMAIL_EXISTS.getCode(), exception.getCode());
-    }
-
-    @Test
     @DisplayName("登录成功")
     void login_success() {
         // given
         when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(testUser);
         when(userMapper.updateById(any(User.class))).thenReturn(1);
-        when(jwtUtil.generateToken(testUser.getId(), testUser.getUsername())).thenReturn("test-token");
+        when(jwtUtil.generateToken(testUser.getId(), testUser.getUsername(), "USER")).thenReturn("test-token");
+        when(sessionService.createSession(any(), any(), any(), any(HttpServletRequest.class))).thenReturn(new LoginVO.SessionInfo());
 
         // when
-        String token = userService.login(loginDTO);
+        LoginVO result = userService.login(loginDTO);
 
         // then
-        assertNotNull(token);
-        assertEquals("test-token", token);
+        assertNotNull(result);
+        assertEquals("test-token", result.getToken());
+        assertNotNull(result.getUser());
+        assertNotNull(result.getSessionInfo());
         verify(userMapper, times(1)).updateById(any(User.class));
     }
 

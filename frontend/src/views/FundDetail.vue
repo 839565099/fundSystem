@@ -69,168 +69,182 @@
           />
         </section>
 
-        <section class="info-tabs card">
-          <n-tabs v-model:value="activeTab" type="line" animated>
-            <n-tab-pane name="overview" tab="概览">
-              <div class="overview-grid">
-                <div class="overview-item">
-                  <span class="label">基金代码</span>
-                  <span class="value">{{ fund.fundCode }}</span>
-                </div>
-                <div class="overview-item">
-                  <span class="label">基金公司</span>
-                  <span class="value">{{ fund.fundCompany || '--' }}</span>
-                </div>
-                <div class="overview-item">
-                  <span class="label">风险等级</span>
-                  <span class="value">{{ riskLevelName }}</span>
-                </div>
-                <div class="overview-item">
-                  <span class="label">最低申购</span>
-                  <span class="value">{{ fund.minPurchase != null ? `¥${fund.minPurchase}` : '--' }}</span>
-                </div>
-                <div class="overview-item">
-                  <span class="label">累计净值</span>
-                  <span class="value">{{ formatNav(fund.accNav) }}</span>
-                </div>
-                <div class="overview-item">
-                  <span class="label">成立以来</span>
-                  <span class="value" :class="growthClass(fund.totalGrowth)">{{ formatGrowth(fund.totalGrowth) }}</span>
-                </div>
-              </div>
-            </n-tab-pane>
+        <!-- 概览卡片 -->
+        <section class="info-card card">
+          <h3 class="card-title">
+            <n-icon size="18"><IconInfoCircle /></n-icon>
+            概览
+          </h3>
+          <div class="overview-grid">
+            <div class="overview-item">
+              <span class="label">基金代码</span>
+              <span class="value">{{ fund.fundCode }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="label">基金公司</span>
+              <span class="value">{{ fund.fundCompany || '--' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="label">风险等级</span>
+              <span class="value">
+                <n-tag v-if="fund.riskLevel" size="small" :type="riskTagType">{{ riskLevelName }}</n-tag>
+                <span v-else>--</span>
+              </span>
+            </div>
+            <div class="overview-item">
+              <span class="label">基金规模</span>
+              <span class="value">{{ fund.fundScale != null ? `${fund.fundScale.toFixed(2)}亿` : '--' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="label">累计净值</span>
+              <span class="value">{{ formatNav(fund.accNav) }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="label">成立以来</span>
+              <span class="value" :class="growthClass(fund.totalGrowth)">{{ formatGrowth(fund.totalGrowth) }}</span>
+            </div>
+          </div>
+        </section>
 
-            <n-tab-pane name="performance" tab="业绩表现">
-              <div class="performance-grid">
-                <div v-for="item in performanceItems" :key="item.label" class="perf-item">
-                  <span class="label">{{ item.label }}</span>
-                  <span class="value" :class="growthClass(item.value)">{{ formatGrowth(item.value) }}</span>
-                </div>
-              </div>
-            </n-tab-pane>
+        <!-- 业绩表现卡片 -->
+        <section class="info-card card">
+          <h3 class="card-title">
+            <n-icon size="18"><IconChartBar /></n-icon>
+            业绩表现
+          </h3>
+          <div class="performance-row">
+            <div v-for="item in performanceItems" :key="item.label" class="perf-block" :class="growthBgClass(item.value)">
+              <span class="perf-label">{{ item.label }}</span>
+              <span class="perf-value" :class="growthClass(item.value)">{{ formatGrowth(item.value) }}</span>
+            </div>
+          </div>
+        </section>
 
-            <n-tab-pane name="manager" tab="基金经理">
-              <n-spin :show="managerLoading">
-                <div v-if="managers.length > 0" class="manager-list">
-                  <div v-for="m in managers" :key="m.managerId" class="manager-card">
-                    <n-avatar v-if="m.photo" round size="large" :src="m.photo" :fallback-src="undefined">
-                      {{ m.managerName?.charAt(0) }}
-                    </n-avatar>
-                    <n-avatar v-else round size="large">{{ m.managerName?.charAt(0) }}</n-avatar>
+        <!-- 基金经理卡片 -->
+        <section class="info-card card">
+          <h3 class="card-title">
+            <n-icon size="18"><IconUser /></n-icon>
+            基金经理
+          </h3>
+          <n-spin :show="managerLoading">
+            <div v-if="managers.length > 0" class="manager-list">
+              <div v-for="m in managers" :key="m.managerId" class="manager-card">
+                <n-avatar v-if="m.photo" round size="large" :src="m.photo">
+                  {{ m.managerName?.charAt(0) }}
+                </n-avatar>
+                <n-avatar v-else round size="large">{{ m.managerName?.charAt(0) }}</n-avatar>
 
-                    <div class="manager-info">
-                      <div class="manager-header">
-                        <div class="manager-name">{{ m.managerName }}</div>
-                        <n-tag size="small" type="info">{{ m.company || '基金经理' }}</n-tag>
-                      </div>
-
-                      <div class="manager-meta">
-                        <span>任职: {{ m.startDate || '--' }}</span>
-                        <span>从业: {{ m.workYears != null ? `${m.workYears}年` : '--' }}</span>
-                        <span>管理规模: {{ m.totalAsset != null ? `${m.totalAsset}亿` : '--' }}</span>
-                        <span>在管基金: {{ m.fundCount != null ? `${m.fundCount}只` : '--' }}</span>
-                      </div>
-
-                      <div v-if="m.bestReturn != null" class="manager-return">
-                        任职回报:
-                        <span :class="growthClass(m.bestReturn)">{{ formatGrowth(m.bestReturn) }}</span>
-                      </div>
-
-                      <div v-if="m.investmentIdea" class="expand-block">
-                        <div
-                          class="expand-content"
-                          :class="{ 'expand-content--collapsed': !expandedIdeas[m.managerId] && shouldCollapse(m.investmentIdea, 90) }"
-                        >
-                          <span class="expand-label">投资理念：</span>{{ m.investmentIdea }}
-                        </div>
-                        <n-button
-                          v-if="shouldCollapse(m.investmentIdea, 90)"
-                          text
-                          size="tiny"
-                          class="expand-btn"
-                          @click="expandedIdeas[m.managerId] = !expandedIdeas[m.managerId]"
-                        >
-                          {{ expandedIdeas[m.managerId] ? '收起' : '展开' }}
-                        </n-button>
-                      </div>
-
-                      <div v-if="m.resume" class="expand-block">
-                        <div
-                          class="expand-content"
-                          :class="{ 'expand-content--collapsed': !expandedResumes[m.managerId] && shouldCollapse(m.resume, 120) }"
-                        >
-                          <span class="expand-label">简介：</span>{{ m.resume }}
-                        </div>
-                        <n-button
-                          v-if="shouldCollapse(m.resume, 120)"
-                          text
-                          size="tiny"
-                          class="expand-btn"
-                          @click="expandedResumes[m.managerId] = !expandedResumes[m.managerId]"
-                        >
-                          {{ expandedResumes[m.managerId] ? '收起' : '展开' }}
-                        </n-button>
-                      </div>
-                    </div>
+                <div class="manager-info">
+                  <div class="manager-header">
+                    <div class="manager-name">{{ m.managerName }}</div>
+                    <n-tag size="small" type="info">{{ m.company || '基金经理' }}</n-tag>
                   </div>
-                </div>
-                <n-empty v-else description="暂无基金经理信息" />
-              </n-spin>
-            </n-tab-pane>
 
-            <n-tab-pane name="holdings" tab="重仓持仓">
-              <n-spin :show="holdingsLoading">
-                <div v-if="holdings.length > 0" class="holdings-section">
-                  <div class="holdings-header">
-                    <span>报告日期: {{ holdings[0]?.reportDate || '--' }}</span>
-                    <n-button v-if="holdings.length > 5" text size="small" @click="expandHoldings = !expandHoldings">
-                      {{ expandHoldings ? '收起' : `查看更多(${holdings.length})` }}
+                  <div class="manager-meta">
+                    <span>任职: {{ m.startDate || '--' }}</span>
+                    <span>从业: {{ m.workYears != null ? `${m.workYears}年` : '--' }}</span>
+                    <span>管理规模: {{ m.totalAsset != null ? `${m.totalAsset}亿` : '--' }}</span>
+                    <span>在管基金: {{ m.fundCount != null ? `${m.fundCount}只` : '--' }}</span>
+                  </div>
+
+                  <div v-if="m.bestReturn != null" class="manager-return">
+                    任职回报:
+                    <span :class="growthClass(m.bestReturn)">{{ formatGrowth(m.bestReturn) }}</span>
+                  </div>
+
+                  <div v-if="m.investmentIdea" class="expand-block">
+                    <div class="expand-content" :class="{ 'expand-content--collapsed': !expandedIdeas[m.managerId] && shouldCollapse(m.investmentIdea, 90) }">
+                      <span class="expand-label">投资理念：</span>{{ m.investmentIdea }}
+                    </div>
+                    <n-button v-if="shouldCollapse(m.investmentIdea, 90)" text size="tiny" class="expand-btn" @click="expandedIdeas[m.managerId] = !expandedIdeas[m.managerId]">
+                      {{ expandedIdeas[m.managerId] ? '收起' : '展开' }}
                     </n-button>
                   </div>
 
-                  <div class="holdings-list">
-                    <div v-for="(h, index) in visibleHoldings" :key="`${h.stockCode}-${index}`" class="holding-item">
-                      <div class="holding-rank">{{ index + 1 }}</div>
-                      <div class="holding-info">
-                        <div class="stock-name">{{ h.stockName || '--' }}</div>
-                        <div class="stock-code">{{ h.stockCode || '--' }}</div>
-                      </div>
-                      <div class="holding-metric">
-                        <span class="label">持仓比例</span>
-                        <span class="value">{{ h.holdingRatio != null ? `${h.holdingRatio.toFixed(2)}%` : '--' }}</span>
-                      </div>
-                      <div class="holding-metric">
-                        <span class="label">今日涨跌</span>
-                        <span class="value" :class="growthClass(h.dayGrowth)">{{ formatGrowth(h.dayGrowth) }}</span>
-                      </div>
+                  <div v-if="m.resume" class="expand-block">
+                    <div class="expand-content" :class="{ 'expand-content--collapsed': !expandedResumes[m.managerId] && shouldCollapse(m.resume, 120) }">
+                      <span class="expand-label">简介：</span>{{ m.resume }}
                     </div>
+                    <n-button v-if="shouldCollapse(m.resume, 120)" text size="tiny" class="expand-btn" @click="expandedResumes[m.managerId] = !expandedResumes[m.managerId]">
+                      {{ expandedResumes[m.managerId] ? '收起' : '展开' }}
+                    </n-button>
                   </div>
                 </div>
-                <n-empty v-else description="暂无重仓持仓信息" />
-              </n-spin>
-            </n-tab-pane>
+              </div>
+            </div>
+            <n-empty v-else description="暂无基金经理信息" />
+          </n-spin>
+        </section>
 
-            <n-tab-pane name="fee" tab="费率信息">
-              <div class="fee-grid">
-                <div class="fee-item">
-                  <span class="label">管理费</span>
-                  <span class="value">{{ fund.managementRate != null ? `${fund.managementRate}%` : '--' }}</span>
+        <!-- 重仓持仓卡片 -->
+        <section class="info-card card">
+          <h3 class="card-title">
+            <n-icon size="18"><IconBriefcase /></n-icon>
+            重仓持仓
+            <span v-if="holdings.length > 0" class="card-subtitle">报告期: {{ holdings[0]?.reportDate || '--' }}</span>
+          </h3>
+          <n-spin :show="holdingsLoading">
+            <div v-if="holdings.length > 0">
+              <div class="holdings-table">
+                <div class="holdings-table-header">
+                  <span class="col-rank">排名</span>
+                  <span class="col-name">股票名称</span>
+                  <span class="col-code">代码</span>
+                  <span class="col-ratio">持仓占比</span>
+                  <span class="col-growth">今日涨跌</span>
                 </div>
-                <div class="fee-item">
-                  <span class="label">托管费</span>
-                  <span class="value">{{ fund.custodyRate != null ? `${fund.custodyRate}%` : '--' }}</span>
-                </div>
-                <div class="fee-item">
-                  <span class="label">申购费</span>
-                  <span class="value">{{ fund.purchaseRate != null ? `${fund.purchaseRate}%` : '--' }}</span>
-                </div>
-                <div class="fee-item">
-                  <span class="label">赎回费</span>
-                  <span class="value">{{ fund.redemptionRate != null ? `${fund.redemptionRate}%` : '--' }}</span>
+                <div v-for="(h, index) in visibleHoldings" :key="`${h.stockCode}-${index}`" class="holding-row">
+                  <span class="col-rank">
+                    <span class="rank-badge" :class="{ 'rank-badge--top3': index < 3 }">{{ index + 1 }}</span>
+                  </span>
+                  <span class="col-name">{{ h.stockName || '--' }}</span>
+                  <span class="col-code">{{ h.stockCode || '--' }}</span>
+                  <span class="col-ratio">
+                    <div class="ratio-bar-wrap">
+                      <div class="ratio-bar" :style="{ width: Math.min(h.holdingRatio || 0, 10) / 10 * 100 + '%' }"></div>
+                      <span class="ratio-text">{{ h.holdingRatio != null ? h.holdingRatio.toFixed(2) + '%' : '--' }}</span>
+                    </div>
+                  </span>
+                  <span class="col-growth" :class="growthClass(h.dayGrowth)">{{ formatGrowth(h.dayGrowth) }}</span>
                 </div>
               </div>
-            </n-tab-pane>
-          </n-tabs>
+              <div v-if="holdings.length > 5" class="holdings-expand">
+                <n-button text size="small" @click="expandHoldings = !expandHoldings">
+                  {{ expandHoldings ? '收起' : `展开全部 ${holdings.length} 只` }}
+                  <template #icon>
+                    <n-icon><IconChevronDown /></n-icon>
+                  </template>
+                </n-button>
+              </div>
+            </div>
+            <n-empty v-else description="暂无重仓持仓信息" />
+          </n-spin>
+        </section>
+
+        <!-- 费率信息卡片 -->
+        <section class="info-card card">
+          <h3 class="card-title">
+            <n-icon size="18"><IconCoin /></n-icon>
+            费率信息
+          </h3>
+          <div class="fee-grid">
+            <div class="fee-item">
+              <span class="label">管理费</span>
+              <span class="value">{{ fund.managementRate != null ? `${fund.managementRate}%` : '--' }}</span>
+            </div>
+            <div class="fee-item">
+              <span class="label">托管费</span>
+              <span class="value">{{ fund.custodyRate != null ? `${fund.custodyRate}%` : '--' }}</span>
+            </div>
+            <div class="fee-item">
+              <span class="label">申购费</span>
+              <span class="value">{{ fund.purchaseRate != null ? `${fund.purchaseRate}%` : '--' }}</span>
+            </div>
+            <div class="fee-item">
+              <span class="label">赎回费</span>
+              <span class="value">{{ fund.redemptionRate != null ? `${fund.redemptionRate}%` : '--' }}</span>
+            </div>
+          </div>
         </section>
       </template>
     </n-spin>
@@ -246,12 +260,19 @@ import {
   NEmpty,
   NIcon,
   NSpin,
-  NTabPane,
-  NTabs,
   NTag,
   createDiscreteApi,
 } from 'naive-ui'
-import { IconStar, IconTrendingUp } from '@tabler/icons-vue'
+import {
+  IconStar,
+  IconTrendingUp,
+  IconInfoCircle,
+  IconChartBar,
+  IconUser,
+  IconBriefcase,
+  IconCoin,
+  IconChevronDown,
+} from '@tabler/icons-vue'
 import { favoriteApi, fundApi } from '../api/fund'
 import { useAuthStore } from '../stores/auth'
 import FundTrendChart from '../components/FundTrendChart.vue'
@@ -263,7 +284,6 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const activeTab = ref('overview')
 const fund = ref<FundDetailVO>()
 const navHistory = ref<FundNavHistoryVO[]>([])
 const managers = ref<FundManagerVO[]>([])
@@ -337,6 +357,11 @@ const formatGrowth = (value?: number) => {
 const growthClass = (value?: number) => {
   if (value == null) return ''
   return value >= 0 ? 'growth-positive' : 'growth-negative'
+}
+
+const growthBgClass = (value?: number) => {
+  if (value == null) return ''
+  return value >= 0 ? 'perf-block--up' : 'perf-block--down'
 }
 
 const shouldCollapse = (text?: string, limit: number = 120) => {
@@ -433,7 +458,6 @@ watch(
   async (code) => {
     if (!code) return
     resetExpandState()
-    activeTab.value = 'overview'
     await Promise.all([loadFundDetail(), loadManagers(), loadHoldings()])
   },
   { immediate: true }
@@ -514,22 +538,36 @@ watch(
   font-weight: 650;
 }
 
-.info-tabs {
-  padding: 18px;
+/* 卡片公共样式 */
+.info-card {
+  padding: 20px;
 }
 
-.overview-grid,
-.performance-grid,
-.fee-grid {
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-color);
+}
+
+.card-subtitle {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* 概览 */
+.overview-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  padding: 12px 0;
 }
 
-.overview-item,
-.perf-item,
-.fee-item {
+.overview-item {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -539,37 +577,66 @@ watch(
   gap: 6px;
 }
 
-.overview-item .label,
-.perf-item .label,
-.fee-item .label {
+.overview-item .label {
   color: var(--text-secondary);
   font-size: 12px;
 }
 
-.overview-item .value,
-.perf-item .value,
-.fee-item .value {
-  font-size: 18px;
+.overview-item .value {
+  font-size: 16px;
   font-weight: 600;
 }
 
-.manager-list,
-.holdings-list {
+/* 业绩表现 */
+.performance-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.perf-block {
+  text-align: center;
+  padding: 14px 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.perf-block--up {
+  background: rgba(207, 19, 34, 0.06);
+  border-color: rgba(207, 19, 34, 0.15);
+}
+
+.perf-block--down {
+  background: rgba(0, 128, 0, 0.06);
+  border-color: rgba(0, 128, 0, 0.15);
+}
+
+.perf-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.perf-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+/* 基金经理 */
+.manager-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 10px;
 }
 
-.manager-card,
-.holding-item {
+.manager-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 14px;
-}
-
-.manager-card {
   display: flex;
   align-items: flex-start;
   gap: 14px;
@@ -633,71 +700,144 @@ watch(
   margin-top: 2px;
 }
 
-.holdings-header {
+/* 重仓持仓 - 表格 */
+.holdings-table {
+  width: 100%;
+}
+
+.holdings-table-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
   color: var(--text-secondary);
-  font-size: 13px;
-  margin-top: 4px;
+  font-weight: 600;
 }
 
-.holding-item {
+.holding-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
 }
 
-.holding-rank {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
+.holding-row:last-child {
+  border-bottom: none;
+}
+
+.col-rank {
+  width: 50px;
   flex-shrink: 0;
 }
 
-.holding-info {
+.col-name {
   flex: 1;
   min-width: 0;
-}
-
-.stock-name {
-  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.stock-code {
+.col-code {
+  width: 80px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
   font-size: 12px;
-  color: var(--text-secondary);
+  font-family: var(--font-number);
 }
 
-.holding-metric {
-  min-width: 92px;
+.col-ratio {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.col-growth {
+  width: 90px;
+  flex-shrink: 0;
   text-align: right;
+  font-weight: 600;
+  font-family: var(--font-number);
 }
 
-.holding-metric .label {
-  display: block;
-  font-size: 11px;
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 700;
   color: var(--text-secondary);
-  margin-bottom: 2px;
 }
 
-.holding-metric .value {
-  font-size: 15px;
+.rank-badge--top3 {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+.ratio-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ratio-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--primary-color);
+  min-width: 4px;
+  flex: 1;
+  max-width: 100px;
+  opacity: 0.6;
+}
+
+.ratio-text {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-number);
+  white-space: nowrap;
+}
+
+.holdings-expand {
+  text-align: center;
+  padding-top: 8px;
+}
+
+/* 费率 */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fee-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fee-item .label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.fee-item .value {
+  font-size: 16px;
   font-weight: 600;
 }
 
+/* 涨跌颜色 */
 .growth-positive {
   color: var(--up-color);
 }
@@ -706,13 +846,20 @@ watch(
   color: var(--down-color);
 }
 
+/* 响应式 */
 @media (max-width: 1200px) {
   .kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .overview-grid,
-  .performance-grid,
+  .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .performance-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .fee-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -732,20 +879,33 @@ watch(
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .overview-grid,
-  .performance-grid,
-  .fee-grid {
+  .overview-grid {
     grid-template-columns: 1fr;
   }
 
-  .holding-item {
-    flex-wrap: wrap;
+  .performance-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .holding-metric {
-    min-width: 0;
-    width: calc(50% - 7px);
-    text-align: left;
+  .fee-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .holdings-table-header,
+  .holding-row {
+    font-size: 13px;
+  }
+
+  .col-ratio {
+    width: 120px;
+  }
+
+  .col-code {
+    display: none;
+  }
+
+  .col-growth {
+    width: 70px;
   }
 }
 </style>

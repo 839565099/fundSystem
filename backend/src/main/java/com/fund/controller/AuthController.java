@@ -4,7 +4,9 @@ import com.fund.common.Result;
 import com.fund.dto.*;
 import com.fund.entity.User;
 import com.fund.service.PasswordResetService;
+import com.fund.service.SessionService;
 import com.fund.service.UserService;
+import com.fund.vo.LoginVO;
 import com.fund.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,17 +20,24 @@ public class AuthController {
 
     private final UserService userService;
     private final PasswordResetService passwordResetService;
-    
+    private final SessionService sessionService;
+
     @PostMapping("/register")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO registerDTO) {
         UserVO user = userService.register(registerDTO);
         return Result.success("注册成功", user);
     }
-    
+
     @PostMapping("/login")
-    public Result<String> login(@Valid @RequestBody LoginDTO loginDTO) {
-        String token = userService.login(loginDTO);
-        return Result.success("登录成功", token);
+    public Result<LoginVO> login(@Valid @RequestBody LoginDTO loginDTO) {
+        LoginVO loginVO = userService.login(loginDTO);
+        return Result.success("登录成功", loginVO);
+    }
+
+    @PostMapping("/logout")
+    public Result<?> logout(@RequestAttribute Long userId) {
+        sessionService.destroySession(userId);
+        return Result.success("已退出登录");
     }
     
     @GetMapping("/info")

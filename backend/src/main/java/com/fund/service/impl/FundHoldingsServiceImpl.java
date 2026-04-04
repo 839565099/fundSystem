@@ -103,8 +103,13 @@ public class FundHoldingsServiceImpl implements FundHoldingsService {
     private boolean isValidHolding(FundHoldings holding) {
         if (holding == null) return false;
         String code = holding.getStockCode();
-        if (code == null || !code.matches("\\d{6}")) return false;
-        String name = holding.getStockName();
-        return name == null || !name.matches("\\d{6}");
+        if (code == null || code.isEmpty()) return false;
+        // A股/港股：6位数字
+        if (code.matches("\\d{6}")) return true;
+        // 海外股票代码：1-5个字母（如 GOOG、NVDA）
+        if (code.matches("[A-Z]{1,5}(\\.\\w)?")) return true;
+        // 5位数字（港股如 09992）
+        if (code.matches("\\d{5}")) return true;
+        return false;
     }
 }

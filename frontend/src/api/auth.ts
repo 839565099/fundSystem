@@ -1,6 +1,18 @@
 import api from './index'
 import type { LoginDTO, RegisterDTO, UserVO, UserStats, Result } from '../types'
 
+export interface LoginResponse {
+  token: string
+  user: UserVO
+  sessionInfo: {
+    sessionId: string
+    loginTime: string
+    expireTime: string
+    maxDurationMinutes: number
+    warningMinutes: number
+  }
+}
+
 const handleResponse = <T>(response: { data: Result<T> }): T => {
   const res = response.data
   if (res.code !== 200) {
@@ -10,14 +22,18 @@ const handleResponse = <T>(response: { data: Result<T> }): T => {
 }
 
 export const authApi = {
-  login: async (data: LoginDTO) => {
-    const response = await api.post<Result<string>>('/auth/login', data)
+  login: async (data: LoginDTO): Promise<LoginResponse> => {
+    const response = await api.post<Result<LoginResponse>>('/auth/login', data)
     return handleResponse(response)
   },
 
   register: async (data: RegisterDTO) => {
     const response = await api.post<Result<UserVO>>('/auth/register', data)
     return handleResponse(response)
+  },
+
+  logout: async () => {
+    await api.post<Result<null>>('/auth/logout')
   },
 
   getProfile: async () => {
@@ -40,7 +56,6 @@ export const authApi = {
     return handleResponse(response)
   },
 
-  // 密码重置相关
   forgotPassword: async (email: string, type: 'link' | 'code' = 'link') => {
     const response = await api.post<Result<string>>('/auth/forgot-password', { email, type })
     return handleResponse(response)

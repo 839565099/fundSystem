@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fund.dto.FundSearchDTO;
 import com.fund.entity.Fund;
 import com.fund.external.FundDataApiService;
+import com.fund.external.FundDetailApiService;
 import com.fund.mapper.FundMapper;
 import com.fund.service.FundNavHistoryService;
 import com.fund.service.FundService;
@@ -34,6 +35,7 @@ public class FundServiceImpl implements FundService {
     private final FundMapper fundMapper;
     private final FundNavHistoryService navHistoryService;
     private final FundDataApiService fundDataApiService;
+    private final FundDetailApiService fundDetailApiService;
     private final RedisTemplate<String, Object> redisTemplate;
     
     private static final String FUND_CACHE_PREFIX = "fund:";
@@ -202,11 +204,20 @@ public class FundServiceImpl implements FundService {
                 fundMapper.insert(fund);
             }
         }
-        
+
         if (fund == null) {
             return null;
         }
-        
+
+        // 补充基金公司、风险等级、费率等缺失数据
+        boolean needsExtra = fund.getFundCompany() == null
+            || fund.getRiskLevel() == null
+            || fund.getManagementRate() == null;
+        if (needsExtra) {
+            fundDetailApiService.fillFundExtraInfo(fund);
+            fundMapper.updateById(fund);
+        }
+
         return convertToDetailVO(fund);
     }
     

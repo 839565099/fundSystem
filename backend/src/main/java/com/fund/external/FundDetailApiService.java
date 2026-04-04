@@ -3,6 +3,7 @@ package com.fund.external;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.fund.entity.Fund;
 import com.fund.entity.FundHoldings;
 import com.fund.entity.FundManager;
 import lombok.extern.slf4j.Slf4j;
@@ -480,15 +481,28 @@ public class FundDetailApiService {
 
     private String extractStockCode(String text) {
         if (text == null) return "";
-        Matcher matcher = Pattern.compile("(\\d{6})").matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1);
+        // 优先匹配6位数字（A股/港股代码）
+        Matcher digitMatcher = Pattern.compile("(\\d{6})").matcher(text);
+        if (digitMatcher.find()) {
+            return digitMatcher.group(1);
+        }
+        // 匹配海外股票代码（字母+数字组合，如 GOOG、NVDA、09992）
+        Matcher alphaMatcher = Pattern.compile("\\b([A-Z]{1,5}\\d{0,5}|\\d{5})\\b").matcher(text);
+        if (alphaMatcher.find()) {
+            return alphaMatcher.group(1);
         }
         return "";
     }
 
     private boolean isStockCode(String text) {
-        return text != null && text.matches("\\d{6}");
+        if (text == null || text.isEmpty()) return false;
+        // A股/港股：6位数字
+        if (text.matches("\\d{6}")) return true;
+        // 海外股票：1-5个字母（可能带数字），如 GOOG、NVDA、BRK.B
+        if (text.matches("[A-Z]{1,5}(\\.\\w)?")) return true;
+        // 5位纯数字（港股代码，如 09992）
+        if (text.matches("\\d{5}")) return true;
+        return false;
     }
 
     private String cleanCellText(String text) {
@@ -673,10 +687,13 @@ public class FundDetailApiService {
                     if (secids.length() > 0) {
                         secids.append(",");
                     }
-                    if (code.startsWith("6")) {
+                    if (code.matches("[A-Z]+.*")) {
+                        // 海外股票：美股用105.前缀
+                        secids.append("105.").append(code);
+                    } else if (code.startsWith("6")) {
                         secids.append("1.").append(code);  // 沪市
-                    } else if (code.length() == 5 && code.startsWith("0")) {
-                        secids.append("116.").append(code); // 港股
+                    } else if (code.length() == 5) {
+                        secids.append("116.").append(code); // 港股5位代码
                     } else {
                         secids.append("0.").append(code);  // 深市/创业板
                     }
@@ -718,6 +735,115 @@ public class FundDetailApiService {
             log.error("获取股票实时数据失败", e);
         }
         return result;
+    }
+
+    /**
+     * 获取基金补充信息：基金公司、风险等级、费率
+     */
+    public void fillFundExtraInfo(Fund fund) {
+        if (fund == null || fund.getFundCode() == null) return;
+        try {
+            String url = "https://fundmobapi.eastmoney.com/FundMNewApi/FundMNFInfo?FCODE=" + fund.getFundCode();
+            String response = httpGet(url);
+            if (response == null) return;
+
+            JSONObject json = JSONUtil.parseObj(response);
+
+            // 尝试从 Expansion 或 Datas 获取数据
+            JSONObject data = json.getJSONObject("Expansion");
+            if (data == null) {
+                JSONArray datas = json.getJSONArray("Datas");
+                if (datas != null && !datas.isEmpty()) {
+                    data = datas.getJSONObject(0);
+                }
+            }
+            if (data == null) return;
+
+            // 基金公司
+            if (fund.getFundCompany() == null) {
+                String company = data.getStr("JJGS");
+                if (company != null && !company.isEmpty()) {
+                    fund.setFundCompany(company);
+                }
+            }
+
+            // 风险等级
+            if (fund.getRiskLevel() == null) {
+                String riskLevel = data.getStr("RISKLEVEL");
+                if (riskLevel != null && !riskLevel.isEmpty()) {
+                    try {
+                        fund.setRiskLevel(Integer.parseInt(riskLevel));
+                    } catch (NumberFormatException e) {
+                        log.warn("解析风险等级失败: {}", riskLevel);
+                    }
+                }
+            }
+
+            // 管理费
+            if (fund.getManagementRate() == null) {
+                String mgrRate = data.getStr("MGRATE");
+                if (mgrRate != null && !mgrRate.isEmpty()) {
+                    try {
+                        fund.setManagementRate(new BigDecimal(mgrRate));
+                    } catch (Exception e) {
+                        log.warn("解析管理费失败: {}", mgrRate);
+                    }
+                }
+            }
+
+            // 托管费
+            if (fund.getCustodyRate() == null) {
+                String tcRate = data.getStr("TCRATE");
+                if (tcRate != null && !tcRate.isEmpty()) {
+                    try {
+                        fund.setCustodyRate(new BigDecimal(tcRate));
+                    } catch (Exception e) {
+                        log.warn("解析托管费失败: {}", tcRate);
+                    }
+                }
+            }
+
+            // 申购费
+            if (fund.getPurchaseRate() == null) {
+                String sgRate = data.getStr("SGRATE");
+                if (sgRate != null && !sgRate.isEmpty()) {
+                    try {
+                        fund.setPurchaseRate(new BigDecimal(sgRate));
+                    } catch (Exception e) {
+                        log.warn("解析申购费失败: {}", sgRate);
+                    }
+                }
+            }
+
+            // 赎回费
+            if (fund.getRedemptionRate() == null) {
+                String shRate = data.getStr("SHRATE");
+                if (shRate != null && !shRate.isEmpty()) {
+                    try {
+                        fund.setRedemptionRate(new BigDecimal(shRate));
+                    } catch (Exception e) {
+                        log.warn("解析赎回费失败: {}", shRate);
+                    }
+                }
+            }
+
+            // 最低申购
+            if (fund.getMinPurchase() == null) {
+                String minPurchase = data.getStr("MINPURCHASE");
+                if (minPurchase != null && !minPurchase.isEmpty()) {
+                    try {
+                        fund.setMinPurchase(new BigDecimal(minPurchase));
+                    } catch (Exception e) {
+                        log.warn("解析最低申购失败: {}", minPurchase);
+                    }
+                }
+            }
+
+            log.info("获取基金补充信息成功: {} - 公司={}, 风险等级={}",
+                fund.getFundCode(), fund.getFundCompany(), fund.getRiskLevel());
+        } catch (Exception e) {
+            log.warn("获取基金补充信息失败: {}", fund.getFundCode(), e);
+        }
     }
 
     // --- JS 解析工具方法（从 FundDataApiService 搬移） ---

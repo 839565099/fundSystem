@@ -4,6 +4,8 @@
       <n-dialog-provider>
         <n-notification-provider>
           <div class="app-container" :class="{ 'dark-mode': isDark }">
+            <!-- 会话倒计时 -->
+            <SessionCountdown />
             <!-- 认证页面（登录/注册等）直接显示 router-view -->
             <router-view v-if="isAuthPage" v-slot="{ Component }">
               <transition name="page" mode="out-in">
@@ -209,6 +211,7 @@ import { useThemeStore } from './stores/theme'
 import { lightThemeOverrides, darkThemeOverrides } from './styles/naive-theme'
 import MobileNav from './components/MobileNav.vue'
 import NotificationBell from './components/NotificationBell.vue'
+import SessionCountdown from './components/SessionCountdown.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -341,9 +344,9 @@ const handleMobileMenuClick = (key: string) => {
   showMobileMenu.value = false
 }
 
-const handleUserAction = (key: string) => {
+const handleUserAction = async (key: string) => {
   if (key === 'logout') {
-    authStore.logout()
+    await authStore.logout()
     router.push('/login')
   } else if (key === 'profile') {
     router.push('/profile')

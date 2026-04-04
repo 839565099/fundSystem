@@ -77,6 +77,9 @@ import {
   IconLogout,
   IconUser,
   IconChartBar,
+  IconClock,
+  IconSettings,
+  IconHistory,
 } from '@tabler/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -94,6 +97,11 @@ const renderIcon = (icon: any) => {
 const menuOptions: MenuOption[] = [
   { label: '管理概览', key: 'AdminDashboard', icon: renderIcon(IconChartBar) },
   { label: '用户管理', key: 'AdminUsers', icon: renderIcon(IconUsers) },
+  { type: 'divider', key: 'd-session' },
+  { label: '会话管理', key: 'AdminSessions', icon: renderIcon(IconClock) },
+  { label: '会话配置', key: 'AdminSessionConfig', icon: renderIcon(IconSettings) },
+  { label: '会话日志', key: 'AdminSessionLogs', icon: renderIcon(IconHistory) },
+  { type: 'divider', key: 'd-logs' },
   { label: '操作日志', key: 'AdminLogs', icon: renderIcon(IconFileText) },
 ]
 
@@ -107,6 +115,9 @@ const handleMenuClick = (key: string) => {
   const pathMap: Record<string, string> = {
     AdminDashboard: '/admin',
     AdminUsers: '/admin/users',
+    AdminSessions: '/admin/sessions',
+    AdminSessionConfig: '/admin/session-config',
+    AdminSessionLogs: '/admin/session-logs',
     AdminLogs: '/admin/logs',
   }
   const path = pathMap[key]
@@ -115,9 +126,9 @@ const handleMenuClick = (key: string) => {
   }
 }
 
-const handleUserAction = (key: string) => {
+const handleUserAction = async (key: string) => {
   if (key === 'logout') {
-    authStore.logout()
+    await authStore.logout()
     router.push('/login')
   } else if (key === 'profile') {
     router.push('/profile')

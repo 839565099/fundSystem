@@ -2,6 +2,7 @@
   <div class="portfolio-page page-container">
     <PageHeader title="投资组合" icon="💼">
       <template #actions>
+        <PrivacyToggle />
         <n-button type="primary" @click="showCreateModal = true">
           <template #icon>
             <n-icon><AddOutline /></n-icon>
@@ -29,18 +30,18 @@
           <div class="portfolio-stats">
             <div class="stat">
               <div class="label">总资产</div>
-              <div class="value">{{ formatMoney(portfolio.currentValue) }}</div>
+              <div class="value">{{ isHidden ? '****' : formatMoney(portfolio.currentValue) }}</div>
             </div>
             <div class="stat">
               <div class="label">总收益</div>
-              <div class="value" :class="portfolio.totalReturn >= 0 ? 'positive' : 'negative'">
-                {{ portfolio.totalReturn >= 0 ? '+' : '' }}{{ portfolio.totalProfit?.toFixed(2) }}
+              <div class="value" :class="!isHidden && portfolio.totalReturn >= 0 ? 'positive' : (!isHidden && portfolio.totalReturn < 0 ? 'negative' : '')">
+                {{ isHidden ? '****' : (portfolio.totalReturn >= 0 ? '+' : '') + portfolio.totalProfit?.toFixed(2) }}
               </div>
             </div>
             <div class="stat">
               <div class="label">收益率</div>
-              <div class="value" :class="portfolio.totalReturn >= 0 ? 'positive' : 'negative'">
-                {{ portfolio.totalReturn >= 0 ? '+' : '' }}{{ portfolio.totalReturn?.toFixed(2) }}%
+              <div class="value" :class="!isHidden && portfolio.totalReturn >= 0 ? 'positive' : (!isHidden && portfolio.totalReturn < 0 ? 'negative' : '')">
+                {{ isHidden ? '****' : (portfolio.totalReturn >= 0 ? '+' : '') + portfolio.totalReturn?.toFixed(2) + '%' }}
               </div>
             </div>
             <div class="stat">
@@ -92,11 +93,14 @@ import { useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NTag, NSpin, NEmpty, NModal, NForm, NFormItem, NInput, useMessage } from 'naive-ui'
 import { IconPlus as AddOutline } from '@tabler/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
+import PrivacyToggle from '../components/PrivacyToggle.vue'
+import { usePrivacy } from '../composables/usePrivacy'
 import { fundApi } from '@/api/fund'
 import type { PortfolioVO } from '@/types'
 
 const router = useRouter()
 const message = useMessage()
+const { isHidden } = usePrivacy()
 
 const loading = ref(false)
 const portfolios = ref<PortfolioVO[]>([])

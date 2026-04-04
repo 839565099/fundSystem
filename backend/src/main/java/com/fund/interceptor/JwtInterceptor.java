@@ -1,5 +1,6 @@
 package com.fund.interceptor;
 
+import com.fund.service.SessionService;
 import com.fund.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,30 +13,44 @@ import javax.servlet.http.HttpServletResponse;
 @Component
 @RequiredArgsConstructor
 public class JwtInterceptor implements HandlerInterceptor {
-    
+
     private final JwtUtil jwtUtil;
-    
+    private final SessionService sessionService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
-        
+
         String token = request.getHeader("Authorization");
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
-            
+
             if (jwtUtil.validateToken(token)) {
                 Long userId = jwtUtil.getUserId(token);
                 String username = jwtUtil.getUsername(token);
                 String role = jwtUtil.getRole(token);
+
+                // 校验 Redis 会话
+                try {
+                    if (!sessionService.validateSession(userId)) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"code\":401,\"message\":\"会话已过期，请重新登录\"}");
+                        return false;
+                    }
+                } catch (Exception e) {
+                    log.warn("会话校验异常，降级放行: {}", e.getMessage());
+                }
+
                 request.setAttribute("userId", userId);
                 request.setAttribute("username", username);
                 request.setAttribute("role", role);
                 return true;
             }
         }
-        
+
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"code\":401,\"message\":\"未授权，请先登录\"}");

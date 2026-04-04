@@ -4,14 +4,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fund.dto.LoginDTO;
 import com.fund.dto.RegisterDTO;
 import com.fund.entity.User;
+import com.fund.vo.LoginVO;
 import com.fund.vo.UserVO;
 import java.util.Map;
 
 public interface UserService {
-    
+
     UserVO register(RegisterDTO registerDTO);
-    
-    String login(LoginDTO loginDTO);
+
+    LoginVO login(LoginDTO loginDTO);
     
     UserVO getUserInfo(Long userId);
     

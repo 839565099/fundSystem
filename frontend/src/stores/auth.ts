@@ -1,21 +1,31 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authApi } from '../api/auth'
+import { authApi, type LoginResponse } from '../api/auth'
 import type { UserVO, LoginDTO, RegisterDTO } from '../types'
+
+export interface SessionInfo {
+  sessionId: string
+  loginTime: string
+  expireTime: string
+  maxDurationMinutes: number
+  warningMinutes: number
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
   const user = ref<UserVO | null>(null)
+  const sessionInfo = ref<SessionInfo | null>(null)
 
   const isLoggedIn = computed(() => !!token.value)
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
   const role = computed(() => user.value?.role || 'USER')
 
   const login = async (data: LoginDTO) => {
-    const tokenValue = await authApi.login(data)
-    token.value = tokenValue
-    localStorage.setItem('token', tokenValue)
-    await fetchProfile()
+    const loginResponse: LoginResponse = await authApi.login(data)
+    token.value = loginResponse.token
+    user.value = loginResponse.user
+    sessionInfo.value = loginResponse.sessionInfo
+    localStorage.setItem('token', loginResponse.token)
   }
 
   const register = async (data: RegisterDTO) => {
@@ -23,9 +33,22 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = userVO
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // 即使后端登出失败也要清理前端状态
+    }
     token.value = null
     user.value = null
+    sessionInfo.value = null
+    localStorage.removeItem('token')
+  }
+
+  const forceLogout = () => {
+    token.value = null
+    user.value = null
+    sessionInfo.value = null
     localStorage.removeItem('token')
   }
 
@@ -33,11 +56,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return
     try {
       user.value = await authApi.getProfile()
-      console.log('fetchProfile result:', user.value)
-      console.log('role:', user.value?.role)
     } catch (e) {
       console.error('fetchProfile error:', e)
-      logout()
+      forceLogout()
     }
   }
 
@@ -48,12 +69,14 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     token,
     user,
+    sessionInfo,
     isLoggedIn,
     isAdmin,
     role,
     login,
     register,
     logout,
+    forceLogout,
     fetchProfile,
   }
 })

@@ -267,6 +267,13 @@ onMounted(() => {
     form.username = savedUsername
     rememberMe.value = true
   }
+  // 检查是否因会话过期被强制下线
+  const reason = route.query.reason as string
+  if (reason === 'session_expired') {
+    message.warning('会话已过期，请重新登录')
+  } else if (reason === 'admin_kicked') {
+    message.warning('您已被管理员强制下线')
+  }
   initParticles()
 })
 
