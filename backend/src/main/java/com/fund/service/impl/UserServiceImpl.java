@@ -200,6 +200,121 @@ public class UserServiceImpl implements UserService {
         return stats;
     }
     
+    @Override
+    public User findByEmail(String email) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getEmail, email);
+        return userMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public User findByGoogleId(String googleId) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getGoogleId, googleId);
+        return userMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public LoginVO loginWithGoogle(String googleId, String email, String name, String avatar, HttpServletRequest request) {
+        // 1. 先通过 googleId 查找
+        User user = findByGoogleId(googleId);
+
+        if (user == null && email != null) {
+            // 2. 通过 email 查找已有账号，关联 googleId
+            user = findByEmail(email);
+            if (user != null) {
+                user.setGoogleId(googleId);
+                if (avatar != null && (user.getAvatar() == null || user.getAvatar().isEmpty())) {
+                    user.setAvatar(avatar);
+                }
+                userMapper.updateById(user);
+            }
+        }
+
+        if (user == null) {
+            // 3. 自动创建新用户
+            user = new User();
+            String baseUsername = email != null ? email.split("@")[0] : "google_" + googleId.substring(0, 8);
+            user.setUsername(generateUniqueUsername(baseUsername));
+            user.setPassword(BCrypt.hashpw(java.util.UUID.randomUUID().toString()));
+            user.setEmail(email);
+            user.setNickname(name != null ? name : baseUsername);
+            user.setAvatar(avatar);
+            user.setGoogleId(googleId);
+            user.setStatus(1);
+            user.setRole("USER");
+            userMapper.insert(user);
+        }
+
+        // 4. 检查用户状态
+        if (user.getStatus() != 1) {
+            throw new BusinessException(ErrorCode.USER_DISABLED);
+        }
+
+        // 5. 更新登录时间
+        user.setLastLoginTime(LocalDateTime.now());
+        userMapper.updateById(user);
+
+        // 6. 签发 JWT + 创建会话
+        String role = user.getRole() != null ? user.getRole() : "USER";
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), role);
+
+        LoginVO.SessionInfo sessionInfo = sessionService.createSession(
+                user.getId(), user.getUsername(), role, request);
+
+        LoginVO loginVO = new LoginVO();
+        loginVO.setToken(token);
+        loginVO.setUser(convertToVO(user));
+        loginVO.setSessionInfo(sessionInfo);
+        return loginVO;
+    }
+
+    private String generateUniqueUsername(String base) {
+        String username = base;
+        int suffix = 1;
+        while (getByUsername(username) != null) {
+            username = base + suffix;
+            suffix++;
+        }
+        return username;
+    }
+
+    @Override
+    public UserVO updateUsername(Long userId, String newUsername) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, newUsername);
+        wrapper.ne(User::getId, userId);
+        if (userMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException(ErrorCode.USERNAME_EXISTS);
+        }
+        user.setUsername(newUsername);
+        userMapper.updateById(user);
+        return convertToVO(user);
+    }
+
+    @Override
+    public void setPassword(Long userId, String password) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        user.setPassword(BCrypt.hashpw(password));
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public boolean hasPassword(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return user.getPassword() != null && !user.getPassword().isEmpty();
+    }
+
     private UserVO convertToVO(User user) {
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);

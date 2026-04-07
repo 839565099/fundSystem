@@ -63,6 +63,10 @@
             <span class="meta-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               {{ user?.email || '暂无邮箱' }}
+              <span v-if="user?.email && user.emailVerified === 1" class="verified-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                已验证
+              </span>
             </span>
             <span class="meta-divider"></span>
             <span class="meta-item" v-if="user?.phone">
@@ -140,11 +144,16 @@
             <n-form :model="profileForm" label-placement="top">
               <div class="form-grid">
                 <n-form-item label="用户名">
-                  <n-input v-model:value="profileForm.username" disabled>
-                    <template #prefix>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </template>
-                  </n-input>
+                  <div class="username-field">
+                    <n-input v-model:value="profileForm.username" placeholder="设置用户名" maxlength="20" show-count>
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </template>
+                    </n-input>
+                    <n-button type="primary" size="small" :loading="usernameLoading" @click="handleUpdateUsername" :disabled="profileForm.username === user?.username">
+                      保存
+                    </n-button>
+                  </div>
                 </n-form-item>
                 <n-form-item label="昵称">
                   <n-input v-model:value="profileForm.nickname" placeholder="设置你的昵称" maxlength="20" show-count>
@@ -179,40 +188,74 @@
 
         <n-tab-pane name="password" tab="安全设置">
           <div class="form-container">
-            <div class="form-header">
-              <h3>修改密码</h3>
-              <p>定期修改密码可以提高账号安全性</p>
-            </div>
-            <n-form ref="pwdFormRef" :model="passwordForm" :rules="pwdRules" label-placement="top">
-              <div class="form-grid form-grid--single">
-                <n-form-item path="oldPassword" label="当前密码">
-                  <n-input v-model:value="passwordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password-on="click">
-                    <template #prefix>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    </template>
-                  </n-input>
-                </n-form-item>
-                <n-form-item path="newPassword" label="新密码">
-                  <n-input v-model:value="passwordForm.newPassword" type="password" placeholder="至少6个字符" show-password-on="click">
-                    <template #prefix>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                    </template>
-                  </n-input>
-                </n-form-item>
-                <n-form-item path="confirmPassword" label="确认新密码">
-                  <n-input v-model:value="passwordForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password-on="click">
-                    <template #prefix>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </template>
-                  </n-input>
-                </n-form-item>
+            <!-- 未设置密码 -->
+            <template v-if="!userHasPassword">
+              <div class="form-header">
+                <h3>设置密码</h3>
+                <p>设置密码后可使用用户名+密码登录</p>
               </div>
-              <div class="form-actions">
-                <n-button type="primary" :loading="pwdLoading" @click="handleChangePassword" size="large">
-                  修改密码
-                </n-button>
+              <n-form ref="setPwdFormRef" :model="setPasswordForm" :rules="setPwdRules" label-placement="top">
+                <div class="form-grid form-grid--single">
+                  <n-form-item path="password" label="新密码">
+                    <n-input v-model:value="setPasswordForm.password" type="password" placeholder="至少6个字符" show-password-on="click">
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </template>
+                    </n-input>
+                  </n-form-item>
+                  <n-form-item path="confirmPassword" label="确认密码">
+                    <n-input v-model:value="setPasswordForm.confirmPassword" type="password" placeholder="再次输入密码" show-password-on="click">
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      </template>
+                    </n-input>
+                  </n-form-item>
+                </div>
+                <div class="form-actions">
+                  <n-button type="primary" :loading="setPwdLoading" @click="handleSetPassword" size="large">
+                    设置密码
+                  </n-button>
+                </div>
+              </n-form>
+            </template>
+
+            <!-- 已有密码 -->
+            <template v-else>
+              <div class="form-header">
+                <h3>修改密码</h3>
+                <p>定期修改密码可以提高账号安全性</p>
               </div>
-            </n-form>
+              <n-form ref="pwdFormRef" :model="passwordForm" :rules="pwdRules" label-placement="top">
+                <div class="form-grid form-grid--single">
+                  <n-form-item path="oldPassword" label="当前密码">
+                    <n-input v-model:value="passwordForm.oldPassword" type="password" placeholder="请输入当前密码" show-password-on="click">
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </template>
+                    </n-input>
+                  </n-form-item>
+                  <n-form-item path="newPassword" label="新密码">
+                    <n-input v-model:value="passwordForm.newPassword" type="password" placeholder="至少6个字符" show-password-on="click">
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                      </template>
+                    </n-input>
+                  </n-form-item>
+                  <n-form-item path="confirmPassword" label="确认新密码">
+                    <n-input v-model:value="passwordForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password-on="click">
+                      <template #prefix>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      </template>
+                    </n-input>
+                  </n-form-item>
+                </div>
+                <div class="form-actions">
+                  <n-button type="primary" :loading="pwdLoading" @click="handleChangePassword" size="large">
+                    修改密码
+                  </n-button>
+                </div>
+              </n-form>
+            </template>
           </div>
         </n-tab-pane>
       </n-tabs>
@@ -281,9 +324,18 @@ const passwordForm = reactive({
   confirmPassword: '',
 })
 
+const setPasswordForm = reactive({
+  password: '',
+  confirmPassword: '',
+})
+
 const saveLoading = ref(false)
 const pwdLoading = ref(false)
+const usernameLoading = ref(false)
+const setPwdLoading = ref(false)
 const pwdFormRef = ref<FormInst>()
+const setPwdFormRef = ref<FormInst>()
+const userHasPassword = ref(true)
 
 const pwdRules: FormRules = {
   oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
@@ -294,6 +346,17 @@ const pwdRules: FormRules = {
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     { validator: (_rule: any, value: string) => value === passwordForm.newPassword, message: '两次密码不一致', trigger: 'blur' },
+  ],
+}
+
+const setPwdRules: FormRules = {
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码至少6个字符', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: (_rule: any, value: string) => value === setPasswordForm.password, message: '两次密码不一致', trigger: 'blur' },
   ],
 }
 
@@ -405,6 +468,51 @@ const handleSaveProfile = async () => {
   }
 }
 
+const handleUpdateUsername = async () => {
+  const newUsername = profileForm.username.trim()
+  if (!newUsername) {
+    message.error('用户名不能为空')
+    return
+  }
+  usernameLoading.value = true
+  try {
+    await authApi.updateUsername(newUsername)
+    await authStore.fetchProfile()
+    message.success('用户名修改成功')
+  } catch (e: any) {
+    message.error(e.message || '修改失败')
+  } finally {
+    usernameLoading.value = false
+  }
+}
+
+const handleSetPassword = async () => {
+  try {
+    await setPwdFormRef.value?.validate()
+  } catch {
+    return
+  }
+  setPwdLoading.value = true
+  try {
+    await authApi.setPassword(setPasswordForm.password)
+    userHasPassword.value = true
+    message.success('密码设置成功，现在可以使用用户名+密码登录')
+  } catch (e: any) {
+    message.error(e.message || '设置失败')
+  } finally {
+    setPwdLoading.value = false
+  }
+}
+
+const checkHasPassword = async () => {
+  try {
+    const res = await authApi.hasPassword()
+    userHasPassword.value = res.hasPassword
+  } catch {
+    userHasPassword.value = true
+  }
+}
+
 const handleChangePassword = async () => {
   try {
     await pwdFormRef.value?.validate()
@@ -437,6 +545,7 @@ onMounted(() => {
   }
   initForm()
   fetchStats()
+  checkHasPassword()
 })
 </script>
 
@@ -575,6 +684,15 @@ onMounted(() => {
 .meta-item svg {
   opacity: 0.8;
   flex-shrink: 0;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: #22c55e;
+  font-weight: 500;
 }
 
 .meta-divider {
@@ -743,6 +861,16 @@ onMounted(() => {
 
 .form-actions .n-button {
   min-width: 140px;
+}
+
+.username-field {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.username-field .n-input {
+  flex: 1;
 }
 
 /* ============ 响应式 ============ */

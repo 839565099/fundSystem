@@ -16,6 +16,8 @@ public enum ErrorCode {
     USERNAME_EXISTS(1004, "用户名已存在"),
     EMAIL_EXISTS(1005, "邮箱已被注册"),
     PHONE_EXISTS(1006, "手机号已被注册"),
+    EMAIL_CODE_INVALID(1007, "验证码无效或已过期"),
+    EMAIL_CODE_COOLDOWN(1008, "发送过于频繁，请稍后重试"),
     
     FUND_NOT_FOUND(2001, "基金不存在"),
     FUND_CODE_ERROR(2002, "基金代码格式错误"),

@@ -28,6 +28,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('token', loginResponse.token)
   }
 
+  const emailLogin = async (email: string, code: string) => {
+    const loginResponse: LoginResponse = await authApi.emailLogin(email, code)
+    token.value = loginResponse.token
+    user.value = loginResponse.user
+    sessionInfo.value = loginResponse.sessionInfo
+    localStorage.setItem('token', loginResponse.token)
+  }
+
   const register = async (data: RegisterDTO) => {
     const userVO = await authApi.register(data)
     user.value = userVO
@@ -74,6 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     role,
     login,
+    emailLogin,
     register,
     logout,
     forceLogout,

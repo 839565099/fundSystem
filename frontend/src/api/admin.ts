@@ -88,6 +88,11 @@ export const adminApi = {
     })
   },
 
+  // 更新用户基本信息
+  updateUserInfo: async (id: number, data: { nickname?: string; email?: string; phone?: string }): Promise<void> => {
+    await api.put<Result<null>>(`/admin/users/${id}`, data)
+  },
+
   // 删除用户
   deleteUser: async (id: number): Promise<void> => {
     await api.delete<Result<null>>(`/admin/users/${id}`)

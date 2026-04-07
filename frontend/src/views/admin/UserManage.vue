@@ -47,6 +47,32 @@
         @update:page-size="handlePageSizeChange"
       />
     </n-card>
+
+    <!-- 编辑用户弹窗 -->
+    <n-modal
+      v-model:show="showEditModal"
+      preset="dialog"
+      title="编辑用户信息"
+      positive-text="保存"
+      negative-text="取消"
+      :loading="editLoading"
+      @positive-click="handleSaveEdit"
+    >
+      <n-form ref="editFormRef" :model="editForm" :rules="editRules" label-placement="left" label-width="60">
+        <n-form-item label="用户名">
+          <n-input :value="editForm.username" disabled />
+        </n-form-item>
+        <n-form-item label="昵称" path="nickname">
+          <n-input v-model:value="editForm.nickname" placeholder="请输入昵称" maxlength="20" />
+        </n-form-item>
+        <n-form-item label="邮箱" path="email">
+          <n-input v-model:value="editForm.email" placeholder="请输入邮箱" />
+        </n-form-item>
+        <n-form-item label="手机号" path="phone">
+          <n-input v-model:value="editForm.phone" placeholder="请输入手机号" maxlength="11" />
+        </n-form-item>
+      </n-form>
+    </n-modal>
   </div>
 </template>
 
@@ -62,6 +88,9 @@ import {
   NIcon,
   NTag,
   NSpace,
+  NModal,
+  NForm,
+  NFormItem,
   type DataTableColumns,
   type PaginationProps,
   useDialog,
@@ -70,6 +99,7 @@ import {
 import {
   IconSearch,
   IconEye,
+  IconEdit,
 } from '@tabler/icons-vue'
 import { adminApi } from '@/api/admin'
 import type { UserVO } from '@/types'
@@ -105,6 +135,41 @@ const pagination = reactive<PaginationProps>({
   pageSizes: [10, 20, 50],
 })
 
+const showEditModal = ref(false)
+const editLoading = ref(false)
+const editForm = reactive({
+  id: 0,
+  username: '',
+  nickname: '',
+  email: '',
+  phone: '',
+})
+
+const editFormRef = ref()
+
+const editRules = {
+  email: {
+    trigger: 'blur',
+    validator: (_rule: any, value: string) => {
+      if (!value) return true
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return new Error('邮箱格式不正确')
+      }
+      return true
+    }
+  },
+  phone: {
+    trigger: 'blur',
+    validator: (_rule: any, value: string) => {
+      if (!value) return true
+      if (!/^1[3-9]\d{9}$/.test(value)) {
+        return new Error('手机号格式不正确')
+      }
+      return true
+    }
+  },
+}
+
 const columns: DataTableColumns<UserVO> = [
   { title: 'ID', key: 'id', width: 80 },
   { title: '用户名', key: 'username' },
@@ -138,6 +203,11 @@ const columns: DataTableColumns<UserVO> = [
     width: 280,
     render: (row) => h(NSpace, null, {
       default: () => [
+        h(NButton, {
+          size: 'small',
+          type: 'primary',
+          onClick: () => handleEdit(row),
+        }, { icon: () => h(NIcon, null, { default: () => h(IconEdit) }) }),
         h(NButton, {
           size: 'small',
           onClick: () => router.push(`/admin/users/${row.id}`),
@@ -243,6 +313,39 @@ const handleToggleRole = (user: UserVO) => {
         message.error('角色更新失败')
       }
     },
+  })
+}
+
+const handleEdit = (user: UserVO) => {
+  editForm.id = user.id
+  editForm.username = user.username
+  editForm.nickname = user.nickname || ''
+  editForm.email = user.email || ''
+  editForm.phone = user.phone || ''
+  showEditModal.value = true
+}
+
+const handleSaveEdit = () => {
+  return new Promise((resolve) => {
+    editFormRef.value?.validate((errors: any) => {
+      if (errors) {
+        resolve(false)
+        return
+      }
+      adminApi.updateUserInfo(editForm.id, {
+        nickname: editForm.nickname,
+        email: editForm.email,
+        phone: editForm.phone,
+      }).then(() => {
+        message.success('用户信息更新成功')
+        loadUsers()
+        resolve(true)
+      }).catch((err) => {
+        const msg = err?.response?.data?.message || '更新失败'
+        message.error(msg)
+        resolve(false)
+      })
+    })
   })
 }
 </script>

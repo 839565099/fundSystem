@@ -60,60 +60,132 @@
     <!-- 右侧找回密码区域 -->
     <div class="forgot-section">
       <div class="forgot-card">
-        <div class="forgot-header">
-          <h2 class="forgot-title">找回密码</h2>
-          <p class="forgot-desc">请输入您的注册邮箱</p>
-        </div>
-
-        <!-- 成功提示 -->
-        <div v-if="sent" class="success-message">
-          <div class="success-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-color)" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9 12l2 2 4-4"/>
-            </svg>
+        <!-- 步骤1: 输入邮箱 -->
+        <template v-if="step === 1">
+          <div class="forgot-header">
+            <h2 class="forgot-title">找回密码</h2>
+            <p class="forgot-desc">请输入您的注册邮箱，我们将发送验证码</p>
           </div>
-          <p class="success-text">邮件已发送</p>
-          <p class="success-email">{{ form.email }}</p>
-          <p class="success-hint">请查收邮件并按照提示重置密码，邮件有效期30分钟</p>
-        </div>
 
-        <!-- 表单 -->
-        <n-form v-show="!sent" ref="formRef" :model="form" :rules="rules" size="large">
-          <n-form-item path="email">
-            <n-input
-              v-model:value="form.email"
-              placeholder="请输入注册时使用的邮箱"
-              :input-props="{ autocomplete: 'email', style: 'color: var(--text-primary)' }"
-            />
-          </n-form-item>
+          <n-form ref="emailFormRef" :model="emailForm" :rules="emailRules" size="large">
+            <n-form-item path="email">
+              <n-input
+                v-model:value="emailForm.email"
+                placeholder="请输入注册时使用的邮箱"
+                :input-props="{ autocomplete: 'email', style: 'color: var(--text-primary)' }"
+              />
+            </n-form-item>
 
-          <n-form-item path="type">
-            <n-radio-group v-model:value="form.type" class="reset-type-group">
-              <n-radio-button value="link">发送重置链接</n-radio-button>
-              <n-radio-button value="code">发送验证码</n-radio-button>
-            </n-radio-group>
-          </n-form-item>
+            <n-button
+              type="primary"
+              block
+              size="large"
+              :loading="sendLoading"
+              class="submit-btn"
+              @click="handleSendCode"
+            >
+              发送验证码
+            </n-button>
+          </n-form>
+        </template>
 
-          <n-button
-            type="primary"
-            block
-            size="large"
-            :loading="loading"
-            :disabled="sent"
-            class="submit-btn"
-            @click="handleSend"
-          >
-            {{ sent ? '已发送' : '发送邮件' }}
-          </n-button>
-        </n-form>
+        <!-- 步骤2: 输入验证码 + 设置新密码 -->
+        <template v-if="step === 2">
+          <div class="forgot-header">
+            <h2 class="forgot-title">重置密码</h2>
+            <p class="forgot-desc">验证码已发送至 <span class="accent-email">{{ emailForm.email }}</span></p>
+          </div>
 
-        <div class="divider">
+          <n-form ref="resetFormRef" :model="resetForm" :rules="resetRules" size="large">
+            <n-form-item path="code" label="验证码">
+              <div class="code-input-wrapper">
+                <n-input
+                  v-model:value="resetForm.code"
+                  placeholder="请输入6位验证码"
+                  :maxlength="6"
+                  :input-props="{ autocomplete: 'one-time-code', style: 'color: var(--text-primary)' }"
+                />
+                <n-button
+                  :disabled="cooldown > 0"
+                  :loading="sendLoading"
+                  class="resend-btn"
+                  @click="handleSendCode"
+                >
+                  {{ cooldown > 0 ? `${cooldown}s` : '重新发送' }}
+                </n-button>
+              </div>
+            </n-form-item>
+
+            <n-form-item path="newPassword" label="新密码">
+              <n-input
+                v-model:value="resetForm.newPassword"
+                type="password"
+                show-password-on="click"
+                placeholder="请输入新密码（6-20位）"
+                :input-props="{ autocomplete: 'new-password', style: 'color: var(--text-primary)' }"
+              />
+            </n-form-item>
+
+            <n-form-item path="confirmPassword" label="确认密码">
+              <n-input
+                v-model:value="resetForm.confirmPassword"
+                type="password"
+                show-password-on="click"
+                placeholder="请再次输入新密码"
+                :input-props="{ autocomplete: 'new-password', style: 'color: var(--text-primary)' }"
+              />
+            </n-form-item>
+
+            <n-button
+              type="primary"
+              block
+              size="large"
+              :loading="resetLoading"
+              class="submit-btn"
+              @click="handleReset"
+            >
+              重置密码
+            </n-button>
+          </n-form>
+        </template>
+
+        <!-- 步骤3: 重置成功 -->
+        <template v-if="step === 3">
+          <div class="success-message">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--success-color)" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+            </div>
+            <p class="success-text">密码重置成功</p>
+            <p class="success-hint">请使用新密码登录</p>
+            <n-button
+              type="primary"
+              block
+              size="large"
+              class="submit-btn"
+              style="margin-top: 24px"
+              @click="router.push('/login')"
+            >
+              返回登录
+            </n-button>
+          </div>
+        </template>
+
+        <div v-if="step !== 3" class="divider">
           <span>或</span>
         </div>
 
-        <n-button block size="large" quaternary class="back-btn" @click="router.push('/login')">
-          返回登录
+        <n-button
+          v-if="step !== 3"
+          block
+          size="large"
+          quaternary
+          class="back-btn"
+          @click="step === 2 ? (step = 1) : router.push('/login')"
+        >
+          {{ step === 2 ? '返回上一步' : '返回登录' }}
         </n-button>
       </div>
     </div>
@@ -121,15 +193,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NForm,
   NFormItem,
   NInput,
   NButton,
-  NRadioGroup,
-  NRadioButton,
   type FormInst,
   type FormRules,
   useMessage,
@@ -139,40 +209,116 @@ import { authApi } from '../api/auth'
 const message = useMessage()
 const router = useRouter()
 
-const formRef = ref<FormInst>()
-const loading = ref(false)
-const sent = ref(false)
+const emailFormRef = ref<FormInst>()
+const resetFormRef = ref<FormInst>()
+const sendLoading = ref(false)
+const resetLoading = ref(false)
+const step = ref(1)
+const cooldown = ref(0)
 
-const form = reactive({
+let cooldownTimer: ReturnType<typeof setInterval> | null = null
+
+const emailForm = reactive({
   email: '',
-  type: 'link' as 'link' | 'code',
 })
 
-const rules: FormRules = {
+const resetForm = reactive({
+  code: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const emailRules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' },
   ],
 }
 
-const handleSend = async () => {
+const resetRules: FormRules = {
+  code: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 6, message: '验证码为6位数字', trigger: 'blur' },
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度为6-20位', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule, value) => {
+        if (value && value !== resetForm.newPassword) {
+          return new Error('两次密码输入不一致')
+        }
+        return true
+      },
+      trigger: 'blur',
+    },
+  ],
+}
+
+const startCooldown = () => {
+  cooldown.value = 60
+  cooldownTimer = setInterval(() => {
+    cooldown.value--
+    if (cooldown.value <= 0 && cooldownTimer) {
+      clearInterval(cooldownTimer)
+      cooldownTimer = null
+    }
+  }, 1000)
+}
+
+const handleSendCode = async () => {
+  if (step.value === 1) {
+    try {
+      await emailFormRef.value?.validate()
+    } catch {
+      return
+    }
+  }
+
+  sendLoading.value = true
   try {
-    await formRef.value?.validate()
+    await authApi.forgotPassword(emailForm.email, 'code')
+    message.success('验证码已发送')
+    step.value = 2
+    startCooldown()
+  } catch (e: any) {
+    message.error(e.message || '发送失败')
+  } finally {
+    sendLoading.value = false
+  }
+}
+
+const handleReset = async () => {
+  try {
+    await resetFormRef.value?.validate()
   } catch {
     return
   }
 
-  loading.value = true
+  resetLoading.value = true
   try {
-    await authApi.forgotPassword(form.email, form.type)
-    sent.value = true
-    message.success('邮件发送成功')
+    await authApi.resetPassword({
+      email: emailForm.email,
+      code: resetForm.code,
+      newPassword: resetForm.newPassword,
+    })
+    message.success('密码重置成功')
+    step.value = 3
   } catch (e: any) {
-    message.error(e.message || '发送失败')
+    message.error(e.message || '重置失败')
   } finally {
-    loading.value = false
+    resetLoading.value = false
   }
 }
+
+onUnmounted(() => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer)
+  }
+})
 </script>
 
 <style scoped>
@@ -326,17 +472,26 @@ const handleSend = async () => {
   margin: 0;
 }
 
-.reset-type-group {
+.accent-email {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+/* 验证码输入行 */
+.code-input-wrapper {
+  display: flex;
+  gap: 8px;
   width: 100%;
 }
 
-.reset-type-group :deep(.n-radio-button) {
+.code-input-wrapper .n-input {
   flex: 1;
 }
 
-.reset-type-group :deep(.n-radio-button__inner) {
-  width: 100%;
-  text-align: center;
+.resend-btn {
+  flex-shrink: 0;
+  min-width: 100px;
+  border-radius: 8px !important;
 }
 
 .submit-btn {
@@ -376,13 +531,6 @@ const handleSend = async () => {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 8px;
-}
-
-.success-email {
-  font-size: 15px;
-  color: var(--accent-color);
-  font-weight: 500;
-  margin: 0 0 16px;
 }
 
 .success-hint {

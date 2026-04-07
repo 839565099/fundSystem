@@ -14,5 +14,6 @@ public class UserVO {
     private String avatar;
     private String role; // 角色: ADMIN-管理员, USER-普通用户
     private Integer status;
+    private Integer emailVerified;
     private LocalDateTime createTime;
 }

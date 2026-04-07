@@ -103,7 +103,7 @@ const columns: DataTableColumns<SessionInfo> = [
     key: 'remainingMinutes',
     width: 120,
     render: (row) => {
-      const minutes = row.remainingMinutes
+      const minutes = Math.round(row.remainingMinutes)
       const type = minutes < 5 ? 'error' : minutes < 15 ? 'warning' : 'success'
       return h(NTag, { type, size: 'small' }, {
         default: () => minutes >= 60

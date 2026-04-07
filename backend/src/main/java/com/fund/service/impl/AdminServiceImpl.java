@@ -3,6 +3,7 @@ package com.fund.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fund.dto.UpdateProfileDTO;
 import com.fund.entity.User;
 import com.fund.mapper.UserMapper;
 import com.fund.service.AdminService;
@@ -156,6 +157,63 @@ public class AdminServiceImpl implements AdminService {
 
         userMapper.deleteById(id);
         return null;
+    }
+
+    @Override
+    public String updateUserInfo(Long id, UpdateProfileDTO dto, Long currentUserId, String currentUsername, String ip) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            return "用户不存在";
+        }
+
+        // 检查邮箱唯一性
+        if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail())) {
+            User existing = userMapper.selectOne(
+                    new LambdaQueryWrapper<User>().eq(User::getEmail, dto.getEmail()));
+            if (existing != null) {
+                return "该邮箱已被其他用户使用";
+            }
+        }
+
+        // 检查手机号唯一性
+        if (dto.getPhone() != null && !dto.getPhone().equals(user.getPhone())) {
+            User existing = userMapper.selectOne(
+                    new LambdaQueryWrapper<User>().eq(User::getPhone, dto.getPhone()));
+            if (existing != null) {
+                return "该手机号已被其他用户使用";
+            }
+        }
+
+        if (dto.getNickname() != null) {
+            user.setNickname(dto.getNickname());
+        }
+        if (dto.getEmail() != null) {
+            user.setEmail(dto.getEmail());
+        }
+        if (dto.getPhone() != null) {
+            user.setPhone(dto.getPhone());
+        }
+        if (dto.getAvatar() != null) {
+            user.setAvatar(dto.getAvatar());
+        }
+        userMapper.updateById(user);
+
+        String detail = String.format("{\"userId\":%d,\"username\":\"%s\",\"updatedFields\":[%s]}",
+                id, user.getUsername(),
+                buildUpdatedFields(dto));
+        logService.logOperation(currentUserId, currentUsername, "UPDATE_USER_INFO", "USER", id.toString(), detail, ip);
+
+        return null;
+    }
+
+    private String buildUpdatedFields(UpdateProfileDTO dto) {
+        StringBuilder sb = new StringBuilder();
+        if (dto.getNickname() != null) sb.append("\"nickname\",");
+        if (dto.getEmail() != null) sb.append("\"email\",");
+        if (dto.getPhone() != null) sb.append("\"phone\",");
+        if (dto.getAvatar() != null) sb.append("\"avatar\",");
+        if (sb.length() > 0) sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
     private UserVO convertToVO(User user) {

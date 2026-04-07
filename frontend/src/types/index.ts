@@ -30,6 +30,7 @@ export interface UserVO {
   avatar?: string
   status: number
   role: 'ADMIN' | 'USER'
+  emailVerified?: number
   createTime?: string
 }
 

@@ -23,4 +23,16 @@ public interface UserService {
     User getByUsername(String username);
 
     Map<String, Object> getUserStats(Long userId);
+
+    User findByEmail(String email);
+
+    User findByGoogleId(String googleId);
+
+    LoginVO loginWithGoogle(String googleId, String email, String name, String avatar, javax.servlet.http.HttpServletRequest request);
+
+    UserVO updateUsername(Long userId, String newUsername);
+
+    void setPassword(Long userId, String password);
+
+    boolean hasPassword(Long userId);
 }

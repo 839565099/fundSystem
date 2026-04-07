@@ -13,7 +13,16 @@
               </transition>
             </router-view>
 
-            <!-- 正常布局页面 -->
+            <!-- 管理后台：独立全屏布局 -->
+            <AdminLayout v-else-if="isAdminRoute">
+              <router-view v-slot="{ Component }">
+                <transition name="page" mode="out-in">
+                  <component :is="Component" :key="route.path" />
+                </transition>
+              </router-view>
+            </AdminLayout>
+
+            <!-- 前台：正常布局页面 -->
             <n-layout v-else has-sider class="main-layout">
               <n-layout-sider
                 bordered
@@ -105,9 +114,16 @@
                       
                       <n-dropdown v-if="authStore.isLoggedIn" :options="userOptions" @select="handleUserAction">
                         <n-button text class="user-btn">
-                          <n-avatar round size="small" class="user-avatar">
-                            {{ authStore.user?.nickname || authStore.user?.username?.charAt(0) || 'U' }}
-                          </n-avatar>
+                          <div class="user-btn-inner">
+                            <n-avatar round size="small" class="user-avatar">
+                              {{ authStore.user?.nickname || authStore.user?.username?.charAt(0) || 'U' }}
+                            </n-avatar>
+                            <span
+                              v-if="authStore.user?.email && authStore.user.emailVerified !== 1"
+                              class="email-unverified-dot"
+                              title="邮箱未验证"
+                            ></span>
+                          </div>
                         </n-button>
                       </n-dropdown>
                       <n-button v-else type="primary" size="small" @click="router.push('/login')">
@@ -212,6 +228,7 @@ import { lightThemeOverrides, darkThemeOverrides } from './styles/naive-theme'
 import MobileNav from './components/MobileNav.vue'
 import NotificationBell from './components/NotificationBell.vue'
 import SessionCountdown from './components/SessionCountdown.vue'
+import AdminLayout from './views/admin/AdminLayout.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -238,9 +255,12 @@ const currentTitle = computed(() => (route.meta.title as string) || '首页')
 
 // 判断是否是认证相关页面（登录、注册、忘记密码等）
 const isAuthPage = computed(() => {
-  const authPages = ['Login', 'Register', 'ForgotPassword', 'ResetPassword']
+  const authPages = ['Login', 'Register', 'ForgotPassword', 'ResetPassword', 'EmailLogin']
   return authPages.includes(route.name as string)
 })
+
+// 判断是否是管理后台页面
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 const marketClock = computed(() => nowTime.value.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }))
 
@@ -538,6 +558,23 @@ const toggleTheme = (value: boolean) => {
 
 .user-btn:hover {
   background: var(--bg-tertiary);
+}
+
+.user-btn-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.email-unverified-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid var(--card-bg);
 }
 
 .user-avatar {

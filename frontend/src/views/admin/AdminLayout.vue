@@ -48,7 +48,7 @@
           </div>
         </n-layout-header>
         <n-layout-content class="admin-content">
-          <router-view />
+          <slot />
         </n-layout-content>
       </n-layout>
     </n-layout>

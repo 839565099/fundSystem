@@ -75,4 +75,38 @@ export const authApi = {
     const response = await api.post<Result<string>>('/auth/reset-password', data)
     return handleResponse(response)
   },
+
+  checkGoogleAuth: async (): Promise<{ enabled: boolean }> => {
+    try {
+      const response = await api.get<Result<{ enabled: boolean }>>('/auth/google/config')
+      return handleResponse(response)
+    } catch {
+      return { enabled: false }
+    }
+  },
+
+  sendEmailLoginCode: async (email: string) => {
+    const response = await api.post<Result<string>>('/auth/email-login-code', { email })
+    return handleResponse(response)
+  },
+
+  emailLogin: async (email: string, code: string): Promise<LoginResponse> => {
+    const response = await api.post<Result<LoginResponse>>('/auth/email-login', { email, code })
+    return handleResponse(response)
+  },
+
+  updateUsername: async (username: string) => {
+    const response = await api.put<Result<UserVO>>('/auth/username', { username })
+    return handleResponse(response)
+  },
+
+  setPassword: async (password: string) => {
+    const response = await api.post<Result<string>>('/auth/set-password', { password })
+    return handleResponse(response)
+  },
+
+  hasPassword: async (): Promise<{ hasPassword: boolean }> => {
+    const response = await api.get<Result<{ hasPassword: boolean }>>('/auth/has-password')
+    return handleResponse(response)
+  },
 }

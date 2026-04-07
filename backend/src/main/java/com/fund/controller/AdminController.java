@@ -2,11 +2,13 @@ package com.fund.controller;
 
 import com.fund.annotation.RequireAdmin;
 import com.fund.common.Result;
+import com.fund.dto.UpdateProfileDTO;
 import com.fund.service.AdminService;
 import com.fund.service.LogService;
 import com.fund.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import javax.validation.Valid;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -57,6 +59,18 @@ public class AdminController {
             return Result.error(error);
         }
         return Result.success(status == 1 ? "用户已启用" : "用户已禁用");
+    }
+
+    @PutMapping("/users/{id}")
+    public Result<?> updateUserInfo(@PathVariable Long id, @RequestBody @Valid UpdateProfileDTO dto, HttpServletRequest request) {
+        String error = adminService.updateUserInfo(id, dto,
+                (Long) request.getAttribute("userId"),
+                (String) request.getAttribute("username"),
+                request.getRemoteAddr());
+        if (error != null) {
+            return Result.error(error);
+        }
+        return Result.success("用户信息更新成功");
     }
 
     @PutMapping("/users/{id}/role")

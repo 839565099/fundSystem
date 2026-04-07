@@ -123,6 +123,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '注册' }
   },
   {
+    path: '/email-login',
+    name: 'EmailLogin',
+    component: () => import('../views/EmailLogin.vue'),
+    meta: { title: '邮箱登录' }
+  },
+  {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: () => import('../views/ForgotPassword.vue'),
@@ -133,6 +139,12 @@ const routes: RouteRecordRaw[] = [
     name: 'ResetPassword',
     component: () => import('../views/ResetPassword.vue'),
     meta: { title: '重置密码' }
+  },
+  {
+    path: '/auth/callback',
+    name: 'AuthCallback',
+    component: () => import('../views/AuthCallback.vue'),
+    meta: { title: '登录中' }
   },
   {
     path: '/notifications',
@@ -146,56 +158,48 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/Profile.vue'),
     meta: { title: '个人中心', requiresAuth: true }
   },
-  // 管理员路由
+  // 管理员路由（独立布局，由 App.vue 中 AdminLayout 包裹）
   {
     path: '/admin',
-    name: 'Admin',
-    component: () => import('../views/admin/AdminLayout.vue'),
-    meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true },
-    children: [
-      {
-        path: '',
-        name: 'AdminDashboard',
-        component: () => import('../views/admin/Dashboard.vue'),
-        meta: { title: '管理概览', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'users',
-        name: 'AdminUsers',
-        component: () => import('../views/admin/UserManage.vue'),
-        meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'sessions',
-        name: 'AdminSessions',
-        component: () => import('../views/admin/SessionManage.vue'),
-        meta: { title: '会话管理', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'session-config',
-        name: 'AdminSessionConfig',
-        component: () => import('../views/admin/SessionConfig.vue'),
-        meta: { title: '会话配置', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'session-logs',
-        name: 'AdminSessionLogs',
-        component: () => import('../views/admin/SessionLog.vue'),
-        meta: { title: '会话日志', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'logs',
-        name: 'AdminLogs',
-        component: () => import('../views/admin/OperationLog.vue'),
-        meta: { title: '操作日志', requiresAuth: true, requiresAdmin: true }
-      },
-      {
-        path: 'users/:id',
-        name: 'AdminUserDetail',
-        component: () => import('../views/admin/UserDetail.vue'),
-        meta: { title: '用户详情', requiresAuth: true, requiresAdmin: true }
-      }
-    ]
+    name: 'AdminDashboard',
+    component: () => import('../views/admin/Dashboard.vue'),
+    meta: { title: '管理概览', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    component: () => import('../views/admin/UserManage.vue'),
+    meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/sessions',
+    name: 'AdminSessions',
+    component: () => import('../views/admin/SessionManage.vue'),
+    meta: { title: '会话管理', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/session-config',
+    name: 'AdminSessionConfig',
+    component: () => import('../views/admin/SessionConfig.vue'),
+    meta: { title: '会话配置', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/session-logs',
+    name: 'AdminSessionLogs',
+    component: () => import('../views/admin/SessionLog.vue'),
+    meta: { title: '会话日志', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/logs',
+    name: 'AdminLogs',
+    component: () => import('../views/admin/OperationLog.vue'),
+    meta: { title: '操作日志', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users/:id',
+    name: 'AdminUserDetail',
+    component: () => import('../views/admin/UserDetail.vue'),
+    meta: { title: '用户详情', requiresAuth: true, requiresAdmin: true }
   },
   {
     path: '/:pathMatch(.*)*',
@@ -226,7 +230,7 @@ router.beforeEach(async (to, _from, next) => {
     next({ name: 'Home' })
   }
   // 已登录访问登录/注册页 -> 跳转首页
-  else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && isLoggedIn) {
+  else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword' || to.name === 'EmailLogin') && isLoggedIn) {
     next({ name: 'Home' })
   }
   else {

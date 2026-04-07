@@ -1,6 +1,7 @@
 package com.fund.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.fund.dto.UpdateProfileDTO;
 import com.fund.vo.UserVO;
 
 import java.util.Map;
@@ -39,6 +40,11 @@ public interface AdminService {
      * 删除用户
      */
     String deleteUser(Long id, Long currentUserId, String currentUsername, String ip);
+
+    /**
+     * 更新用户基本信息
+     */
+    String updateUserInfo(Long id, UpdateProfileDTO dto, Long currentUserId, String currentUsername, String ip);
 
     /**
      * 构建分页结果

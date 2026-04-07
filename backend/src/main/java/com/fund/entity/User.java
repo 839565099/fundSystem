@@ -30,6 +30,10 @@ public class User implements Serializable {
 
     private String role; // 角色: ADMIN-管理员, USER-普通用户
 
+    private String googleId;
+
+    private Integer emailVerified;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
