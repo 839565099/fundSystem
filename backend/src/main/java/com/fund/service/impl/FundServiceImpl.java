@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -398,5 +399,10 @@ public class FundServiceImpl implements FundService {
             redisTemplate.opsForValue().set(cacheKey, funds, CACHE_EXPIRE, TimeUnit.SECONDS);
         }
         return funds;
+    }
+
+    @Override
+    public Map<String, Object> getFundTrends(String fundCode) {
+        return fundDataApiService.fetchFundTrends(fundCode);
     }
 }

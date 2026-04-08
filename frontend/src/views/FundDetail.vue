@@ -65,6 +65,7 @@
           <FundTrendChart
             :data="navHistory"
             :fund-name="fund.fundName"
+            :intraday-data="intradayData"
             @period-change="loadNavHistory"
           />
         </section>
@@ -286,6 +287,7 @@ const authStore = useAuthStore()
 
 const fund = ref<FundDetailVO>()
 const navHistory = ref<FundNavHistoryVO[]>([])
+const intradayData = ref<{ fundCode: string; prevNav: number; isEtf: boolean; trends: Array<{ time: string; price: number; changeRatio: number }> } | null>(null)
 const managers = ref<FundManagerVO[]>([])
 const holdings = ref<FundHoldingVO[]>([])
 
@@ -335,6 +337,7 @@ const visibleHoldings = computed(() => {
 
 const resetExpandState = () => {
   expandHoldings.value = false
+  intradayData.value = null
   Object.keys(expandedIdeas).forEach((k) => delete expandedIdeas[k])
   Object.keys(expandedResumes).forEach((k) => delete expandedResumes[k])
 }
@@ -372,7 +375,7 @@ const loadFundDetail = async () => {
   loading.value = true
   try {
     fund.value = await fundApi.getDetail(fundCode.value)
-    await loadNavHistory('month')
+    await Promise.all([loadNavHistory('month'), loadIntradayData()])
     await checkFavorite()
   } catch (e: any) {
     message.error(e.message || '加载基金详情失败')
@@ -383,10 +386,22 @@ const loadFundDetail = async () => {
 }
 
 const loadNavHistory = async (period: string) => {
+  if (period === 'intraday') {
+    await loadIntradayData()
+    return
+  }
   try {
     navHistory.value = (await fundApi.getNavHistory(fundCode.value, period)) || []
   } catch {
     navHistory.value = []
+  }
+}
+
+const loadIntradayData = async () => {
+  try {
+    intradayData.value = await fundApi.getFundTrends(fundCode.value)
+  } catch {
+    intradayData.value = null
   }
 }
 

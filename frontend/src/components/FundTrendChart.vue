@@ -4,8 +4,8 @@
       <div class="toolbar-group">
         <span class="group-label">周期</span>
         <div class="btn-segment">
-          <button 
-            v-for="p in periods" 
+          <button
+            v-for="p in periods"
             :key="p.value"
             class="segment-btn"
             :class="{ active: period === p.value }"
@@ -15,53 +15,64 @@
           </button>
         </div>
       </div>
-      
-      <div class="toolbar-divider"></div>
-      
-      <div class="toolbar-group">
-        <span class="group-label">图表</span>
-        <div class="btn-segment">
-          <button 
-            v-for="t in chartTypes" 
-            :key="t.value"
-            class="segment-btn"
-            :class="{ active: chartType === t.value }"
-            @click="chartType = t.value as 'line' | 'area' | 'column'"
-          >
-            <n-icon size="14" style="margin-right: 4px;">
-              <IconTrendingUp v-if="t.value === 'line'" />
-              <IconCoin v-else-if="t.value === 'area'" />
-              <IconChartBar v-else />
-            </n-icon>
-            {{ t.label }}
-          </button>
+
+      <template v-if="period !== 'intraday'">
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <span class="group-label">图表</span>
+          <div class="btn-segment">
+            <button
+              v-for="t in chartTypes"
+              :key="t.value"
+              class="segment-btn"
+              :class="{ active: chartType === t.value }"
+              @click="chartType = t.value as 'line' | 'area' | 'column'"
+            >
+              <n-icon size="14" style="margin-right: 4px;">
+                <IconTrendingUp v-if="t.value === 'line'" />
+                <IconCoin v-else-if="t.value === 'area'" />
+                <IconChartBar v-else />
+              </n-icon>
+              {{ t.label }}
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div class="toolbar-divider"></div>
-      
-      <div class="toolbar-group">
-        <span class="group-label">显示</span>
-        <div class="btn-segment">
-          <button 
-            class="segment-btn"
-            :class="{ active: displayMode === 'nav' }"
-            @click="displayMode = 'nav'"
-          >
-            <n-icon size="14" style="margin-right: 4px;"><IconCoin /></n-icon>
-            净值
-          </button>
-          <button
-            class="segment-btn"
-            :class="{ active: displayMode === 'growth' }"
-            @click="displayMode = 'growth'"
-          >
-            <n-icon size="14" style="margin-right: 4px;"><IconTrendingUp /></n-icon>
-            涨跌幅
-          </button>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <span class="group-label">显示</span>
+          <div class="btn-segment">
+            <button
+              class="segment-btn"
+              :class="{ active: displayMode === 'nav' }"
+              @click="displayMode = 'nav'"
+            >
+              <n-icon size="14" style="margin-right: 4px;"><IconCoin /></n-icon>
+              净值
+            </button>
+            <button
+              class="segment-btn"
+              :class="{ active: displayMode === 'growth' }"
+              @click="displayMode = 'growth'"
+            >
+              <n-icon size="14" style="margin-right: 4px;"><IconTrendingUp /></n-icon>
+              涨跌幅
+            </button>
+          </div>
         </div>
-      </div>
-      
+      </template>
+
+      <template v-else>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-group" v-if="intradayData">
+          <span class="intraday-badge" :class="intradayData.isEtf ? 'badge-etf' : 'badge-estimate'">
+            {{ intradayData.isEtf ? '实时行情' : '估值走势' }}
+          </span>
+        </div>
+      </template>
+
       <div class="toolbar-actions">
         <n-tooltip trigger="hover">
           <template #trigger>
@@ -85,10 +96,37 @@
         </n-tooltip>
       </div>
     </div>
-    
+
     <div ref="chartRef" class="chart-container" :class="{ 'chart-container--fullscreen': isFullscreen }"></div>
-    
-    <div class="chart-stats" v-if="stats">
+
+    <!-- 分时图统计 -->
+    <div class="chart-stats" v-if="period === 'intraday' && intradayStats">
+      <div class="stat-item card-stagger">
+        <span class="stat-label">昨收净值</span>
+        <span class="stat-value">{{ intradayStats.prevNav?.toFixed(4) }}</span>
+      </div>
+      <div class="stat-item card-stagger">
+        <span class="stat-label">当前估值</span>
+        <span class="stat-value">{{ intradayStats.currentPrice?.toFixed(4) }}</span>
+      </div>
+      <div class="stat-item card-stagger">
+        <span class="stat-label">估算涨跌</span>
+        <span class="stat-value" :class="intradayStats.changeRatio >= 0 ? 'growth-positive' : 'growth-negative'">
+          {{ intradayStats.changeRatio >= 0 ? '+' : '' }}{{ intradayStats.changeRatio?.toFixed(2) }}%
+        </span>
+      </div>
+      <div class="stat-item card-stagger">
+        <span class="stat-label">最高</span>
+        <span class="stat-value">{{ intradayStats.maxPrice?.toFixed(4) }}</span>
+      </div>
+      <div class="stat-item card-stagger">
+        <span class="stat-label">最低</span>
+        <span class="stat-value">{{ intradayStats.minPrice?.toFixed(4) }}</span>
+      </div>
+    </div>
+
+    <!-- 常规统计 -->
+    <div class="chart-stats" v-else-if="stats">
       <div class="stat-item card-stagger">
         <span class="stat-label">期间涨跌</span>
         <span class="stat-value" :class="stats.periodGrowth >= 0 ? 'growth-positive' : 'growth-negative'">
@@ -131,9 +169,23 @@ import * as echarts from 'echarts'
 import type { FundNavHistoryVO } from '../types'
 import { useThemeStore } from '../stores/theme'
 
+interface IntradayTrendPoint {
+  time: string
+  price: number
+  changeRatio: number
+}
+
+interface IntradayData {
+  fundCode: string
+  prevNav: number
+  isEtf: boolean
+  trends: IntradayTrendPoint[]
+}
+
 const props = defineProps<{
   data: FundNavHistoryVO[]
   fundName?: string
+  intradayData?: IntradayData | null
 }>()
 
 const themeStore = useThemeStore()
@@ -149,6 +201,7 @@ const getChartColors = () => {
     downColor: style.getPropertyValue('--down-color').trim() || '#22c55e',
     primaryColor: style.getPropertyValue('--primary-color').trim() || '#3b82f6',
     cardBg: style.getPropertyValue('--card-bg').trim() || '#ffffff',
+    goldColor: style.getPropertyValue('--primary-color').trim() || '#C9A96E',
   }
 }
 
@@ -162,6 +215,7 @@ const displayMode = ref<'nav' | 'growth'>('nav')
 const isFullscreen = ref(false)
 
 const periods = [
+  { label: '分时', value: 'intraday' },
   { label: '日', value: 'day' },
   { label: '周', value: 'week' },
   { label: '月', value: 'month' },
@@ -183,18 +237,18 @@ const emit = defineEmits<{
 
 const stats = computed(() => {
   if (!props.data || props.data.length === 0) return null
-  
+
   const navs = props.data.map(d => d.nav)
   const maxNav = Math.max(...navs)
   const minNav = Math.min(...navs)
   const firstNav = props.data[0]?.nav || 0
   const lastNav = props.data[props.data.length - 1]?.nav || 0
   const periodGrowth = firstNav > 0 ? ((lastNav - firstNav) / firstNav) * 100 : 0
-  
+
   const growths = props.data.map(d => d.dayGrowth || 0).filter(g => g !== 0)
   const maxGrowth = growths.length > 0 ? Math.max(...growths) : 0
   const minGrowth = growths.length > 0 ? Math.min(...growths) : 0
-  
+
   let upDays = 0
   let downDays = 0
   props.data.forEach(d => {
@@ -203,8 +257,22 @@ const stats = computed(() => {
       else if (d.dayGrowth < 0) downDays++
     }
   })
-  
+
   return { maxNav, minNav, periodGrowth, upDays, downDays, maxGrowth, minGrowth }
+})
+
+const intradayStats = computed(() => {
+  if (!props.intradayData || !props.intradayData.trends || props.intradayData.trends.length === 0) return null
+  const trends = props.intradayData.trends
+  const prices = trends.map(t => t.price)
+  const last = trends[trends.length - 1]
+  return {
+    prevNav: props.intradayData.prevNav,
+    currentPrice: last?.price,
+    changeRatio: last?.changeRatio,
+    maxPrice: Math.max(...prices),
+    minPrice: Math.min(...prices),
+  }
 })
 
 const changePeriod = (p: string) => {
@@ -219,18 +287,18 @@ const toggleFullscreen = () => {
 
 const downloadChart = () => {
   if (!chart) return
-  
+
   const url = chart.getDataURL({
     type: 'png',
     pixelRatio: 2,
     backgroundColor: isDark.value ? '#1e293b' : '#fff'
   })
-  
+
   const link = document.createElement('a')
   link.href = url
   link.download = `${props.fundName || '基金'}_走势图_${new Date().toLocaleDateString()}.png`
   link.click()
-  
+
   message.success('图表已下载')
 }
 
@@ -247,21 +315,168 @@ const initChart = () => {
 }
 
 const updateChart = () => {
+  if (!chart) return
+
+  if (period.value === 'intraday') {
+    updateIntradayChart()
+  } else {
+    updateRegularChart()
+  }
+}
+
+const updateIntradayChart = () => {
+  if (!chart) return
+  const colors = getChartColors()
+  const trends = props.intradayData?.trends || []
+  const prevNav = props.intradayData?.prevNav || 0
+
+  if (trends.length === 0) {
+    chart.setOption({
+      title: {
+        text: '暂无分时数据',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: colors.text, fontSize: 14 }
+      }
+    }, true)
+    return
+  }
+
+  const times = trends.map(t => t.time)
+  const prices = trends.map(t => t.price)
+  const changeRatios = trends.map(t => t.changeRatio)
+
+  const lastChange = changeRatios[changeRatios.length - 1] || 0
+  const lineColor = lastChange >= 0 ? colors.upColor : colors.downColor
+
+  const option: any = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: isDark.value ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      borderColor: isDark.value ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: [12, 16],
+      textStyle: {
+        color: isDark.value ? '#f8fafc' : '#1f2937',
+        fontSize: 13
+      },
+      extraCssText: 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);',
+      formatter: (params: any) => {
+        if (!params || !params[0]) return ''
+        const idx = params[0].dataIndex
+        const point = trends[idx]
+        if (!point) return ''
+        return `
+          <div style="padding: 4px;">
+            <div style="font-weight: 600; margin-bottom: 10px; font-size: 14px;">${point.time}</div>
+            <div style="margin-bottom: 6px;">估值: <span style="color: ${colors.goldColor}; font-weight: 600;">${point.price?.toFixed(4)}</span></div>
+            <div>涨跌幅: <span style="color: ${point.changeRatio >= 0 ? colors.upColor : colors.downColor}; font-weight: 600;">${point.changeRatio >= 0 ? '+' : ''}${point.changeRatio?.toFixed(2)}%</span></div>
+          </div>
+        `
+      },
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '12%',
+      top: '10%',
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'category',
+      data: times,
+      boundaryGap: false,
+      axisLine: {
+        show: true,
+        lineStyle: { color: colors.splitLine }
+      },
+      axisTick: { show: false },
+      axisLabel: {
+        color: colors.text,
+        fontSize: 11,
+        interval: (index: number) => {
+          // 大约每30分钟显示一个标签
+          const step = Math.max(1, Math.floor(times.length / 8))
+          return index === 0 || index === times.length - 1 || index % step === 0
+        },
+      },
+    },
+    yAxis: {
+      type: 'value',
+      name: '涨跌幅(%)',
+      nameTextStyle: {
+        color: colors.text,
+        fontSize: 12,
+        padding: [0, 0, 0, 50],
+      },
+      splitLine: {
+        lineStyle: {
+          color: colors.splitLine,
+          type: 'dashed'
+        },
+      },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: colors.text,
+        fontSize: 11,
+        formatter: (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
+      },
+    },
+    series: [
+      {
+        type: 'line',
+        data: changeRatios,
+        smooth: false,
+        symbol: 'none',
+        lineStyle: {
+          width: 2,
+          color: lineColor,
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: `${lineColor}25` },
+            { offset: 1, color: `${lineColor}02` },
+          ]),
+        },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          label: { show: false },
+          lineStyle: {
+            color: colors.text,
+            type: 'dashed',
+            width: 1,
+          },
+          data: [{ yAxis: 0 }],
+        },
+      },
+    ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut' as const,
+  }
+
+  chart.setOption(option, true)
+}
+
+const updateRegularChart = () => {
   if (!chart || !props.data || props.data.length === 0) return
 
   const colors = getChartColors()
   const dates = props.data.map(d => d.navDate)
   const navs = props.data.map(d => d.nav)
   const growths = props.data.map(d => d.dayGrowth || 0)
-  
+
   const firstNav = props.data[0]?.nav || 1
   const cumulativeGrowths = props.data.map((d) => {
     const currentNav = d.nav
     return firstNav > 0 ? ((currentNav - firstNav) / firstNav) * 100 : 0
   })
-  
+
   let series: any[]
-  
+
   if (chartType.value === 'column') {
     series = [{
       type: 'bar',
@@ -285,7 +500,7 @@ const updateChart = () => {
     const lineColor = isGrowthMode
       ? (lastValue >= 0 ? colors.upColor : colors.downColor)
       : colors.primaryColor
-    
+
     series = [{
       type: 'line',
       data: dataToUse,
@@ -313,9 +528,9 @@ const updateChart = () => {
       }
     }]
   }
-  
+
   const isGrowthMode = displayMode.value === 'growth'
-  
+
   const option: any = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -325,7 +540,7 @@ const updateChart = () => {
       borderWidth: 1,
       borderRadius: 12,
       padding: [12, 16],
-      textStyle: { 
+      textStyle: {
         color: isDark.value ? '#f8fafc' : '#1f2937',
         fontSize: 13
       },
@@ -367,7 +582,7 @@ const updateChart = () => {
       type: 'category',
       data: dates,
       boundaryGap: chartType.value === 'column',
-      axisLine: { 
+      axisLine: {
         show: true,
         lineStyle: { color: colors.splitLine }
       },
@@ -388,9 +603,9 @@ const updateChart = () => {
         padding: [0, 0, 0, 40],
       },
       splitLine: {
-        lineStyle: { 
-          color: colors.splitLine, 
-          type: 'dashed' 
+        lineStyle: {
+          color: colors.splitLine,
+          type: 'dashed'
         },
       },
       axisLine: { show: false },
@@ -398,7 +613,7 @@ const updateChart = () => {
       axisLabel: {
         color: colors.text,
         fontSize: 11,
-        formatter: isGrowthMode 
+        formatter: isGrowthMode
           ? (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
           : (value: number) => value.toFixed(4),
       },
@@ -434,13 +649,14 @@ const updateChart = () => {
     animationDuration: 800,
     animationEasing: 'cubicOut' as const,
   }
-  
+
   chart.setOption(option, true)
 }
 
-watch(() => props.data, updateChart, { deep: true })
-watch(chartType, updateChart)
-watch(displayMode, updateChart)
+watch(() => props.data, () => { if (period.value !== 'intraday') updateChart() }, { deep: true })
+watch(() => props.intradayData, () => { if (period.value === 'intraday') updateChart() }, { deep: true })
+watch(chartType, () => { if (period.value !== 'intraday') updateChart() })
+watch(displayMode, () => { if (period.value !== 'intraday') updateChart() })
 watch(isDark, () => {
   chart?.dispose()
   initChart()
@@ -529,6 +745,26 @@ onUnmounted(() => {
   gap: 4px;
 }
 
+.intraday-badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.badge-etf {
+  background: rgba(201, 169, 110, 0.15);
+  color: var(--primary-color);
+  border: 1px solid rgba(201, 169, 110, 0.3);
+}
+
+.badge-estimate {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
 .chart-container {
   height: 380px;
   width: 100%;
@@ -579,19 +815,19 @@ onUnmounted(() => {
   .fund-trend-chart {
     padding: 16px;
   }
-  
+
   .chart-toolbar {
     gap: 8px;
   }
-  
+
   .toolbar-divider {
     display: none;
   }
-  
+
   .chart-container {
     height: 300px;
   }
-  
+
   .stat-value {
     font-size: 16px;
   }

@@ -13,6 +13,7 @@ import com.fund.vo.FundNavHistoryVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/fund")
@@ -96,5 +97,11 @@ public class FundController {
             @RequestParam(defaultValue = "8") int limit) {
         List<Fund> funds = fundService.getHotFundsByType(fundType, limit);
         return Result.success(funds);
+    }
+
+    @GetMapping("/trends/{fundCode}")
+    public Result<Map<String, Object>> getFundTrends(@PathVariable String fundCode) {
+        Map<String, Object> trends = fundService.getFundTrends(fundCode);
+        return Result.success(trends);
     }
 }

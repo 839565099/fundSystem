@@ -10,5 +10,7 @@ public interface MarketDataService {
 
     List<Map<String, Object>> getMarketHistory(String marketCode, String period);
 
+    List<Map<String, Object>> getMarketTrends(String marketCode);
+
     void updateMarketData();
 }

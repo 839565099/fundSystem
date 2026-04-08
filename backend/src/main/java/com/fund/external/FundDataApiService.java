@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -513,7 +514,15 @@ public class FundDataApiService {
     public List<Object[]> fetchMarketHistory(String marketCode, String period) {
         return marketDataApiService.fetchMarketHistory(marketCode, period);
     }
-    
+
+    public List<Object[]> fetchMarketTrends(String marketCode) {
+        return marketDataApiService.fetchMarketTrends(marketCode);
+    }
+
+    public Map<String, Object> fetchFundTrends(String fundCode) {
+        return marketDataApiService.fetchFundTrends(fundCode);
+    }
+
     public List<Fund> fetchFundRanking(String rankingType, String period, int pageNum, int pageSize) {
         List<Fund> funds = new ArrayList<>();
         try {

@@ -27,4 +27,9 @@ public class MarketController {
             @RequestParam(defaultValue = "month") String period) {
         return Result.success(marketDataService.getMarketHistory(marketCode, period));
     }
+
+    @GetMapping("/trends/{marketCode}")
+    public Result<List<Map<String, Object>>> getMarketTrends(@PathVariable String marketCode) {
+        return Result.success(marketDataService.getMarketTrends(marketCode));
+    }
 }

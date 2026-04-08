@@ -133,6 +133,7 @@ const operationOptions = [
   { label: '禁用用户', value: 'DISABLE_USER' },
   { label: '变更角色', value: 'CHANGE_ROLE' },
   { label: '删除用户', value: 'DELETE_USER' },
+  { label: '修改用户信息', value: 'UPDATE_USER_INFO' },
 ]
 
 // 日志类型选项
@@ -149,19 +150,30 @@ const opColumns: DataTableColumns<OperationLogItem> = [
   {
     title: '操作类型',
     key: 'operation',
-    width: 120,
+    width: 130,
     render: (row) => {
       const typeMap: Record<string, { label: string; type: 'success' | 'warning' | 'error' | 'info' }> = {
         'ENABLE_USER': { label: '启用用户', type: 'success' },
         'DISABLE_USER': { label: '禁用用户', type: 'error' },
         'CHANGE_ROLE': { label: '变更角色', type: 'warning' },
         'DELETE_USER': { label: '删除用户', type: 'error' },
+        'UPDATE_USER_INFO': { label: '修改用户信息', type: 'info' },
       }
       const info = typeMap[row.operation] || { label: row.operation, type: 'info' }
       return h(NTag, { type: info.type, size: 'small' }, { default: () => info.label })
     }
   },
-  { title: '目标类型', key: 'targetType', width: 100 },
+  {
+    title: '目标类型',
+    key: 'targetType',
+    width: 110,
+    render: (row) => {
+      const typeMap: Record<string, string> = {
+        'USER': '用户',
+      }
+      return typeMap[row.targetType] || row.targetType || '-'
+    }
+  },
   { title: '目标ID', key: 'targetId', width: 100 },
   {
     title: '详情',

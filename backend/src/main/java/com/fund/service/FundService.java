@@ -6,6 +6,7 @@ import com.fund.entity.Fund;
 import com.fund.vo.FundDetailVO;
 import com.fund.vo.FundListVO;
 import java.util.List;
+import java.util.Map;
 
 public interface FundService {
     
@@ -42,4 +43,9 @@ public interface FundService {
      * @return 基金信息，如果获取失败返回 null
      */
     Fund fetchAndSaveFund(String fundCode);
+
+    /**
+     * 获取基金分时走势数据
+     */
+    Map<String, Object> getFundTrends(String fundCode);
 }

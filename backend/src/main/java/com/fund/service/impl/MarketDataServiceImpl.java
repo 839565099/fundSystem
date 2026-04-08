@@ -58,6 +58,21 @@ public class MarketDataServiceImpl implements MarketDataService {
     }
 
     @Override
+    public List<Map<String, Object>> getMarketTrends(String marketCode) {
+        List<Object[]> trends = fundDataApiService.fetchMarketTrends(marketCode);
+        List<Map<String, Object>> result = new ArrayList<>();
+        String[] keys = {"time", "price", "avgPrice", "volume", "amount"};
+        for (Object[] item : trends) {
+            Map<String, Object> map = new HashMap<>();
+            for (int i = 0; i < keys.length && i < item.length; i++) {
+                map.put(keys[i], item[i]);
+            }
+            result.add(map);
+        }
+        return result;
+    }
+
+    @Override
     @Scheduled(fixedRate = 30000)
     public void updateMarketData() {
         log.info("开始更新市场数据...");

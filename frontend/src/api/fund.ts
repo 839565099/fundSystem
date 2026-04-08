@@ -56,6 +56,11 @@ const fundBaseApi = {
     const response = await api.get<Result<FundHoldingVO[]>>(`/fund-info/holdings/${fundCode}`, { params: { limit } })
     return handleResponse(response)
   },
+
+  getFundTrends: async (fundCode: string) => {
+    const response = await api.get<Result<{ fundCode: string; prevNav: number; isEtf: boolean; trends: Array<{ time: string; price: number; changeRatio: number }> }>>(`/fund/trends/${fundCode}`)
+    return handleResponse(response)
+  },
 }
 
 export const favoriteApi = {
@@ -88,6 +93,11 @@ export const marketApi = {
 
   getMarketHistory: async (marketCode: string, period: string = 'month') => {
     const response = await api.get<Result<any[]>>(`/market/history/${marketCode}`, { params: { period } })
+    return handleResponse(response)
+  },
+
+  getMarketTrends: async (marketCode: string) => {
+    const response = await api.get<Result<any[]>>(`/market/trends/${marketCode}`)
     return handleResponse(response)
   },
 }
